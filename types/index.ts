@@ -75,18 +75,24 @@ export interface CameraSettings {
   aperture: string; // "f/1.4", "f/2.8", etc
   shutterSpeed: string; // "1/200", "1/60", etc
   whiteBalance: number; // Kelvin
-  exposure: 'low_key' | 'normal' | 'high_key';
   apertureAuto: boolean;
   shutterSpeedAuto: boolean;
   isoAuto: boolean;
 }
 
 export interface LightingSettings {
+  enabled: boolean; // 라이팅 ON/OFF
+  exposure: 'low_key' | 'normal' | 'high_key'; // 노출
   patternId: string;
   quality: 'hard' | 'soft';
   colorTemp: number;
   timeOfDay?: string;
   keyFillBackRatio: string; // "4:2:1"
+  // 스튜디오 전용 라이팅
+  studioLightingSetup: '1point' | '2point' | '3point' | 'backlight';
+  studioLightingTool: 'softbox' | 'beautydish' | 'spotlight' | 'umbrella';
+  studioBackgroundDetail: 'circular' | 'window' | 'halo' | 'blackout';
+  studioColorTemp: '5600k' | '3200k' | '7500k' | 'colorgel';
 }
 
 export interface ColorGradingSettings {
@@ -113,9 +119,27 @@ export interface QualitySettings {
   customNegatives: string[];
 }
 
+// Studio 인물 정보
+export interface StudioSubject {
+  autoMode: boolean; // Auto 모드 - ON이면 인종/성별/나이만 활성화
+  gender: 'male' | 'female';
+  ageGroup: 'child' | 'teen' | '20s' | '30s' | '40s' | '50plus' | 'elderly';
+  ethnicity: 'asian' | 'caucasian' | 'black' | 'hispanic' | 'middle_eastern' | 'mixed';
+  hairColor: 'black' | 'brown' | 'blonde' | 'red' | 'gray' | 'white';
+  hairStyle: 'short' | 'medium' | 'long' | 'wavy' | 'curly' | 'straight' | 'bald' | 'ponytail' | 'bun' | 'braids';
+  eyeColor: 'brown' | 'blue' | 'green' | 'hazel' | 'gray';
+  skinTexture: 'smooth' | 'natural' | 'freckled' | 'weathered';
+  otherFeatures: string;
+  fashion: string;
+}
+
 export interface UserInputSettings {
   subjectDescription: string;
   moodDescription: string;
+  // Studio 전용
+  studioSubjectCount: 1 | 2 | 3;
+  studioComposition: 'closeup' | 'bust' | 'waist' | 'full' | 'extreme_closeup';
+  studioSubjects: StudioSubject[];
 }
 
 // ===== Generated Prompt =====

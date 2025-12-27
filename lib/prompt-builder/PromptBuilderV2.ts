@@ -1,7 +1,7 @@
 // lib/prompt-builder/PromptBuilderV2.ts
 // IR(Intermediate Representation) 기반 프롬프트 빌더
 
-import type { PromptIR, SlotContent, UserSettings, ConflictReport } from '@/types';
+import type { PromptIR, SlotContent, UserSettings, ConflictReport, StudioSubject } from '@/types';
 import { PROMPT_SLOTS, getSlotById } from '@/config/slots/slot-definitions';
 import { getCameraById } from '@/config/mappings/cameras';
 import { getLensById } from '@/config/mappings/lenses';
@@ -101,23 +101,150 @@ export class PromptBuilderV2 {
             locked: false
         });
 
-        // 피사체 (사용자 입력)
-        if (this.settings.userInput.subjectDescription) {
-            this.setSlot('subject', this.settings.userInput.subjectDescription, {
+        // 피사체 (Studio 모드 또는 직접 입력)
+        const subjectPrompt = this.getSubjectPrompt();
+        if (subjectPrompt) {
+            this.setSlot('subject', subjectPrompt, {
                 priority: 9,
-                source: 'user_direct',
+                source: this.settings.artDirection.lensCharacteristicType === 'studio' ? 'deterministic' : 'user_direct',
                 locked: false
             });
         }
 
-        // 스타일/분위기 (사용자 입력)
-        if (this.settings.userInput.moodDescription) {
+        // 스타일/분위기 (사용자 입력) - Studio 모드가 아닐 때만
+        if (this.settings.artDirection.lensCharacteristicType !== 'studio' && this.settings.userInput.moodDescription) {
             this.setSlot('style', this.settings.userInput.moodDescription, {
                 priority: 6,
                 source: 'user_direct',
                 locked: false
             });
         }
+    }
+
+    // Studio 모드 피사체 프롬프트 생성
+    private getSubjectPrompt(): string {
+        const { lensCharacteristicType } = this.settings.artDirection;
+
+        // Studio 모드: 폼 데이터 기반
+        if (lensCharacteristicType === 'studio') {
+            return this.buildStudioSubjectPrompt();
+        }
+
+        // 다른 모드: 기존 직접 입력
+        return this.settings.userInput.subjectDescription || '';
+    }
+
+    private buildStudioSubjectPrompt(): string {
+        const { studioSubjectCount, studioComposition, studioSubjects } = this.settings.userInput;
+        const parts: string[] = [];
+
+        // 구도 매핑
+        const compositionMap: Record<string, string> = {
+            extreme_closeup: 'extreme close-up portrait',
+            closeup: 'close-up portrait',
+            bust: 'bust shot portrait',
+            waist: 'waist-up portrait',
+            full: 'full body portrait'
+        };
+        parts.push(compositionMap[studioComposition] || 'portrait');
+
+        // 인원수
+        if (studioSubjectCount > 1) {
+            parts.push(`of ${studioSubjectCount} people`);
+        }
+
+        // 각 인물 설명
+        const subjectDescriptions = studioSubjects.slice(0, studioSubjectCount).map((subject, idx) => {
+            return this.buildSingleSubjectDescription(subject, studioSubjectCount > 1 ? idx + 1 : null);
+        });
+
+        parts.push(subjectDescriptions.join('; '));
+
+        return parts.join(', ');
+    }
+
+    private buildSingleSubjectDescription(subject: StudioSubject, personNumber: number | null): string {
+        const parts: string[] = [];
+
+        // 성별 & 나이대 매핑
+        const genderMap: Record<string, string> = { male: 'man', female: 'woman' };
+        const ageMap: Record<string, string> = {
+            child: 'child',
+            teen: 'teenager',
+            '20s': 'in their 20s',
+            '30s': 'in their 30s',
+            '40s': 'in their 40s',
+            '50plus': 'in their 50s',
+            elderly: 'elderly'
+        };
+
+        // Person N (복수 인물일 때)
+        if (personNumber) {
+            parts.push(`Person ${personNumber}:`);
+        }
+
+        // 인종 (항상 포함)
+        const ethnicityMap: Record<string, string> = {
+            asian: 'Asian',
+            caucasian: 'Caucasian',
+            black: 'Black',
+            hispanic: 'Hispanic',
+            middle_eastern: 'Middle Eastern',
+            mixed: 'mixed ethnicity'
+        };
+        parts.push(ethnicityMap[subject.ethnicity] || '');
+
+        // 나이대 + 성별 (항상 포함)
+        const ageText = ageMap[subject.ageGroup] || '';
+        const genderText = genderMap[subject.gender] || 'person';
+        if (subject.ageGroup === 'child' || subject.ageGroup === 'teen' || subject.ageGroup === 'elderly') {
+            parts.push(`${ageText} ${genderText}`);
+        } else {
+            parts.push(`${genderText} ${ageText}`);
+        }
+
+        // Auto 모드가 OFF일 때만 상세 정보 포함
+        if (!subject.autoMode) {
+            // 머리
+            const hairColorMap: Record<string, string> = {
+                black: 'black', brown: 'brown', blonde: 'blonde', red: 'red', gray: 'gray', white: 'white'
+            };
+            const hairStyleMap: Record<string, string> = {
+                short: 'short', medium: 'medium-length', long: 'long', wavy: 'wavy', curly: 'curly', straight: 'straight', bald: 'bald', ponytail: 'ponytail', bun: 'bun', braids: 'braided'
+            };
+            if (subject.hairStyle !== 'bald') {
+                parts.push(`${hairStyleMap[subject.hairStyle]} ${hairColorMap[subject.hairColor]} hair`);
+            } else {
+                parts.push('bald');
+            }
+
+            // 눈
+            const eyeColorMap: Record<string, string> = {
+                brown: 'brown', blue: 'blue', green: 'green', hazel: 'hazel', gray: 'gray'
+            };
+            parts.push(`${eyeColorMap[subject.eyeColor]} eyes`);
+
+            // 피부
+            const skinMap: Record<string, string> = {
+                smooth: 'smooth skin',
+                natural: 'natural skin texture',
+                freckled: 'freckled skin',
+                weathered: 'weathered skin'
+            };
+            parts.push(skinMap[subject.skinTexture] || '');
+
+            // 기타 특징
+            if (subject.otherFeatures.trim()) {
+                parts.push(subject.otherFeatures.trim());
+            }
+
+            // 패션
+            if (subject.fashion.trim()) {
+                parts.push(`wearing ${subject.fashion.trim()}`);
+            }
+        }
+
+        return parts.filter(p => p).join(', ');
     }
 
     // ===== 개별 슬롯 생성 메서드 =====
@@ -266,7 +393,52 @@ export class PromptBuilderV2 {
 
     private getLighting(): string {
         const parts: string[] = [];
+        const { lensCharacteristicType } = this.settings.artDirection;
 
+        // 스튜디오 전용 라이팅
+        if (lensCharacteristicType === 'studio') {
+            const { studioLightingSetup, studioLightingTool, studioBackgroundDetail, studioColorTemp } = this.settings.lighting;
+
+            // 조명 구조
+            const setupMap: Record<string, string> = {
+                '1point': 'single key light source, dramatic chiaroscuro, high contrast shadows',
+                '2point': 'key and fill lighting setup, balanced facial shadows, natural volume',
+                '3point': 'professional 3-point setup, rim light, hair light, subject separation',
+                'backlight': 'strong backlighting, glowing edges, dark frontal exposure, silhouette effect'
+            };
+            parts.push(setupMap[studioLightingSetup] || '');
+
+            // 광질 및 도구
+            const toolMap: Record<string, string> = {
+                'softbox': 'diffused softbox light, smooth skin transitions, gentle shadow falloff',
+                'beautydish': 'beauty dish illumination, crisp facial contours, specular highlights, micro-contrast',
+                'spotlight': 'focused snoot light, narrow beam, dramatic light falloff, cinematic focus',
+                'umbrella': 'wide umbrella bounce, even global illumination, open shadows'
+            };
+            parts.push(toolMap[studioLightingTool] || '');
+
+            // 디테일 및 배경
+            const detailMap: Record<string, string> = {
+                'circular': 'sharp circular catchlights in irises, vibrant eye reflections',
+                'window': 'rectangular window catchlights, realistic eye highlights',
+                'halo': 'halo light on backdrop, gradual background glow behind subject',
+                'blackout': 'pitch black background, zero ambient light, pure subject isolation'
+            };
+            parts.push(detailMap[studioBackgroundDetail] || '');
+
+            // 색온도
+            const tempMap: Record<string, string> = {
+                '5600k': 'neutral 5600K white balance, daylight balanced strobes, accurate color rendering',
+                '3200k': 'warm tungsten lighting, 3200K amber glow, cozy indoor atmosphere, nostalgic mood',
+                '7500k': 'cool blueish studio light, 7500K temperature, clinical and modern look, high-tech mood',
+                'colorgel': 'creative color gels, dual-tone lighting, cyan and magenta contrast'
+            };
+            parts.push(tempMap[studioColorTemp] || '');
+
+            return parts.filter(p => p).join(', ');
+        }
+
+        // 기존 라이팅 로직 (다른 모드용)
         // 조명 패턴
         const pattern = getLightingPatternById(this.settings.lighting.patternId);
         if (pattern) {

@@ -10,6 +10,7 @@ import type {
     QualitySettings,
     UserInputSettings,
     UserSettings,
+    StudioSubject,
 } from '@/types';
 
 // 기본값 정의
@@ -20,18 +21,24 @@ const defaultCameraSettings: CameraSettings = {
     aperture: 'f/2.8',
     shutterSpeed: '1/200',
     whiteBalance: 5600,
-    exposure: 'normal',
     apertureAuto: false,
     shutterSpeedAuto: false,
     isoAuto: false,
 };
 
 const defaultLightingSettings: LightingSettings = {
+    enabled: true,
+    exposure: 'normal',
     patternId: 'rembrandt',
     quality: 'soft',
     colorTemp: 5600,
     timeOfDay: 'daylight',
     keyFillBackRatio: '4:2:1',
+    // 스튜디오 전용 라이팅 기본값
+    studioLightingSetup: '3point',
+    studioLightingTool: 'softbox',
+    studioBackgroundDetail: 'circular',
+    studioColorTemp: '5600k',
 };
 
 const defaultColorGradingSettings: ColorGradingSettings = {
@@ -58,9 +65,26 @@ const defaultQualitySettings: QualitySettings = {
     customNegatives: [],
 };
 
+// Studio 인물 기본값
+const createDefaultStudioSubject = (): StudioSubject => ({
+    autoMode: true,
+    gender: 'female',
+    ageGroup: '20s',
+    ethnicity: 'asian',
+    hairColor: 'black',
+    hairStyle: 'long',
+    eyeColor: 'brown',
+    skinTexture: 'natural',
+    otherFeatures: '',
+    fashion: '',
+});
+
 const defaultUserInputSettings: UserInputSettings = {
     subjectDescription: '',
     moodDescription: '',
+    studioSubjectCount: 1,
+    studioComposition: 'bust',
+    studioSubjects: [createDefaultStudioSubject()],
 };
 
 export const defaultSettings: UserSettings = {

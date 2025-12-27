@@ -11,3 +11,35 @@
 | 8. Vignetting (Conditional) | 시선의 유도 (Edge Masking)        | 최대 개방 시에만 활성화되어, 주변부 광량을 제어해. 광학적 결함을 이용해 중앙 피사체로 시선을 모으는 심리적 장치 역할을 해.                       |   |   |
 
 
+# 라이팅 관련
+## 1. 조명 구조 (Setup: 빛의 레이어와 입체감)
+| 유저 선택지 (UI)            | 대응 AI 프롬프트 (English)                                                   | 구현 의도                                                                                                                                        |   |   |
+|-----------------------------|------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|---|---|
+| 1점 조명             | single key light source, dramatic chiaroscuro, high contrast shadows         | 강한 명암 대비와 예술적 그림자 생성                                                                                                              |   |   |
+| 2점 조명        | key and fill lighting setup, balanced facial shadows, natural volume         | 그림자를 적절히 메워 부드러운 입체감 형성                                                                                                        |   |   |
+| 3점 조명      | professional 3-point setup, rim light, hair light, subject separation        | 인물 테두리에 빛을 맺히게 하여 배경과 분리                                                                                                       |   |   |
+| 백라이트          | strong backlighting, glowing edges, dark frontal exposure, silhouette effect | 배경에서 강한 빛이 들어와 형태를 강조                                                                                                            |   |   |
+
+## 2. 광질 및 도구 (Quality: 피부 질감과 하이라이트)
+| 유저 선택지 (UI)            | 대응 AI 프롬프트 (English)                                                           | 구현 의도                                                                                                                                        |   |   |
+|-----------------------------|--------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|---|---|
+| 소프트박스       | diffused softbox light, smooth skin transitions, gentle shadow falloff               | 잡티를 가리고 화사한 피부 톤 구현                                                                                                                |   |   |
+| 뷰티 디쉬         | beauty dish illumination, crisp facial contours, specular highlights, micro-contrast | 이목구비를 또렷하게 하고 피부 질감 강조                                                                                                          |   |   |
+| 스포트라이트         | focused snoot light, narrow beam, dramatic light falloff, cinematic focus            | 특정 부위만 밝히고 나머지는 급격히 어둡게 처리                                                                                                   |   |   |
+| 엄브렐러           | wide umbrella bounce, even global illumination, open shadows                         | 화면 전체에 균일하고 넓게 퍼지는 빛                                                                                                              |   |   |
+
+## 3. 디테일 및 배경 (Detail: 시선의 완성)
+| 유저 선택지 (UI)            | 대응 AI 프롬프트 (English)                                         | 구현 의도                                                                                                                                        |   |   |
+|-----------------------------|--------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|---|---|
+| 원형        | sharp circular catchlights in irises, vibrant eye reflections      | 인물의 생기 부여 (동그란 조명 형태)                                                                                                              |   |   |
+| 창문       | rectangular window catchlights, realistic eye highlights           | 자연스러운 실내 창가 느낌의 반사광                                                                                                               |   |   |
+| 광륜          | halo light on backdrop, gradual background glow behind subject     | 인물 뒤 배경에 그라데이션 조명 효과 추가                                                                                                         |   |   |
+| 배경 완전 암전              | pitch black background, zero ambient light, pure subject isolation | 배경을 완벽하게 검게 처리하여 인물만 부각                                                                                                        |   |   |
+
+## 4. 스튜디오 색온도
+| 유저 선택지 (UI)            | 대응 AI 프롬프트 (English)                                                             | 시각적 효과 및 의도                                                                                                                              |   |   |
+|-----------------------------|----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|---|---|
+| 표준 화이트 (5600K)         | neutral 5600K white balance, daylight balanced strobes, accurate color rendering       | 가장 깨끗하고 정확한 색상. 광고, 도감, 정석 프로필에 사용.                                                                                       |   |   |
+| 따뜻한 텅스텐 (3200K)       | warm tungsten lighting, 3200K amber glow, cozy indoor atmosphere, nostalgic mood       | 인물에 온기를 더하고 부드럽고 친근한 느낌 조성.                                                                                                  |   |   |
+| 차가운 시네마틱 (7500K)     | cool blueish studio light, 7500K temperature, clinical and modern look, high-tech mood | 차갑고 이성적인 느낌. 테크 제품이나 미스터리한 인물 화보에 적합.                                                                                 |   |   |
+| 컬러 젤 (창의적)            | creative color gels, dual-tone lighting, cyan and magenta contrast                     | 조명 앞에 색상 필터를 끼운 효과. 예술적이고 강렬한 비주얼 구현.                                                                                  |   |   |
