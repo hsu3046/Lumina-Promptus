@@ -20,6 +20,10 @@ const defaultCameraSettings: CameraSettings = {
     aperture: 'f/2.8',
     shutterSpeed: '1/200',
     whiteBalance: 5600,
+    exposure: 'normal',
+    apertureAuto: false,
+    shutterSpeedAuto: false,
+    isoAuto: false,
 };
 
 const defaultLightingSettings: LightingSettings = {
@@ -45,6 +49,7 @@ const defaultArtDirectionSettings: ArtDirectionSettings = {
     shotType: 'medium_shot',
     photographerStyleId: undefined,
     environmentEffects: [],
+    lensCharacteristicType: 'studio',
 };
 
 const defaultQualitySettings: QualitySettings = {

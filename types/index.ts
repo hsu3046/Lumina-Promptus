@@ -75,6 +75,10 @@ export interface CameraSettings {
   aperture: string; // "f/1.4", "f/2.8", etc
   shutterSpeed: string; // "1/200", "1/60", etc
   whiteBalance: number; // Kelvin
+  exposure: 'low_key' | 'normal' | 'high_key';
+  apertureAuto: boolean;
+  shutterSpeedAuto: boolean;
+  isoAuto: boolean;
 }
 
 export interface LightingSettings {
@@ -100,6 +104,7 @@ export interface ArtDirectionSettings {
   shotType: string;
   photographerStyleId?: string;
   environmentEffects: string[];
+  lensCharacteristicType: 'studio' | 'landscape' | 'architecture' | 'product' | 'street';
 }
 
 export interface QualitySettings {
@@ -213,7 +218,6 @@ export interface CameraBody {
   mount: Mount;
   sensorSize: 'Full Frame' | 'APS-C' | 'Medium Format' | 'Micro Four Thirds' | '35mm Film' | '6x6cm Medium Format Film' | '6x7cm Medium Format Film';
   megapixel: number;
-  characteristics: string;
   metaToken: string;
   promptKeywords: string;
   isoSpec: ISOSpec;
@@ -227,10 +231,14 @@ export interface Lens {
   mount: Mount;
   focalLength: string; // "85mm", "24-70mm", etc
   maxAperture: string;
+  bokeh: string;
+  vignetting: string;
   category: 'ultra_wide' | 'wide' | 'standard' | 'medium_telephoto' | 'telephoto' | 'macro';
-  characteristics: string;
-  promptKeywords: string;
-  compatibleBodies: string[]; // camera body IDs (deprecated, use mount)
+  characteristic_studio: string;
+  characteristic_landscape: string;
+  characteristic_architecture: string;
+  characteristic_product: string;
+  characteristic_street: string;
   apertureSpec: ApertureSpec;
 }
 
@@ -249,7 +257,6 @@ export interface FilmStock {
   brand: string;
   type: 'color_negative' | 'color_positive' | 'black_white';
   iso: number;
-  characteristics: string;
   promptKeywords: string;
   thumbnail?: string;
 }

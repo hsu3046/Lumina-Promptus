@@ -129,12 +129,90 @@ export class PromptBuilderV2 {
 
     private getCameraBody(): string {
         const camera = getCameraById(this.settings.camera.bodyId);
-        return camera?.promptKeywords || '';
+        if (!camera) return '';
+
+        // 프롬프트 조합: 1) metaToken, 2) "shot with" + brand + model, 3) 나머지 promptKeywords
+        const parts: string[] = [];
+
+        // 1. metaToken (가장 앞)
+        if (camera.metaToken) {
+            parts.push(camera.metaToken);
+        }
+
+        // 2. "shot with" + brand + model
+        parts.push(`shot with ${camera.brand} ${camera.model}`);
+
+        // 3. 나머지 promptKeywords (metaToken과 "shot with..."가 이미 포함된 경우 제외)
+        if (camera.promptKeywords) {
+            // 기존 promptKeywords에서 metaToken과 "shot with..." 패턴 제거
+            let cleanedKeywords = camera.promptKeywords
+                .replace(new RegExp(`^${camera.metaToken},?\\s*`, 'i'), '')
+                .replace(/shot (with|on) [^,]+,?\s*/i, '')
+                .trim();
+
+            // 선행 쉼표 제거
+            cleanedKeywords = cleanedKeywords.replace(/^,\s*/, '');
+
+            if (cleanedKeywords) {
+                parts.push(cleanedKeywords);
+            }
+        }
+
+        return parts.join(', ');
     }
 
     private getLens(): string {
         const lens = getLensById(this.settings.camera.lensId);
-        return lens?.promptKeywords || '';
+        if (!lens) return '';
+
+        const parts: string[] = [];
+
+        // 1. brand + model (가장 앞)
+        parts.push(`${lens.brand} ${lens.model}`);
+
+        // 2. category 정보
+        const categoryMap: Record<string, string> = {
+            ultra_wide: 'ultra wide angle lens',
+            wide: 'wide angle lens',
+            standard: 'standard lens',
+            medium_telephoto: 'medium telephoto lens',
+            telephoto: 'telephoto lens',
+            macro: 'macro lens'
+        };
+        if (lens.category && categoryMap[lens.category]) {
+            parts.push(categoryMap[lens.category]);
+        }
+
+        // 3. maxAperture 조건부 추가 (현재 설정된 조리개가 maxAperture와 일치하면)
+        if (this.settings.camera.aperture === lens.maxAperture) {
+            parts.push(`a maximum aperture of ${lens.maxAperture}`);
+        }
+
+        // 4. bokeh
+        if (lens.bokeh) {
+            parts.push(lens.bokeh);
+        }
+
+        // 5. 선택된 characteristic 타입에 따른 키워드
+        const charType = this.settings.artDirection.lensCharacteristicType;
+        const charKeywords = {
+            studio: lens.characteristic_studio,
+            landscape: lens.characteristic_landscape,
+            architecture: lens.characteristic_architecture,
+            product: lens.characteristic_product,
+            street: lens.characteristic_street,
+        }[charType];
+
+        if (charKeywords) {
+            parts.push(charKeywords);
+        }
+
+        // 6. vignetting
+        if (lens.vignetting) {
+            parts.push(lens.vignetting);
+        }
+
+        return parts.join(', ');
     }
 
     private getCameraSettings(): string {
