@@ -1,7 +1,8 @@
 'use client';
 
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { ButtonGroup } from '@/components/ui/button-group';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { PersonForm } from './PersonForm';
 import type { StudioSubject } from '@/types';
@@ -11,19 +12,38 @@ const DEFAULT_SUBJECT: StudioSubject = {
     gender: 'female',
     ageGroup: '20s',
     ethnicity: 'asian',
+    bodyType: 'average',
+    skinTexture: 'natural',
     hairColor: 'black',
     hairStyle: 'long',
     eyeColor: 'brown',
-    skinTexture: 'natural',
-    otherFeatures: '',
+    gazeDirection: 'camera',
+    accessory: 'none',
     fashion: '',
 };
+
+const COUNT_OPTIONS = [
+    { value: 1, label: '1명' },
+    { value: 2, label: '2명' },
+    { value: 3, label: '3명' },
+    { value: 'group', label: '단체' },
+] as const;
+
+const COMPOSITION_OPTIONS = [
+    { value: 'closeup', label: '클로즈업' },
+    { value: 'bust', label: '바스트샷' },
+    { value: 'waist', label: '웨이스트샷' },
+    { value: 'full', label: '풀샷' },
+] as const;
 
 export function StudioSubjectForm() {
     const { settings, updateUserInput } = useSettingsStore();
     const { studioSubjectCount, studioComposition, studioSubjects } = settings.userInput;
 
-    const handleCountChange = (count: 1 | 2 | 3) => {
+    const handleCountChange = (count: 1 | 2 | 3 | 'group') => {
+        // 단체는 아직 미구현
+        if (count === 'group') return;
+
         let newSubjects = [...studioSubjects];
         while (newSubjects.length < count) {
             newSubjects.push({ ...DEFAULT_SUBJECT });
@@ -40,53 +60,57 @@ export function StudioSubjectForm() {
 
     return (
         <>
-            {/* Row 1: 인원수 + 구도 */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* 인원수 + 구도 */}
+            <div className="flex flex-col md:flex-row md:justify-between gap-4">
                 <div className="space-y-2">
                     <Label>인원수</Label>
-                    <div className="flex gap-2">
-                        {([1, 2, 3] as const).map((count) => (
-                            <button
-                                key={count}
-                                onClick={() => handleCountChange(count)}
-                                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${studioSubjectCount === count
-                                    ? 'bg-amber-600 text-white'
-                                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                                    }`}
+                    <ButtonGroup>
+                        {COUNT_OPTIONS.map((option) => (
+                            <Button
+                                key={option.value}
+                                variant={studioSubjectCount === option.value ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => handleCountChange(option.value)}
+                                className={`w-16 ${studioSubjectCount === option.value
+                                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                                    : ''}`}
                             >
-                                {count}명
-                            </button>
+                                {option.label}
+                            </Button>
                         ))}
-                    </div>
+                    </ButtonGroup>
                 </div>
-                <div className="space-y-2">
+
+                <div className="space-y-2 md:text-right">
                     <Label>구도</Label>
-                    <Select
-                        value={studioComposition}
-                        onValueChange={(v) => updateUserInput({ studioComposition: v as 'closeup' | 'bust' | 'waist' | 'full' | 'extreme_closeup' })}
-                    >
-                        <SelectTrigger className="bg-zinc-950 border-zinc-800">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800">
-                            <SelectItem value="extreme_closeup">익스트림 클로즈업</SelectItem>
-                            <SelectItem value="closeup">클로즈업</SelectItem>
-                            <SelectItem value="bust">바스트샷</SelectItem>
-                            <SelectItem value="waist">웨이스트샷</SelectItem>
-                            <SelectItem value="full">풀샷</SelectItem>
-                        </SelectContent>
-                    </Select>
+                    <ButtonGroup>
+                        {COMPOSITION_OPTIONS.map((option) => (
+                            <Button
+                                key={option.value}
+                                variant={studioComposition === option.value ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => updateUserInput({ studioComposition: option.value })}
+                                className={`w-20 ${studioComposition === option.value
+                                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                                    : ''}`}
+                            >
+                                {option.label}
+                            </Button>
+                        ))}
+                    </ButtonGroup>
                 </div>
             </div>
 
             {/* 인원별 상세 정보 */}
             {studioSubjects.slice(0, studioSubjectCount).map((subject, idx) => (
-                <PersonForm
-                    key={idx}
-                    index={idx}
-                    subject={subject}
-                    onUpdate={(updates) => handleSubjectUpdate(idx, updates)}
-                />
+                <div key={idx}>
+                    {idx > 0 && <hr className="border-zinc-700/50 my-4" />}
+                    <PersonForm
+                        index={idx}
+                        subject={subject}
+                        onUpdate={(updates) => handleSubjectUpdate(idx, updates)}
+                    />
+                </div>
             ))}
         </>
     );

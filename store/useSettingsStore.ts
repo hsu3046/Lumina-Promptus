@@ -27,7 +27,7 @@ const defaultCameraSettings: CameraSettings = {
 };
 
 const defaultLightingSettings: LightingSettings = {
-    enabled: true,
+    enabled: false,
     exposure: 'normal',
     patternId: 'rembrandt',
     quality: 'soft',
@@ -35,7 +35,7 @@ const defaultLightingSettings: LightingSettings = {
     timeOfDay: 'daylight',
     keyFillBackRatio: '4:2:1',
     // 스튜디오 전용 라이팅 기본값
-    studioLightingSetup: '3point',
+    studioLightingSetup: '2point',
     studioLightingTool: 'softbox',
     studioBackgroundDetail: 'circular',
     studioColorTemp: '5600k',
@@ -70,12 +70,14 @@ const createDefaultStudioSubject = (): StudioSubject => ({
     autoMode: true,
     gender: 'female',
     ageGroup: '20s',
-    ethnicity: 'asian',
+    ethnicity: 'korean',
+    bodyType: 'average',
+    skinTexture: 'natural',
     hairColor: 'black',
     hairStyle: 'long',
     eyeColor: 'brown',
-    skinTexture: 'natural',
-    otherFeatures: '',
+    gazeDirection: 'camera',
+    accessory: 'none',
     fashion: '',
 });
 

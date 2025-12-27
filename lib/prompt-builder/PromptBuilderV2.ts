@@ -233,9 +233,38 @@ export class PromptBuilderV2 {
             };
             parts.push(skinMap[subject.skinTexture] || '');
 
-            // 기타 특징
-            if (subject.otherFeatures.trim()) {
-                parts.push(subject.otherFeatures.trim());
+            // 체형
+            const bodyMap = {
+                slim: 'slim body',
+                average: 'average build',
+                athletic: 'athletic build',
+                curvy: 'curvy figure',
+                plus: 'plus size'
+            };
+            parts.push(bodyMap[subject.bodyType] || '');
+
+
+            // 시선
+            const gazeMap = {
+                camera: 'looking at camera',
+                aside: 'looking aside',
+                down: 'looking down',
+                up: 'looking up'
+            };
+            parts.push(gazeMap[subject.gazeDirection] || '');
+
+            // 악세서리
+            const accessoryMap = {
+                none: '',
+                glasses: 'wearing glasses',
+                sunglasses: 'wearing sunglasses',
+                earrings: 'wearing earrings',
+                necklace: 'wearing necklace',
+                hat: 'wearing hat',
+                scarf: 'wearing scarf'
+            };
+            if (accessoryMap[subject.accessory]) {
+                parts.push(accessoryMap[subject.accessory]);
             }
 
             // 패션

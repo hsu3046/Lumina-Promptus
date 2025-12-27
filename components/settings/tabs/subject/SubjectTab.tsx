@@ -10,7 +10,7 @@ export function SubjectTab() {
 
     return (
         <Card className="bg-zinc-900/50 border-zinc-800/50">
-            <CardContent className="space-y-6 pt-6">
+            <CardContent className="space-y-6 pt-3">
                 {/* 타입별 피사체 설정 */}
                 {characteristicType === 'studio' && <StudioSubjectForm />}
 

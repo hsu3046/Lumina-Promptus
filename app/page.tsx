@@ -1,6 +1,8 @@
 'use client';
 
-import { Camera, Lightbulb, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { User02Icon, Sun03Icon, Camera02Icon } from '@hugeicons/core-free-icons';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSettingsStore } from '@/store/useSettingsStore';
@@ -43,8 +45,8 @@ export default function Home() {
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">Lumina Promptus</h1>
-              <p className="text-xs text-zinc-500">디지털 암실 - 광학 시뮬레이터</p>
+              <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-playfair)' }}>LUMINA PROMPTUS</h1>
+              <p className="text-xs text-zinc-500">프로페셔널 AI 사진 시뮬레이터</p>
             </div>
           </div>
           <Badge variant="secondary" className="bg-amber-500/10 text-amber-400 border-amber-500/20">
@@ -55,23 +57,23 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
-        <div className="grid grid-cols-3 gap-8">
-          {/* 설정 패널 (왼쪽 2/3) */}
-          <div className="col-span-2 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* 설정 패널 (데스크탑: 왼쪽 2/3, 모바일: 전체) */}
+          <div className="lg:col-span-2 space-y-6">
             {/* 렌즈 특성 타입 선택 */}
             <CharacteristicTypeSelector onTypeChange={handleCharacteristicTypeChange} />
 
             {/* 메인 탭 */}
             <Tabs defaultValue="style" className="w-full">
-              <TabsList className="w-full grid grid-cols-3 bg-zinc-900/50 border border-zinc-800/50">
-                <TabsTrigger value="style" className="data-[state=active]:bg-zinc-800 gap-2">
-                  <ImageIcon className="w-4 h-4" /> 피사체
+              <TabsList className="w-full h-12 grid grid-cols-3 bg-zinc-900/50 border border-zinc-800/50">
+                <TabsTrigger value="style" className="data-[state=active]:!bg-zinc-800 data-[state=active]:!border-2 data-[state=active]:!border-amber-500 gap-2 py-3">
+                  <HugeiconsIcon icon={User02Icon} size={16} /> 피사체 설정
                 </TabsTrigger>
-                <TabsTrigger value="lighting" className="data-[state=active]:bg-zinc-800 gap-2">
-                  <Lightbulb className="w-4 h-4" /> 라이팅
+                <TabsTrigger value="lighting" className="data-[state=active]:!bg-zinc-800 data-[state=active]:!border-2 data-[state=active]:!border-amber-500 gap-2 py-3">
+                  <HugeiconsIcon icon={Sun03Icon} size={16} /> 라이팅 설정
                 </TabsTrigger>
-                <TabsTrigger value="camera" className="data-[state=active]:bg-zinc-800 gap-2">
-                  <Camera className="w-4 h-4" /> 카메라
+                <TabsTrigger value="camera" className="data-[state=active]:!bg-zinc-800 data-[state=active]:!border-2 data-[state=active]:!border-amber-500 gap-2 py-3">
+                  <HugeiconsIcon icon={Camera02Icon} size={16} /> 카메라 설정
                 </TabsTrigger>
               </TabsList>
 
@@ -92,8 +94,10 @@ export default function Home() {
             </Tabs>
           </div>
 
-          {/* 프롬프트 미리보기 (오른쪽 1/3) */}
-          <PromptPreview />
+          {/* 프롬프트 미리보기 (데스크탑: 오른쪽 1/3, 모바일: 하단) */}
+          <div className="lg:col-span-1 order-last">
+            <PromptPreview />
+          </div>
         </div>
       </main>
     </div>

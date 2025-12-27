@@ -124,12 +124,14 @@ export interface StudioSubject {
   autoMode: boolean; // Auto 모드 - ON이면 인종/성별/나이만 활성화
   gender: 'male' | 'female';
   ageGroup: 'child' | 'teen' | '20s' | '30s' | '40s' | '50plus' | 'elderly';
-  ethnicity: 'asian' | 'caucasian' | 'black' | 'hispanic' | 'middle_eastern' | 'mixed';
+  ethnicity: 'korean' | 'asian' | 'caucasian' | 'black' | 'hispanic' | 'middle_eastern';
+  bodyType: 'slim' | 'average' | 'athletic' | 'curvy' | 'plus';
+  skinTexture: 'smooth' | 'natural' | 'freckled' | 'weathered';
   hairColor: 'black' | 'brown' | 'blonde' | 'red' | 'gray' | 'white';
   hairStyle: 'short' | 'medium' | 'long' | 'wavy' | 'curly' | 'straight' | 'bald' | 'ponytail' | 'bun' | 'braids';
   eyeColor: 'brown' | 'blue' | 'green' | 'hazel' | 'gray';
-  skinTexture: 'smooth' | 'natural' | 'freckled' | 'weathered';
-  otherFeatures: string;
+  gazeDirection: 'camera' | 'aside' | 'down' | 'up';
+  accessory: 'none' | 'glasses' | 'sunglasses' | 'earrings' | 'necklace' | 'hat' | 'scarf';
   fashion: string;
 }
 
