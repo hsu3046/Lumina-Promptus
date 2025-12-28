@@ -14,17 +14,12 @@ export class NanoBananaProExporter {
     /**
      * IR을 Nano Banana Pro 최적화 프롬프트로 변환
      */
-    export(): { positive: string; negative: string } {
+    export(): string {
         const positiveParts = NANO_BANANA_PRO_SLOT_ORDER
             .map(slotId => this.ir.slots[slotId]?.content)
             .filter(Boolean);
 
-        const negative = this.ir.slots['negative']?.content || '';
-
-        return {
-            positive: this.optimizePrompt(positiveParts.join(', ')),
-            negative: this.optimizeNegative(negative)
-        };
+        return this.optimizePrompt(positiveParts.join(', '));
     }
 
     /**
@@ -49,25 +44,6 @@ export class NanoBananaProExporter {
     }
 
     /**
-     * Negative 프롬프트 최적화
-     */
-    private optimizeNegative(negative: string): string {
-        const keywords = negative.split(/,\s*/);
-        const seen = new Set<string>();
-        const unique: string[] = [];
-
-        for (const keyword of keywords) {
-            const normalized = keyword.toLowerCase().trim();
-            if (normalized && !seen.has(normalized)) {
-                seen.add(normalized);
-                unique.push(keyword.trim());
-            }
-        }
-
-        return unique.join(', ');
-    }
-
-    /**
      * 프롬프트 메타데이터 반환
      */
     getMetadata(): {
@@ -79,10 +55,8 @@ export class NanoBananaProExporter {
         let totalTokens = 0;
 
         for (const [slotId, slot] of Object.entries(this.ir.slots)) {
-            if (slotId !== 'negative') {
-                slotBreakdown[slotId] = slot.tokens;
-                totalTokens += slot.tokens;
-            }
+            slotBreakdown[slotId] = slot.tokens;
+            totalTokens += slot.tokens;
         }
 
         const warnings: string[] = [];

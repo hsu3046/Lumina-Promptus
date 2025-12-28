@@ -64,7 +64,6 @@ export interface UserSettings {
   lighting: LightingSettings;
   colorGrading: ColorGradingSettings;
   artDirection: ArtDirectionSettings;
-  quality: QualitySettings;
   userInput: UserInputSettings;
 }
 
@@ -78,6 +77,8 @@ export interface CameraSettings {
   apertureAuto: boolean;
   shutterSpeedAuto: boolean;
   isoAuto: boolean;
+  aspectRatio: '3:2' | '4:3' | '16:9' | '1:1' | '4:5';
+  orientation: 'landscape' | 'portrait';
 }
 
 export interface LightingSettings {
@@ -113,11 +114,6 @@ export interface ArtDirectionSettings {
   lensCharacteristicType: 'studio' | 'landscape' | 'architecture' | 'product' | 'street';
 }
 
-export interface QualitySettings {
-  level: 'standard' | 'high' | 'premium';
-  negativePresetId: string;
-  customNegatives: string[];
-}
 
 // Studio 인물 정보
 export interface StudioSubject {
@@ -129,8 +125,8 @@ export interface StudioSubject {
   skinTexture: 'smooth' | 'natural' | 'freckled' | 'weathered';
   hairColor: 'black' | 'brown' | 'blonde' | 'red' | 'gray' | 'white';
   hairStyle: 'short' | 'medium' | 'long' | 'wavy' | 'curly' | 'straight' | 'bald' | 'ponytail' | 'bun' | 'braids';
-  eyeColor: 'brown' | 'blue' | 'green' | 'hazel' | 'gray';
   gazeDirection: 'camera' | 'aside' | 'down' | 'up';
+  pose: 'contrapposto' | 'sitting' | 'shoulder_lookback' | 'hands_to_face' | 'walking';
   accessory: 'none' | 'glasses' | 'sunglasses' | 'earrings' | 'necklace' | 'hat' | 'scarf';
   fashion: string;
 }
@@ -141,6 +137,7 @@ export interface UserInputSettings {
   // Studio 전용
   studioSubjectCount: 1 | 2 | 3;
   studioComposition: 'closeup' | 'bust' | 'waist' | 'full' | 'extreme_closeup';
+  studioBackgroundType: 'seamless_white' | 'seamless_gray' | 'seamless_blue' | 'textured';
   studioSubjects: StudioSubject[];
 }
 
@@ -149,17 +146,13 @@ export interface UserInputSettings {
 export interface GeneratedPrompt {
   ir: PromptIR;
   rendered: {
-    [model: string]: {
-      positive: string;
-      negative: string;
-    };
+    [model: string]: string;
   };
   metadata: {
     deterministic: {
       camera: string;
       lighting: string;
       composition: string;
-      quality: string;
     };
     aiRefined: {
       subject: {
@@ -268,15 +261,6 @@ export interface Lens {
   apertureSpec: ApertureSpec;
 }
 
-export interface LightingPattern {
-  id: string;
-  name: string;
-  description: string;
-  diagram?: string; // SVG path or icon
-  suitableFor: string[];
-  promptKeywords: string;
-}
-
 export interface FilmStock {
   id: string;
   name: string;
@@ -313,7 +297,6 @@ export interface SettingsStore {
   updateLighting: (lighting: Partial<LightingSettings>) => void;
   updateColorGrading: (colorGrading: Partial<ColorGradingSettings>) => void;
   updateArtDirection: (artDirection: Partial<ArtDirectionSettings>) => void;
-  updateQuality: (quality: Partial<QualitySettings>) => void;
   updateUserInput: (userInput: Partial<UserInputSettings>) => void;
   resetToDefaults: () => void;
 }

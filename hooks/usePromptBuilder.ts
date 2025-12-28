@@ -13,7 +13,7 @@ import type { PromptIR, PromptDiff } from '@/types';
 
 interface UsePromptBuilderReturn {
     ir: PromptIR | null;
-    rendered: { positive: string; negative: string } | null;
+    rendered: string | null;
     diff: PromptDiff[];
     conflicts: PromptIR['metadata']['conflicts'];
     warnings: string[];

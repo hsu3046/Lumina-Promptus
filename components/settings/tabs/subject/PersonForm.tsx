@@ -167,20 +167,20 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
                             </Select>
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">눈동자색</Label>
+                            <Label className="text-xs">포즈</Label>
                             <Select
-                                value={subject.eyeColor}
-                                onValueChange={(v) => onUpdate({ eyeColor: v as StudioSubject['eyeColor'] })}
+                                value={subject.pose}
+                                onValueChange={(v) => onUpdate({ pose: v as StudioSubject['pose'] })}
                             >
                                 <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-zinc-900 border-zinc-800">
-                                    <SelectItem value="brown">갈색</SelectItem>
-                                    <SelectItem value="blue">파랑</SelectItem>
-                                    <SelectItem value="green">초록</SelectItem>
-                                    <SelectItem value="hazel">헤이즐</SelectItem>
-                                    <SelectItem value="gray">회색</SelectItem>
+                                    <SelectItem value="contrapposto">컨트라포스토</SelectItem>
+                                    <SelectItem value="sitting">시크한 시팅</SelectItem>
+                                    <SelectItem value="shoulder_lookback">숄더 룩백</SelectItem>
+                                    <SelectItem value="hands_to_face">에디토리얼 핸즈</SelectItem>
+                                    <SelectItem value="walking">다이내믹 워킹</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

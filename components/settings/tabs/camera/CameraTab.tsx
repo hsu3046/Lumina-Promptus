@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
     Select,
     SelectContent,
@@ -20,7 +21,7 @@ import {
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useCameraSettings } from '@/components/hooks/useCameraSettings';
 import { CAMERA_BODIES_BY_BRAND, getCameraById } from '@/config/mappings/cameras';
-import { getLensesByMount, LENS_CATEGORY_LABELS } from '@/config/mappings/lenses';
+import { getLensesByMount, LENS_CATEGORY_LABELS, getLensById } from '@/config/mappings/lenses';
 import type { Lens } from '@/types';
 
 // 카메라 브랜드 정렬 순서
@@ -62,9 +63,47 @@ export function CameraTab() {
         if (camera) {
             const lenses = getLensesByMount(camera.mount);
             if (lenses.length > 0) {
-                updateCamera({ lensId: lenses[0].id });
+                handleLensChange(lenses[0].id);
             }
         }
+    };
+
+    // 렌즈 변경 시 기본값 설정: 조리개(최대개방), 셔터스피드(화각*2), ISO(100)
+    const handleLensChange = (lensId: string) => {
+        const lens = getLensById(lensId);
+        if (!lens) {
+            updateCamera({ lensId });
+            return;
+        }
+
+        // 조리개: 최대 개방
+        const maxAperture = lens.maxAperture;
+
+        // 셔터스피드: 화각의 2배 (예: 85mm → 1/170 → 가장 가까운 1/200)
+        const focalNum = parseInt(lens.focalLength.replace(/[^\d]/g, ''), 10) || 50;
+        const targetShutter = focalNum * 2;
+        const shutterStopsOptions = ['1/60', '1/125', '1/200', '1/250', '1/500', '1/1000', '1/2000'];
+        const closestShutter = shutterStopsOptions.reduce((prev, curr) => {
+            const prevNum = parseShutterSpeed(prev);
+            const currNum = parseShutterSpeed(curr);
+            return Math.abs(currNum - targetShutter) < Math.abs(prevNum - targetShutter) ? curr : prev;
+        });
+
+        updateCamera({
+            lensId,
+            aperture: maxAperture,
+            shutterSpeed: closestShutter,
+            iso: 100,
+            apertureAuto: false,
+            shutterSpeedAuto: false,
+            isoAuto: false,
+        });
+    };
+
+    // 셔터스피드 문자열을 숫자로 변환 (1/200 → 200)
+    const parseShutterSpeed = (s: string): number => {
+        if (s.startsWith('1/')) return parseInt(s.slice(2), 10);
+        return 1 / parseFloat(s);
     };
 
     const lightingEnabled = settings.lighting.enabled;
@@ -117,7 +156,7 @@ export function CameraTab() {
                         <Label>렌즈</Label>
                         <Select
                             value={settings.camera.lensId}
-                            onValueChange={(value) => updateCamera({ lensId: value })}
+                            onValueChange={handleLensChange}
                         >
                             <SelectTrigger className="w-full bg-zinc-950 border-zinc-800">
                                 <SelectValue placeholder="렌즈 선택" />
@@ -277,6 +316,48 @@ export function CameraTab() {
                     <div className="flex justify-between text-xs text-zinc-500">
                         <span>{isoStops[0]}</span>
                         <span>{isoStops[isoStops.length - 1]}</span>
+                    </div>
+                </div>
+
+                <Separator className="bg-zinc-800" />
+
+                {/* 사진 비율 */}
+                <div className="space-y-3">
+                    <Label>사진 비율</Label>
+                    <div className="flex items-center gap-6">
+                        {/* 가로/세로 Radio Group */}
+                        <RadioGroup
+                            value={settings.camera.orientation}
+                            onValueChange={(v) => updateCamera({ orientation: v as 'landscape' | 'portrait' })}
+                            className="flex gap-4"
+                        >
+                            <div className="flex items-center gap-2">
+                                <RadioGroupItem value="landscape" id="landscape" />
+                                <Label htmlFor="landscape" className="text-sm font-normal cursor-pointer">가로</Label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <RadioGroupItem value="portrait" id="portrait" />
+                                <Label htmlFor="portrait" className="text-sm font-normal cursor-pointer">세로</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
+
+                    {/* 비율 선택 버튼 */}
+                    <div className="flex gap-2">
+                        {(['3:2', '4:3', '16:9', '1:1', '4:5'] as const).map((ratio) => (
+                            <button
+                                key={ratio}
+                                onClick={() => updateCamera({ aspectRatio: ratio })}
+                                className={`flex-1 py-2 px-3 text-sm rounded-md border transition-colors ${settings.camera.aspectRatio === ratio
+                                    ? 'bg-amber-600 border-amber-500 text-white'
+                                    : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-600'
+                                    }`}
+                            >
+                                {settings.camera.orientation === 'landscape'
+                                    ? ratio
+                                    : ratio.split(':').reverse().join(':')}
+                            </button>
+                        ))}
                     </div>
                 </div>
             </CardContent>

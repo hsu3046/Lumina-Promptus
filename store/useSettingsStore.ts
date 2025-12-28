@@ -7,16 +7,15 @@ import type {
     LightingSettings,
     ColorGradingSettings,
     ArtDirectionSettings,
-    QualitySettings,
     UserInputSettings,
     UserSettings,
     StudioSubject,
 } from '@/types';
 
-// 기본값 정의
+// 기본값 정의 (스튜디오 기본: Nikon D850 + AF-S 85mm)
 const defaultCameraSettings: CameraSettings = {
-    bodyId: 'canon_eos_r5',
-    lensId: 'canon_rf_85mm_f12',
+    bodyId: 'nikon_d850',
+    lensId: 'nikon_af_s_85mm_f14g',
     iso: 100,
     aperture: 'f/2.8',
     shutterSpeed: '1/200',
@@ -24,6 +23,8 @@ const defaultCameraSettings: CameraSettings = {
     apertureAuto: false,
     shutterSpeedAuto: false,
     isoAuto: false,
+    aspectRatio: '3:2',
+    orientation: 'portrait',
 };
 
 const defaultLightingSettings: LightingSettings = {
@@ -59,11 +60,6 @@ const defaultArtDirectionSettings: ArtDirectionSettings = {
     lensCharacteristicType: 'studio',
 };
 
-const defaultQualitySettings: QualitySettings = {
-    level: 'high',
-    negativePresetId: 'standard',
-    customNegatives: [],
-};
 
 // Studio 인물 기본값
 const createDefaultStudioSubject = (): StudioSubject => ({
@@ -75,8 +71,8 @@ const createDefaultStudioSubject = (): StudioSubject => ({
     skinTexture: 'natural',
     hairColor: 'black',
     hairStyle: 'long',
-    eyeColor: 'brown',
     gazeDirection: 'camera',
+    pose: 'contrapposto',
     accessory: 'none',
     fashion: '',
 });
@@ -86,6 +82,7 @@ const defaultUserInputSettings: UserInputSettings = {
     moodDescription: '',
     studioSubjectCount: 1,
     studioComposition: 'bust',
+    studioBackgroundType: 'seamless_gray',
     studioSubjects: [createDefaultStudioSubject()],
 };
 
@@ -94,7 +91,6 @@ export const defaultSettings: UserSettings = {
     lighting: defaultLightingSettings,
     colorGrading: defaultColorGradingSettings,
     artDirection: defaultArtDirectionSettings,
-    quality: defaultQualitySettings,
     userInput: defaultUserInputSettings,
 };
 
@@ -105,7 +101,6 @@ interface SettingsStore {
     updateLighting: (lighting: Partial<LightingSettings>) => void;
     updateColorGrading: (colorGrading: Partial<ColorGradingSettings>) => void;
     updateArtDirection: (artDirection: Partial<ArtDirectionSettings>) => void;
-    updateQuality: (quality: Partial<QualitySettings>) => void;
     updateUserInput: (userInput: Partial<UserInputSettings>) => void;
     resetToDefaults: () => void;
 }
@@ -142,14 +137,6 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
             settings: {
                 ...state.settings,
                 artDirection: { ...state.settings.artDirection, ...artDirection },
-            },
-        })),
-
-    updateQuality: (quality) =>
-        set((state) => ({
-            settings: {
-                ...state.settings,
-                quality: { ...state.settings.quality, ...quality },
             },
         })),
 

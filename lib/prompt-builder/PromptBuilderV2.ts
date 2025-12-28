@@ -5,7 +5,7 @@ import type { PromptIR, SlotContent, UserSettings, ConflictReport, StudioSubject
 import { PROMPT_SLOTS, getSlotById } from '@/config/slots/slot-definitions';
 import { getCameraById } from '@/config/mappings/cameras';
 import { getLensById } from '@/config/mappings/lenses';
-import { getLightingPatternById, getTimeOfDayPresetById, LIGHT_QUALITIES, LIGHTING_RATIO_PRESETS } from '@/config/mappings/lighting-patterns';
+import { buildLightingPrompt } from '@/config/mappings/lighting-patterns';
 import { detectConflicts } from '@/lib/conflict-resolver/rules';
 
 export class PromptBuilderV2 {
@@ -87,20 +87,6 @@ export class PromptBuilderV2 {
             locked: false
         });
 
-        // 품질 키워드
-        this.setSlot('quality', this.getQualityKeywords(), {
-            priority: 4,
-            source: 'deterministic',
-            locked: false
-        });
-
-        // 네거티브 프롬프트
-        this.setSlot('negative', this.getNegativePrompt(), {
-            priority: 10,
-            source: 'deterministic',
-            locked: false
-        });
-
         // 피사체 (Studio 모드 또는 직접 입력)
         const subjectPrompt = this.getSubjectPrompt();
         if (subjectPrompt) {
@@ -135,7 +121,7 @@ export class PromptBuilderV2 {
     }
 
     private buildStudioSubjectPrompt(): string {
-        const { studioSubjectCount, studioComposition, studioSubjects } = this.settings.userInput;
+        const { studioSubjectCount, studioComposition, studioBackgroundType, studioSubjects } = this.settings.userInput;
         const parts: string[] = [];
 
         // 구도 매핑
@@ -153,6 +139,17 @@ export class PromptBuilderV2 {
             parts.push(`of ${studioSubjectCount} people`);
         }
 
+        // 배경 타입 매핑
+        const backgroundMap: Record<string, string> = {
+            seamless_white: 'seamless white studio background',
+            seamless_gray: 'seamless gray studio background',
+            seamless_blue: 'seamless blue studio background',
+            textured: 'textured studio backdrop'
+        };
+        if (studioBackgroundType && backgroundMap[studioBackgroundType]) {
+            parts.push(backgroundMap[studioBackgroundType]);
+        }
+
         // 각 인물 설명
         const subjectDescriptions = studioSubjects.slice(0, studioSubjectCount).map((subject, idx) => {
             return this.buildSingleSubjectDescription(subject, studioSubjectCount > 1 ? idx + 1 : null);
@@ -166,108 +163,90 @@ export class PromptBuilderV2 {
     private buildSingleSubjectDescription(subject: StudioSubject, personNumber: number | null): string {
         const parts: string[] = [];
 
-        // 성별 & 나이대 매핑
-        const genderMap: Record<string, string> = { male: 'man', female: 'woman' };
-        const ageMap: Record<string, string> = {
-            child: 'child',
-            teen: 'teenager',
-            '20s': 'in their 20s',
-            '30s': 'in their 30s',
-            '40s': 'in their 40s',
-            '50plus': 'in their 50s',
-            elderly: 'elderly'
-        };
-
         // Person N (복수 인물일 때)
         if (personNumber) {
             parts.push(`Person ${personNumber}:`);
         }
 
-        // 인종 (항상 포함)
+        // === AI 이미지 생성 우선순위 순서로 배치 ===
+
+        // 1. 시선 (가장 중요 - 인물의 표현/감정)
+        if (!subject.autoMode) {
+            const gazeMap: Record<string, string> = {
+                camera: 'looking directly at camera',
+                aside: 'gazing to the side',
+                down: 'looking down thoughtfully',
+                up: 'looking upward'
+            };
+            parts.push(gazeMap[subject.gazeDirection] || '');
+        }
+
+        // 2. 성별 + 인종 + 나이대 (핵심 정체성)
+        const genderMap: Record<string, string> = { male: 'man', female: 'woman' };
         const ethnicityMap: Record<string, string> = {
+            korean: 'Korean',
             asian: 'Asian',
             caucasian: 'Caucasian',
             black: 'Black',
             hispanic: 'Hispanic',
-            middle_eastern: 'Middle Eastern',
-            mixed: 'mixed ethnicity'
+            middle_eastern: 'Middle Eastern'
         };
-        parts.push(ethnicityMap[subject.ethnicity] || '');
+        const ageMap: Record<string, string> = {
+            child: 'young',
+            teen: 'teenage',
+            '20s': 'young adult',
+            '30s': 'adult',
+            '40s': 'mature',
+            '50plus': 'middle-aged',
+            elderly: 'elderly'
+        };
 
-        // 나이대 + 성별 (항상 포함)
-        const ageText = ageMap[subject.ageGroup] || '';
-        const genderText = genderMap[subject.gender] || 'person';
-        if (subject.ageGroup === 'child' || subject.ageGroup === 'teen' || subject.ageGroup === 'elderly') {
-            parts.push(`${ageText} ${genderText}`);
-        } else {
-            parts.push(`${genderText} ${ageText}`);
-        }
+        const ethnicity = ethnicityMap[subject.ethnicity] || '';
+        const age = ageMap[subject.ageGroup] || '';
+        const gender = genderMap[subject.gender] || 'person';
+
+        // "Korean young adult woman" 형식
+        parts.push(`${ethnicity} ${age} ${gender}`.trim());
+
+        // 3. 체형 (전체적인 실루엣)
+        const bodyMap: Record<string, string> = {
+            slim: 'with slim figure',
+            average: 'with average build',
+            athletic: 'with athletic physique',
+            curvy: 'with curvy figure',
+            plus: 'with plus-size body'
+        };
+        parts.push(bodyMap[subject.bodyType] || '');
 
         // Auto 모드가 OFF일 때만 상세 정보 포함
         if (!subject.autoMode) {
-            // 머리
+            // 4. 머리카락 (시각적 특징)
             const hairColorMap: Record<string, string> = {
-                black: 'black', brown: 'brown', blonde: 'blonde', red: 'red', gray: 'gray', white: 'white'
+                black: 'black', brown: 'brown', blonde: 'blonde',
+                red: 'red', gray: 'gray', white: 'white'
             };
             const hairStyleMap: Record<string, string> = {
-                short: 'short', medium: 'medium-length', long: 'long', wavy: 'wavy', curly: 'curly', straight: 'straight', bald: 'bald', ponytail: 'ponytail', bun: 'bun', braids: 'braided'
+                short: 'short', medium: 'medium-length', long: 'long flowing',
+                wavy: 'wavy', curly: 'curly', straight: 'straight',
+                bald: 'bald', ponytail: 'ponytail', bun: 'elegant bun', braids: 'braided'
             };
-            if (subject.hairStyle !== 'bald') {
-                parts.push(`${hairStyleMap[subject.hairStyle]} ${hairColorMap[subject.hairColor]} hair`);
+            if (subject.hairStyle === 'bald') {
+                parts.push('bald head');
             } else {
-                parts.push('bald');
+                parts.push(`${hairStyleMap[subject.hairStyle]} ${hairColorMap[subject.hairColor]} hair`);
             }
 
-            // 눈
-            const eyeColorMap: Record<string, string> = {
-                brown: 'brown', blue: 'blue', green: 'green', hazel: 'hazel', gray: 'gray'
+            // 5. 포즈
+            const poseMap: Record<string, string> = {
+                contrapposto: 'classic contrapposto, weight shifted to one hip, one knee slightly bent, elegant body curve, shoulders angled 45 degrees, confident editorial stance',
+                sitting: 'sitting on a minimalist studio stool, legs crossed elegantly, leaning slightly back, hands resting naturally on knees, effortless high-fashion aesthetic, relaxed posture',
+                shoulder_lookback: 'looking back over the shoulder, dynamic body twist, elegant neck line, hair gently flowing, sophisticated gaze, subtle side-profile',
+                hands_to_face: 'editorial hand-to-face gesture, slender fingers near jawline, soft hand placement, intense eye contact, high-fashion beauty pose, focus on facial expression',
+                walking: 'mid-action walking pose, forward motion, natural stride, fluid movement, hair and clothes in motion, candid fashion photography style'
             };
-            parts.push(`${eyeColorMap[subject.eyeColor]} eyes`);
+            parts.push(poseMap[subject.pose] || poseMap['contrapposto']);
 
-            // 피부
-            const skinMap: Record<string, string> = {
-                smooth: 'smooth skin',
-                natural: 'natural skin texture',
-                freckled: 'freckled skin',
-                weathered: 'weathered skin'
-            };
-            parts.push(skinMap[subject.skinTexture] || '');
-
-            // 체형
-            const bodyMap = {
-                slim: 'slim body',
-                average: 'average build',
-                athletic: 'athletic build',
-                curvy: 'curvy figure',
-                plus: 'plus size'
-            };
-            parts.push(bodyMap[subject.bodyType] || '');
-
-
-            // 시선
-            const gazeMap = {
-                camera: 'looking at camera',
-                aside: 'looking aside',
-                down: 'looking down',
-                up: 'looking up'
-            };
-            parts.push(gazeMap[subject.gazeDirection] || '');
-
-            // 악세서리
-            const accessoryMap = {
-                none: '',
-                glasses: 'wearing glasses',
-                sunglasses: 'wearing sunglasses',
-                earrings: 'wearing earrings',
-                necklace: 'wearing necklace',
-                hat: 'wearing hat',
-                scarf: 'wearing scarf'
-            };
-            if (accessoryMap[subject.accessory]) {
-                parts.push(accessoryMap[subject.accessory]);
-            }
-
-            // 패션
+            // 6. 패션 (마지막 - 의상)
             if (subject.fashion.trim()) {
                 parts.push(`wearing ${subject.fashion.trim()}`);
             }
@@ -294,9 +273,6 @@ export class PromptBuilderV2 {
         if (camera.metaToken) {
             parts.push(camera.metaToken);
         }
-
-        // 2. "shot with" + brand + model
-        parts.push(`shot with ${camera.brand} ${camera.model}`);
 
         // 3. 나머지 promptKeywords (metaToken과 "shot with..."가 이미 포함된 경우 제외)
         if (camera.promptKeywords) {
@@ -339,13 +315,17 @@ export class PromptBuilderV2 {
             parts.push(categoryMap[lens.category]);
         }
 
+        // 현재 조리개가 maxAperture인지 확인
+        const currentAperture = this.settings.camera.aperture;
+        const isMaxAperture = currentAperture === lens.maxAperture;
+
         // 3. maxAperture 조건부 추가 (현재 설정된 조리개가 maxAperture와 일치하면)
-        if (this.settings.camera.aperture === lens.maxAperture) {
+        if (isMaxAperture) {
             parts.push(`a maximum aperture of ${lens.maxAperture}`);
         }
 
-        // 4. bokeh
-        if (lens.bokeh) {
+        // 4. bokeh (maxAperture일 때만)
+        if (lens.bokeh && isMaxAperture) {
             parts.push(lens.bokeh);
         }
 
@@ -363,8 +343,8 @@ export class PromptBuilderV2 {
             parts.push(charKeywords);
         }
 
-        // 6. vignetting
-        if (lens.vignetting) {
+        // 6. vignetting (maxAperture일 때만)
+        if (lens.vignetting && isMaxAperture) {
             parts.push(lens.vignetting);
         }
 
@@ -372,16 +352,23 @@ export class PromptBuilderV2 {
     }
 
     private getCameraSettings(): string {
-        const { iso, aperture, shutterSpeed, whiteBalance } = this.settings.camera;
+        const { iso, aperture, whiteBalance } = this.settings.camera;
         const parts: string[] = [];
 
-        // ISO
+        // ISO → Grain/Noise 표현으로 변환
         if (iso) {
-            parts.push(`ISO ${iso}`);
-            if (iso > 800) {
-                parts.push('visible grain');
-            } else if (iso <= 200) {
-                parts.push('clean low noise image');
+            if (iso <= 100) {
+                parts.push('clean very low noise image, high dynamic range');
+            } else if (iso <= 400) {
+                parts.push('clean image, smooth tonal transitions');
+            } else if (iso <= 800) {
+                parts.push('slight film grain, natural texture');
+            } else if (iso <= 1600) {
+                parts.push('visible film grain, textured look');
+            } else if (iso <= 3200) {
+                parts.push('prominent grain, artistic noise');
+            } else {
+                parts.push('heavy grain, high ISO aesthetic');
             }
         }
 
@@ -396,18 +383,9 @@ export class PromptBuilderV2 {
             }
         }
 
-        // 셔터스피드
-        if (shutterSpeed) {
-            parts.push(`${shutterSpeed}s shutter speed`);
-            if (shutterSpeed.includes('/') && parseInt(shutterSpeed.split('/')[1]) < 60) {
-                parts.push('motion blur');
-            } else if (shutterSpeed.includes('/') && parseInt(shutterSpeed.split('/')[1]) >= 500) {
-                parts.push('frozen motion, sharp action');
-            }
-        }
-
-        // 색온도
-        if (whiteBalance) {
+        // 색온도 (스튜디오 모드에서는 Lighting의 studioColorTemp 사용하므로 생략)
+        const isStudioMode = this.settings.artDirection.lensCharacteristicType === 'studio';
+        if (whiteBalance && !isStudioMode) {
             if (whiteBalance < 4000) {
                 parts.push(`warm ${whiteBalance}K color temperature`);
             } else if (whiteBalance > 6000) {
@@ -421,84 +399,7 @@ export class PromptBuilderV2 {
     }
 
     private getLighting(): string {
-        const parts: string[] = [];
-        const { lensCharacteristicType } = this.settings.artDirection;
-
-        // 스튜디오 전용 라이팅
-        if (lensCharacteristicType === 'studio') {
-            const { studioLightingSetup, studioLightingTool, studioBackgroundDetail, studioColorTemp } = this.settings.lighting;
-
-            // 조명 구조
-            const setupMap: Record<string, string> = {
-                '1point': 'single key light source, dramatic chiaroscuro, high contrast shadows',
-                '2point': 'key and fill lighting setup, balanced facial shadows, natural volume',
-                '3point': 'professional 3-point setup, rim light, hair light, subject separation',
-                'backlight': 'strong backlighting, glowing edges, dark frontal exposure, silhouette effect'
-            };
-            parts.push(setupMap[studioLightingSetup] || '');
-
-            // 광질 및 도구
-            const toolMap: Record<string, string> = {
-                'softbox': 'diffused softbox light, smooth skin transitions, gentle shadow falloff',
-                'beautydish': 'beauty dish illumination, crisp facial contours, specular highlights, micro-contrast',
-                'spotlight': 'focused snoot light, narrow beam, dramatic light falloff, cinematic focus',
-                'umbrella': 'wide umbrella bounce, even global illumination, open shadows'
-            };
-            parts.push(toolMap[studioLightingTool] || '');
-
-            // 디테일 및 배경
-            const detailMap: Record<string, string> = {
-                'circular': 'sharp circular catchlights in irises, vibrant eye reflections',
-                'window': 'rectangular window catchlights, realistic eye highlights',
-                'halo': 'halo light on backdrop, gradual background glow behind subject',
-                'blackout': 'pitch black background, zero ambient light, pure subject isolation'
-            };
-            parts.push(detailMap[studioBackgroundDetail] || '');
-
-            // 색온도
-            const tempMap: Record<string, string> = {
-                '5600k': 'neutral 5600K white balance, daylight balanced strobes, accurate color rendering',
-                '3200k': 'warm tungsten lighting, 3200K amber glow, cozy indoor atmosphere, nostalgic mood',
-                '7500k': 'cool blueish studio light, 7500K temperature, clinical and modern look, high-tech mood',
-                'colorgel': 'creative color gels, dual-tone lighting, cyan and magenta contrast'
-            };
-            parts.push(tempMap[studioColorTemp] || '');
-
-            return parts.filter(p => p).join(', ');
-        }
-
-        // 기존 라이팅 로직 (다른 모드용)
-        // 조명 패턴
-        const pattern = getLightingPatternById(this.settings.lighting.patternId);
-        if (pattern) {
-            parts.push(pattern.promptKeywords);
-        }
-
-        // 광질
-        const quality = LIGHT_QUALITIES.find(q => q.id === this.settings.lighting.quality);
-        if (quality) {
-            parts.push(quality.promptKeywords);
-        }
-
-        // 색온도/시간대
-        if (this.settings.lighting.timeOfDay) {
-            const timePreset = getTimeOfDayPresetById(this.settings.lighting.timeOfDay);
-            if (timePreset) {
-                parts.push(timePreset.promptKeywords);
-            }
-        }
-
-        // Key:Fill:Back 비율
-        if (this.settings.lighting.keyFillBackRatio) {
-            const ratioPreset = LIGHTING_RATIO_PRESETS.find(
-                r => r.ratio === this.settings.lighting.keyFillBackRatio
-            );
-            if (ratioPreset) {
-                parts.push(ratioPreset.promptKeywords);
-            }
-        }
-
-        return parts.join(', ');
+        return buildLightingPrompt(this.settings.lighting);
     }
 
     private getComposition(): string {
@@ -540,36 +441,12 @@ export class PromptBuilderV2 {
         return parts.filter(Boolean).join(', ');
     }
 
-    private getQualityKeywords(): string {
-        const levelMap: Record<string, string> = {
-            'standard': 'professional photography, high quality',
-            'high': 'professional photography, high detail, sharp focus, award-winning photograph, exceptional quality',
-            'premium': 'professional photography, ultra high detail, tack sharp focus, award-winning photograph, gallery quality, exceptional resolution'
-        };
-
-        return levelMap[this.settings.quality.level] || levelMap['standard'];
-    }
-
-    private getNegativePrompt(): string {
-        const baseNegatives = [
-            'blurry', 'out of focus', 'low quality', 'low resolution',
-            'oversaturated', 'overexposed', 'underexposed', 'noise',
-            'artifacts', 'distortion', 'watermark', 'text', 'logo'
-        ];
-
-        // 사용자 커스텀 네거티브 추가
-        const allNegatives = [...baseNegatives, ...this.settings.quality.customNegatives];
-
-        // 중복 제거
-        return [...new Set(allNegatives)].join(', ');
-    }
 
     // ===== 우선순위 적용 =====
 
     private applyPriorities(): void {
         // 총 토큰 수 계산
         const totalTokens = Object.values(this.ir.slots)
-            .filter(slot => slot.slotId !== 'negative')
             .reduce((sum, slot) => sum + slot.tokens, 0);
 
         // 1500 토큰 초과 시 낮은 우선순위 슬롯 트리밍
@@ -585,7 +462,6 @@ export class PromptBuilderV2 {
             .sort((a, b) => a.priority - b.priority);
 
         let currentTotal = Object.values(this.ir.slots)
-            .filter(slot => slot.slotId !== 'negative')
             .reduce((sum, slot) => sum + slot.tokens, 0);
 
         for (const slot of sortedSlots) {

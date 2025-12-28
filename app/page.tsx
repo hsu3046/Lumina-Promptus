@@ -66,13 +66,13 @@ export default function Home() {
             {/* 메인 탭 */}
             <Tabs defaultValue="style" className="w-full">
               <TabsList className="w-full h-12 grid grid-cols-3 bg-zinc-900/50 border border-zinc-800/50">
-                <TabsTrigger value="style" className="data-[state=active]:!bg-zinc-800 data-[state=active]:!border-2 data-[state=active]:!border-amber-500 gap-2 py-3">
+                <TabsTrigger value="style" className="data-[state=active]:bg-transparent data-[state=active]:!border-2 data-[state=active]:!border-amber-500 gap-2 py-3">
                   <HugeiconsIcon icon={User02Icon} size={16} /> 피사체 설정
                 </TabsTrigger>
-                <TabsTrigger value="lighting" className="data-[state=active]:!bg-zinc-800 data-[state=active]:!border-2 data-[state=active]:!border-amber-500 gap-2 py-3">
+                <TabsTrigger value="lighting" className="data-[state=active]:bg-transparent data-[state=active]:!border-2 data-[state=active]:!border-amber-500 gap-2 py-3">
                   <HugeiconsIcon icon={Sun03Icon} size={16} /> 라이팅 설정
                 </TabsTrigger>
-                <TabsTrigger value="camera" className="data-[state=active]:!bg-zinc-800 data-[state=active]:!border-2 data-[state=active]:!border-amber-500 gap-2 py-3">
+                <TabsTrigger value="camera" className="data-[state=active]:bg-transparent data-[state=active]:!border-2 data-[state=active]:!border-amber-500 gap-2 py-3">
                   <HugeiconsIcon icon={Camera02Icon} size={16} /> 카메라 설정
                 </TabsTrigger>
               </TabsList>
