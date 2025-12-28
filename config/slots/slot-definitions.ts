@@ -132,6 +132,7 @@ export const SLOT_ORDER_BY_PRIORITY = PROMPT_SLOTS
 export const NANO_BANANA_PRO_SLOT_ORDER = [
     'subject',          // 1. 피사체
     'composition',      // 1-1. 구도 (피사체의 일부)
+    'aspect_ratio',     // 1-2. 사진 비율
     'lighting',         // 2. 라이팅
     'meta_tokens',      // 3. 카메라 metaToken
     'camera_body',      // 3-1. 카메라 바디

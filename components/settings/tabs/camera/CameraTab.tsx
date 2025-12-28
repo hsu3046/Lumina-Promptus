@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react';
 import { Lightbulb, AlertTriangle, AlertCircle } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
@@ -141,324 +140,322 @@ export function CameraTab() {
     }, []);
 
     return (
-        <Card className="bg-zinc-900/50 border-zinc-800/50 py-4 gap-2">
-            <CardContent className="space-y-4">
-                {/* 카메라 바디 / 렌즈 - 2줄 배치 */}
-                <div className="grid grid-cols-2 gap-4">
-                    {/* 카메라 바디 (브랜드별 그룹) */}
-                    <div className="space-y-2">
-                        <Label>카메라</Label>
-                        <Select
-                            value={settings.camera.bodyId}
-                            onValueChange={handleCameraChange}
-                        >
-                            <SelectTrigger className="w-full bg-zinc-950 border-zinc-800">
-                                <SelectValue placeholder="카메라 선택" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-zinc-900 border-zinc-800 max-h-80">
-                                {sortedBrands.map((brand) => (
-                                    <SelectGroup key={brand}>
-                                        <SelectLabel className="text-amber-400 font-medium">{brand}</SelectLabel>
-                                        {CAMERA_BODIES_BY_BRAND[brand].map((camera) => (
-                                            <SelectItem key={camera.id} value={camera.id}>
-                                                {camera.model}
+        <div className="space-y-4">
+            {/* 카메라 바디 / 렌즈 - 2줄 배치 */}
+            <div className="grid grid-cols-2 gap-4">
+                {/* 카메라 바디 (브랜드별 그룹) */}
+                <div className="space-y-2">
+                    <Label>카메라</Label>
+                    <Select
+                        value={settings.camera.bodyId}
+                        onValueChange={handleCameraChange}
+                    >
+                        <SelectTrigger className="w-full bg-zinc-950 border-zinc-800">
+                            <SelectValue placeholder="카메라 선택" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-zinc-900 border-zinc-800 max-h-80">
+                            {sortedBrands.map((brand) => (
+                                <SelectGroup key={brand}>
+                                    <SelectLabel className="text-amber-400 font-medium">{brand}</SelectLabel>
+                                    {CAMERA_BODIES_BY_BRAND[brand].map((camera) => (
+                                        <SelectItem key={camera.id} value={camera.id}>
+                                            {camera.model}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* 렌즈 (카테고리별 그룹) */}
+                <div className="space-y-2">
+                    <Label>렌즈</Label>
+                    <Select
+                        value={settings.camera.lensId}
+                        onValueChange={handleLensChange}
+                    >
+                        <SelectTrigger className="w-full bg-zinc-950 border-zinc-800">
+                            <SelectValue placeholder="렌즈 선택" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-zinc-900 border-zinc-800 max-h-80">
+                            {CATEGORY_ORDER.filter(cat => (compatibleLensesByCategory[cat]?.length ?? 0) > 0).map((category) => (
+                                <SelectGroup key={category}>
+                                    <SelectLabel className="text-amber-400 font-medium">
+                                        {LENS_CATEGORY_LABELS[category]}
+                                    </SelectLabel>
+                                    {compatibleLensesByCategory[category]!.map((lens) => {
+                                        const status = getLensStatusForOption(framing, angle, compositionRule, lens.id);
+                                        // disabled면 표시하지 않음
+                                        if (status.level === 'disabled') return null;
+                                        return (
+                                            <SelectItem key={lens.id} value={lens.id}>
+                                                <div className="flex items-center gap-1">
+                                                    {status.level === 'recommend' && <Lightbulb className="w-3 h-3 text-blue-500" />}
+                                                    {status.level === 'critical' && <AlertCircle className="w-3 h-3 text-red-500" />}
+                                                    {status.level === 'warning' && <AlertTriangle className="w-3 h-3 text-amber-400" />}
+                                                    <span>{lens.model}</span>
+                                                </div>
                                             </SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {/* 렌즈 (카테고리별 그룹) */}
-                    <div className="space-y-2">
-                        <Label>렌즈</Label>
-                        <Select
-                            value={settings.camera.lensId}
-                            onValueChange={handleLensChange}
-                        >
-                            <SelectTrigger className="w-full bg-zinc-950 border-zinc-800">
-                                <SelectValue placeholder="렌즈 선택" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-zinc-900 border-zinc-800 max-h-80">
-                                {CATEGORY_ORDER.filter(cat => (compatibleLensesByCategory[cat]?.length ?? 0) > 0).map((category) => (
-                                    <SelectGroup key={category}>
-                                        <SelectLabel className="text-amber-400 font-medium">
-                                            {LENS_CATEGORY_LABELS[category]}
-                                        </SelectLabel>
-                                        {compatibleLensesByCategory[category]!.map((lens) => {
-                                            const status = getLensStatusForOption(framing, angle, compositionRule, lens.id);
-                                            // disabled면 표시하지 않음
-                                            if (status.level === 'disabled') return null;
-                                            return (
-                                                <SelectItem key={lens.id} value={lens.id}>
-                                                    <div className="flex items-center gap-1">
-                                                        {status.level === 'recommend' && <Lightbulb className="w-3 h-3 text-blue-500" />}
-                                                        {status.level === 'critical' && <AlertCircle className="w-3 h-3 text-red-500" />}
-                                                        {status.level === 'warning' && <AlertTriangle className="w-3 h-3 text-amber-400" />}
-                                                        <span>{lens.model}</span>
-                                                    </div>
-                                                </SelectItem>
-                                            );
-                                        })}
-                                    </SelectGroup>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                                        );
+                                    })}
+                                </SelectGroup>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
+            </div>
 
-                <Separator className="bg-zinc-800" />
+            <Separator className="bg-zinc-800" />
 
-                {/* 조리개 (스냅 슬라이더) */}
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Label>조리개</Label>
-                            {!lightingEnabled && (
-                                <div className="flex items-center gap-1">
-                                    <Switch
-                                        checked={settings.camera.apertureAuto}
-                                        onCheckedChange={() => handleAutoToggle('aperture')}
-                                    />
-                                    <span className="text-xs text-zinc-500">Auto</span>
-                                </div>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                            {(() => {
-                                const style = getExposureStatusStyle(exposureInfo.status);
-                                const showIcon = !lightingEnabled && !settings.camera.apertureAuto && style.icon !== 'none';
-                                return (
-                                    <>
-                                        {showIcon && style.icon === 'critical' && <AlertCircle className={`w-4 h-4 ${style.color}`} />}
-                                        {showIcon && style.icon === 'warning' && <AlertTriangle className={`w-4 h-4 ${style.color}`} />}
-                                        <span className={`text-sm font-mono ${!settings.camera.apertureAuto && style.icon !== 'none' ? style.color : 'text-amber-400'}`}>
-                                            {settings.camera.aperture}
-                                        </span>
-                                    </>
-                                );
-                            })()}
-                        </div>
-                    </div>
-                    <Slider
-                        value={[Math.max(0, apertureStops.indexOf(settings.camera.aperture))]}
-                        min={0}
-                        max={apertureStops.length - 1}
-                        step={1}
-                        onValueChange={([idx]) => handleManualChange('aperture', apertureStops[idx])}
-                        className="py-1"
-                        disabled={settings.camera.apertureAuto}
-                    />
-                    <div className="flex justify-between text-xs text-zinc-500 -mt-2">
-                        <span>{apertureStops[0]}</span>
-                        <span>{apertureStops[apertureStops.length - 1]}</span>
-                    </div>
-                </div>
-
-                {/* 셔터 스피드 (스냅 슬라이더) */}
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Label>셔터 스피드</Label>
-                            {lightingEnabled ? (
-                                <Badge className="bg-amber-600 text-white">
-                                    <Lightbulb className="w-3 h-3" /> 조명 촬영
-                                </Badge>
-                            ) : (
-                                <div className="flex items-center gap-1">
-                                    <Switch
-                                        checked={settings.camera.shutterSpeedAuto}
-                                        onCheckedChange={() => handleAutoToggle('shutter')}
-                                    />
-                                    <span className="text-xs text-zinc-500">Auto</span>
-                                </div>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                            {(() => {
-                                const style = getExposureStatusStyle(exposureInfo.status);
-                                const showIcon = !lightingEnabled && !settings.camera.shutterSpeedAuto && style.icon !== 'none';
-                                return (
-                                    <>
-                                        {showIcon && style.icon === 'critical' && <AlertCircle className={`w-4 h-4 ${style.color}`} />}
-                                        {showIcon && style.icon === 'warning' && <AlertTriangle className={`w-4 h-4 ${style.color}`} />}
-                                        <span className={`text-sm font-mono ${lightingEnabled ? 'text-zinc-500' : (showIcon ? style.color : 'text-amber-400')}`}>
-                                            {lightingEnabled ? '1/125' : settings.camera.shutterSpeed}
-                                        </span>
-                                    </>
-                                );
-                            })()}
-                        </div>
-                    </div>
-                    <Slider
-                        value={[Math.max(0, shutterStops.indexOf(lightingEnabled ? '1/125' : settings.camera.shutterSpeed))]}
-                        min={0}
-                        max={shutterStops.length - 1}
-                        step={1}
-                        onValueChange={([idx]) => handleManualChange('shutter', shutterStops[idx])}
-                        className="py-1"
-                        disabled={lightingEnabled || settings.camera.shutterSpeedAuto}
-                    />
-                    <div className="flex justify-between text-xs text-zinc-500 -mt-2">
-                        <span>{shutterStops[0]}s</span>
-                        <span>{shutterStops[shutterStops.length - 1]}s</span>
-                    </div>
-                </div>
-
-                {/* ISO (스냅 슬라이더) */}
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Label>ISO</Label>
-                            {lightingEnabled ? (
-                                <Badge className="bg-amber-600 text-white">
-                                    <Lightbulb className="w-3 h-3" /> 조명 촬영
-                                </Badge>
-                            ) : (
-                                <div className="flex items-center gap-1">
-                                    <Switch
-                                        checked={settings.camera.isoAuto}
-                                        onCheckedChange={() => handleAutoToggle('iso')}
-                                    />
-                                    <span className="text-xs text-zinc-500">Auto</span>
-                                </div>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                            {(() => {
-                                const style = getExposureStatusStyle(exposureInfo.status);
-                                const showIcon = !lightingEnabled && !settings.camera.isoAuto && style.icon !== 'none';
-                                return (
-                                    <>
-                                        {showIcon && style.icon === 'critical' && <AlertCircle className={`w-4 h-4 ${style.color}`} />}
-                                        {showIcon && style.icon === 'warning' && <AlertTriangle className={`w-4 h-4 ${style.color}`} />}
-                                        <span className={`text-sm font-mono ${lightingEnabled ? 'text-zinc-500' : (showIcon ? style.color : 'text-amber-400')}`}>
-                                            {lightingEnabled ? '100' : settings.camera.iso}
-                                        </span>
-                                    </>
-                                );
-                            })()}
-                        </div>
-                    </div>
-                    <Slider
-                        value={[Math.max(0, isoStops.indexOf(lightingEnabled ? 100 : settings.camera.iso))]}
-                        min={0}
-                        max={isoStops.length - 1}
-                        step={1}
-                        onValueChange={([idx]) => handleManualChange('iso', isoStops[idx])}
-                        className="py-1"
-                        disabled={lightingEnabled || settings.camera.isoAuto}
-                    />
-                    <div className="flex justify-between text-xs text-zinc-500 -mt-2">
-                        <span>{isoStops[0]}</span>
-                        <span>{isoStops[isoStops.length - 1]}</span>
-                    </div>
-                </div>
-
-                {/* 노출 보정 (EV) */}
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Label>노출 보정</Label>
-                            {lightingEnabled && (
-                                <Badge className="bg-amber-600 text-white">
-                                    <Lightbulb className="w-3 h-3" /> 조명 촬영
-                                </Badge>
-                            )}
-                        </div>
-                        <span className={`text-sm font-mono ${lightingEnabled ? 'text-zinc-500' : 'text-amber-400'}`}>
-                            {lightingEnabled ? '0' : (settings.camera.exposureCompensation > 0 ? '+' : '') + settings.camera.exposureCompensation} EV
-                        </span>
-                    </div>
-                    <Slider
-                        value={[lightingEnabled ? 0 : settings.camera.exposureCompensation]}
-                        min={-3}
-                        max={3}
-                        step={0.3}
-                        onValueChange={([val]) => updateCamera({ exposureCompensation: Math.round(val * 10) / 10 })}
-                        className="py-1"
-                        disabled={lightingEnabled}
-                    />
-                    <div className="flex justify-between text-xs text-zinc-500 -mt-2">
-                        <span>-3 EV</span>
-                        <span>0</span>
-                        <span>+3 EV</span>
-                    </div>
-                </div>
-
-                {/* 색온도 (White Balance) */}
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Label>색온도</Label>
-                            {lightingEnabled && (
-                                <Badge className="bg-amber-600 text-white">
-                                    <Lightbulb className="w-3 h-3" /> 조명 촬영
-                                </Badge>
-                            )}
-                        </div>
-                        <span className={`text-sm font-mono ${lightingEnabled ? 'text-zinc-500' : 'text-amber-400'}`}>
-                            {lightingEnabled ? '5600' : settings.camera.whiteBalance}K
-                        </span>
-                    </div>
-                    <Slider
-                        value={[lightingEnabled ? 5600 : settings.camera.whiteBalance]}
-                        min={2500}
-                        max={10000}
-                        step={100}
-                        onValueChange={([val]) => updateCamera({ whiteBalance: val })}
-                        className="py-1"
-                        disabled={lightingEnabled}
-                    />
-                    <div className="flex justify-between text-xs text-zinc-500 -mt-2">
-                        <span>2500K</span>
-                        <span>10000K</span>
-                    </div>
-                </div>
-
-                <Separator className="bg-zinc-800" />
-
-                {/* 사진 비율 */}
-                <div className="space-y-3">
-                    <Label>사진 비율</Label>
-                    <div className="flex items-center gap-6">
-                        {/* 가로/세로 Radio Group */}
-                        <RadioGroup
-                            value={settings.camera.orientation}
-                            onValueChange={(v) => updateCamera({ orientation: v as 'landscape' | 'portrait' })}
-                            className="flex gap-4"
-                        >
-                            <div className="flex items-center gap-2">
-                                <RadioGroupItem value="landscape" id="landscape" />
-                                <Label htmlFor="landscape" className="text-sm font-normal cursor-pointer">가로</Label>
+            {/* 조리개 (스냅 슬라이더) */}
+            <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Label>조리개</Label>
+                        {!lightingEnabled && (
+                            <div className="flex items-center gap-1">
+                                <Switch
+                                    checked={settings.camera.apertureAuto}
+                                    onCheckedChange={() => handleAutoToggle('aperture')}
+                                />
+                                <span className="text-xs text-zinc-500">Auto</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <RadioGroupItem value="portrait" id="portrait" />
-                                <Label htmlFor="portrait" className="text-sm font-normal cursor-pointer">세로</Label>
-                            </div>
-                        </RadioGroup>
+                        )}
                     </div>
-
-                    {/* 비율 선택 버튼 */}
-                    <div className="flex gap-2">
-                        {(['3:2', '4:3', '16:9', '1:1', '4:5'] as const).map((ratio) => (
-                            <button
-                                key={ratio}
-                                onClick={() => updateCamera({ aspectRatio: ratio })}
-                                className={`flex-1 py-2 px-3 text-sm rounded-md border transition-colors ${settings.camera.aspectRatio === ratio
-                                    ? 'bg-amber-600 border-amber-500 text-white'
-                                    : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-600'
-                                    }`}
-                            >
-                                {settings.camera.orientation === 'landscape'
-                                    ? ratio
-                                    : ratio.split(':').reverse().join(':')}
-                            </button>
-                        ))}
+                    <div className="flex items-center gap-1">
+                        {(() => {
+                            const style = getExposureStatusStyle(exposureInfo.status);
+                            const showIcon = !lightingEnabled && !settings.camera.apertureAuto && style.icon !== 'none';
+                            return (
+                                <>
+                                    {showIcon && style.icon === 'critical' && <AlertCircle className={`w-4 h-4 ${style.color}`} />}
+                                    {showIcon && style.icon === 'warning' && <AlertTriangle className={`w-4 h-4 ${style.color}`} />}
+                                    <span className={`text-sm font-mono ${!settings.camera.apertureAuto && style.icon !== 'none' ? style.color : 'text-amber-400'}`}>
+                                        {settings.camera.aperture}
+                                    </span>
+                                </>
+                            );
+                        })()}
                     </div>
                 </div>
-            </CardContent>
-        </Card>
+                <Slider
+                    value={[Math.max(0, apertureStops.indexOf(settings.camera.aperture))]}
+                    min={0}
+                    max={apertureStops.length - 1}
+                    step={1}
+                    onValueChange={([idx]) => handleManualChange('aperture', apertureStops[idx])}
+                    className="py-1"
+                    disabled={settings.camera.apertureAuto}
+                />
+                <div className="flex justify-between text-xs text-zinc-500 -mt-2">
+                    <span>{apertureStops[0]}</span>
+                    <span>{apertureStops[apertureStops.length - 1]}</span>
+                </div>
+            </div>
+
+            {/* 셔터 스피드 (스냅 슬라이더) */}
+            <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Label>셔터 스피드</Label>
+                        {lightingEnabled ? (
+                            <Badge className="bg-amber-600 text-white">
+                                <Lightbulb className="w-3 h-3" /> 조명 촬영
+                            </Badge>
+                        ) : (
+                            <div className="flex items-center gap-1">
+                                <Switch
+                                    checked={settings.camera.shutterSpeedAuto}
+                                    onCheckedChange={() => handleAutoToggle('shutter')}
+                                />
+                                <span className="text-xs text-zinc-500">Auto</span>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                        {(() => {
+                            const style = getExposureStatusStyle(exposureInfo.status);
+                            const showIcon = !lightingEnabled && !settings.camera.shutterSpeedAuto && style.icon !== 'none';
+                            return (
+                                <>
+                                    {showIcon && style.icon === 'critical' && <AlertCircle className={`w-4 h-4 ${style.color}`} />}
+                                    {showIcon && style.icon === 'warning' && <AlertTriangle className={`w-4 h-4 ${style.color}`} />}
+                                    <span className={`text-sm font-mono ${lightingEnabled ? 'text-zinc-500' : (showIcon ? style.color : 'text-amber-400')}`}>
+                                        {lightingEnabled ? '1/125' : settings.camera.shutterSpeed}
+                                    </span>
+                                </>
+                            );
+                        })()}
+                    </div>
+                </div>
+                <Slider
+                    value={[Math.max(0, shutterStops.indexOf(lightingEnabled ? '1/125' : settings.camera.shutterSpeed))]}
+                    min={0}
+                    max={shutterStops.length - 1}
+                    step={1}
+                    onValueChange={([idx]) => handleManualChange('shutter', shutterStops[idx])}
+                    className="py-1"
+                    disabled={lightingEnabled || settings.camera.shutterSpeedAuto}
+                />
+                <div className="flex justify-between text-xs text-zinc-500 -mt-2">
+                    <span>{shutterStops[0]}s</span>
+                    <span>{shutterStops[shutterStops.length - 1]}s</span>
+                </div>
+            </div>
+
+            {/* ISO (스냅 슬라이더) */}
+            <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Label>ISO</Label>
+                        {lightingEnabled ? (
+                            <Badge className="bg-amber-600 text-white">
+                                <Lightbulb className="w-3 h-3" /> 조명 촬영
+                            </Badge>
+                        ) : (
+                            <div className="flex items-center gap-1">
+                                <Switch
+                                    checked={settings.camera.isoAuto}
+                                    onCheckedChange={() => handleAutoToggle('iso')}
+                                />
+                                <span className="text-xs text-zinc-500">Auto</span>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                        {(() => {
+                            const style = getExposureStatusStyle(exposureInfo.status);
+                            const showIcon = !lightingEnabled && !settings.camera.isoAuto && style.icon !== 'none';
+                            return (
+                                <>
+                                    {showIcon && style.icon === 'critical' && <AlertCircle className={`w-4 h-4 ${style.color}`} />}
+                                    {showIcon && style.icon === 'warning' && <AlertTriangle className={`w-4 h-4 ${style.color}`} />}
+                                    <span className={`text-sm font-mono ${lightingEnabled ? 'text-zinc-500' : (showIcon ? style.color : 'text-amber-400')}`}>
+                                        {lightingEnabled ? '100' : settings.camera.iso}
+                                    </span>
+                                </>
+                            );
+                        })()}
+                    </div>
+                </div>
+                <Slider
+                    value={[Math.max(0, isoStops.indexOf(lightingEnabled ? 100 : settings.camera.iso))]}
+                    min={0}
+                    max={isoStops.length - 1}
+                    step={1}
+                    onValueChange={([idx]) => handleManualChange('iso', isoStops[idx])}
+                    className="py-1"
+                    disabled={lightingEnabled || settings.camera.isoAuto}
+                />
+                <div className="flex justify-between text-xs text-zinc-500 -mt-2">
+                    <span>{isoStops[0]}</span>
+                    <span>{isoStops[isoStops.length - 1]}</span>
+                </div>
+            </div>
+
+            {/* 노출 보정 (EV) */}
+            <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Label>노출 보정</Label>
+                        {lightingEnabled && (
+                            <Badge className="bg-amber-600 text-white">
+                                <Lightbulb className="w-3 h-3" /> 조명 촬영
+                            </Badge>
+                        )}
+                    </div>
+                    <span className={`text-sm font-mono ${lightingEnabled ? 'text-zinc-500' : 'text-amber-400'}`}>
+                        {lightingEnabled ? '0' : (settings.camera.exposureCompensation > 0 ? '+' : '') + settings.camera.exposureCompensation} EV
+                    </span>
+                </div>
+                <Slider
+                    value={[lightingEnabled ? 0 : settings.camera.exposureCompensation]}
+                    min={-3}
+                    max={3}
+                    step={0.3}
+                    onValueChange={([val]) => updateCamera({ exposureCompensation: Math.round(val * 10) / 10 })}
+                    className="py-1"
+                    disabled={lightingEnabled}
+                />
+                <div className="flex justify-between text-xs text-zinc-500 -mt-2">
+                    <span>-3 EV</span>
+                    <span>0</span>
+                    <span>+3 EV</span>
+                </div>
+            </div>
+
+            {/* 색온도 (White Balance) */}
+            <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Label>색온도</Label>
+                        {lightingEnabled && (
+                            <Badge className="bg-amber-600 text-white">
+                                <Lightbulb className="w-3 h-3" /> 조명 촬영
+                            </Badge>
+                        )}
+                    </div>
+                    <span className={`text-sm font-mono ${lightingEnabled ? 'text-zinc-500' : 'text-amber-400'}`}>
+                        {lightingEnabled ? '5600' : settings.camera.whiteBalance}K
+                    </span>
+                </div>
+                <Slider
+                    value={[lightingEnabled ? 5600 : settings.camera.whiteBalance]}
+                    min={2500}
+                    max={10000}
+                    step={100}
+                    onValueChange={([val]) => updateCamera({ whiteBalance: val })}
+                    className="py-1"
+                    disabled={lightingEnabled}
+                />
+                <div className="flex justify-between text-xs text-zinc-500 -mt-2">
+                    <span>2500K</span>
+                    <span>10000K</span>
+                </div>
+            </div>
+
+            <Separator className="bg-zinc-800" />
+
+            {/* 사진 비율 */}
+            <div className="space-y-3">
+                <Label>사진 비율</Label>
+                <div className="flex items-center gap-6">
+                    {/* 가로/세로 Radio Group */}
+                    <RadioGroup
+                        value={settings.camera.orientation}
+                        onValueChange={(v) => updateCamera({ orientation: v as 'landscape' | 'portrait' })}
+                        className="flex gap-4"
+                    >
+                        <div className="flex items-center gap-2">
+                            <RadioGroupItem value="landscape" id="landscape" />
+                            <Label htmlFor="landscape" className="text-sm font-normal cursor-pointer">가로</Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <RadioGroupItem value="portrait" id="portrait" />
+                            <Label htmlFor="portrait" className="text-sm font-normal cursor-pointer">세로</Label>
+                        </div>
+                    </RadioGroup>
+                </div>
+
+                {/* 비율 선택 버튼 */}
+                <div className="flex gap-2">
+                    {(['3:2', '4:3', '16:9', '1:1', '4:5'] as const).map((ratio) => (
+                        <button
+                            key={ratio}
+                            onClick={() => updateCamera({ aspectRatio: ratio })}
+                            className={`flex-1 py-2 px-3 text-sm rounded-md border transition-colors ${settings.camera.aspectRatio === ratio
+                                ? 'bg-amber-600 border-amber-500 text-white'
+                                : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-600'
+                                }`}
+                        >
+                            {settings.camera.orientation === 'landscape'
+                                ? ratio
+                                : ratio.split(':').reverse().join(':')}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </div>
     );
 }

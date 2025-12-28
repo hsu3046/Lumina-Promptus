@@ -21,9 +21,9 @@ const defaultCameraSettings: CameraSettings = {
     shutterSpeed: '1/200',
     whiteBalance: 5600,
     exposureCompensation: 0, // EV 0
-    apertureAuto: false,
-    shutterSpeedAuto: false,
-    isoAuto: false,
+    apertureAuto: true,
+    shutterSpeedAuto: true,
+    isoAuto: true,
     aspectRatio: '3:2',
     orientation: 'portrait',
 };

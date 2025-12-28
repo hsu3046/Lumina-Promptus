@@ -28,6 +28,10 @@ import {
     FOOTWEAR_OPTIONS,
     ACCESSORY_OPTIONS,
 } from '@/config/mappings/fashion-options';
+import {
+    checkFashionConflicts,
+    type FashionConflictResult,
+} from '@/config/mappings/framing-fashion-conflicts';
 import type {
     StudioSubject,
     PortraitFraming,
@@ -71,6 +75,21 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
         gaze: subject.gazeDirection,
     }), [framing, subject.bodyPose, subject.handPose, subject.expression, subject.gazeDirection]);
 
+    // 패션-구도 충돌 감지
+    const fashionConflicts = useMemo((): FashionConflictResult[] => {
+        return checkFashionConflicts(
+            framing as PortraitFraming,
+            subject.bottomWear || '',
+            subject.footwear || '',
+            subject.accessory || ''
+        );
+    }, [framing, subject.bottomWear, subject.footwear, subject.accessory]);
+
+    // 특정 필드의 패션 충돌 조회
+    const getFashionConflict = (field: 'bottomWear' | 'footwear' | 'accessory'): FashionConflictResult | undefined => {
+        return fashionConflicts.find(c => c.field === field);
+    };
+
     // autoMode: true = 검색창만, false = 모든 드롭다운 표시
     const showDetail = !subject.autoMode;
 
@@ -96,6 +115,7 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
 
     const selectedAppearance = findSelectedPresetId(APPEARANCE_PRESETS, ['skinTone', 'hairColor', 'eyeColor', 'faceShape']);
     const selectedStyle = findSelectedPresetId(STYLE_PRESETS, ['gender', 'ageGroup', 'hairStyle', 'bodyType']);
+    const selectedFashion = findSelectedPresetId(FASHION_PRESETS, ['topWear', 'bottomWear', 'footwear', 'accessory']);
     const selectedPose = findSelectedPresetId(POSE_PRESETS, ['bodyPose', 'handPose', 'expression', 'gazeDirection']);
 
     return (
@@ -137,7 +157,7 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
                     label="패션"
                     placeholder="캐주얼..."
                     options={FASHION_PRESETS}
-                    value=""
+                    value={selectedFashion}
                     onChange={(preset) => onUpdate(preset.values)}
                 />
 
@@ -153,10 +173,9 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
 
             {/* 상세 모드: 개별 드롭다운 */}
             {showDetail && (
-                <div className="space-y-4 border-t border-zinc-800 pt-4">
+                <div className="space-y-4 pt-4">
                     {/* A: 외모 상세 */}
                     <div className="space-y-2">
-                        <span className="text-[10px] text-zinc-500 font-medium">외모</span>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <div className="space-y-1">
                                 <Label className="text-[10px] text-zinc-500">피부톤</Label>
@@ -220,7 +239,6 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
 
                     {/* B: 스타일 상세 */}
                     <div className="space-y-2">
-                        <span className="text-[10px] text-zinc-500 font-medium">스타일</span>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <div className="space-y-1">
                                 <Label className="text-[10px] text-zinc-500">성별</Label>
@@ -283,12 +301,11 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
 
                     {/* C: 패션 상세 */}
                     <div className="space-y-2">
-                        <span className="text-[10px] text-zinc-500 font-medium">패션</span>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <div className="space-y-1">
                                 <Label className="text-[10px] text-zinc-500">상의</Label>
-                                <Select value={subject.topWear} onValueChange={(v) => onUpdate({ topWear: v })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue placeholder="선택..." /></SelectTrigger>
+                                <Select value={subject.topWear || 'none'} onValueChange={(v) => onUpdate({ topWear: v === 'none' ? '' : v })}>
+                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue placeholder="선택 안함" /></SelectTrigger>
                                     <SelectContent className="bg-zinc-900 border-zinc-800 max-h-48">
                                         {TOP_WEAR_OPTIONS.map((opt) => (
                                             <SelectItem key={opt.value || 'none'} value={opt.value || 'none'}>{opt.label}</SelectItem>
@@ -297,9 +314,12 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
                                 </Select>
                             </div>
                             <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500">하의</Label>
-                                <Select value={subject.bottomWear} onValueChange={(v) => onUpdate({ bottomWear: v })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue placeholder="선택..." /></SelectTrigger>
+                                <Label className="text-[10px] text-zinc-500 flex items-center gap-1">
+                                    하의
+                                    {getFashionConflict('bottomWear') && <ConflictIcon level={getFashionConflict('bottomWear')!.level} />}
+                                </Label>
+                                <Select value={subject.bottomWear || 'none'} onValueChange={(v) => onUpdate({ bottomWear: v === 'none' ? '' : v })}>
+                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue placeholder="선택 안함" /></SelectTrigger>
                                     <SelectContent className="bg-zinc-900 border-zinc-800 max-h-48">
                                         {BOTTOM_WEAR_OPTIONS.map((opt) => (
                                             <SelectItem key={opt.value || 'none'} value={opt.value || 'none'}>{opt.label}</SelectItem>
@@ -308,9 +328,12 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
                                 </Select>
                             </div>
                             <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500">신발</Label>
-                                <Select value={subject.footwear} onValueChange={(v) => onUpdate({ footwear: v })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue placeholder="선택..." /></SelectTrigger>
+                                <Label className="text-[10px] text-zinc-500 flex items-center gap-1">
+                                    신발
+                                    {getFashionConflict('footwear') && <ConflictIcon level={getFashionConflict('footwear')!.level} />}
+                                </Label>
+                                <Select value={subject.footwear || 'none'} onValueChange={(v) => onUpdate({ footwear: v === 'none' ? '' : v })}>
+                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue placeholder="선택 안함" /></SelectTrigger>
                                     <SelectContent className="bg-zinc-900 border-zinc-800 max-h-48">
                                         {FOOTWEAR_OPTIONS.map((opt) => (
                                             <SelectItem key={opt.value || 'none'} value={opt.value || 'none'}>{opt.label}</SelectItem>
@@ -319,9 +342,12 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
                                 </Select>
                             </div>
                             <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500">악세서리</Label>
-                                <Select value={subject.accessory} onValueChange={(v) => onUpdate({ accessory: v })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue placeholder="선택..." /></SelectTrigger>
+                                <Label className="text-[10px] text-zinc-500 flex items-center gap-1">
+                                    악세서리
+                                    {getFashionConflict('accessory') && <ConflictIcon level={getFashionConflict('accessory')!.level} />}
+                                </Label>
+                                <Select value={subject.accessory || 'none'} onValueChange={(v) => onUpdate({ accessory: v === 'none' ? '' : v })}>
+                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue placeholder="선택 안함" /></SelectTrigger>
                                     <SelectContent className="bg-zinc-900 border-zinc-800 max-h-48">
                                         {ACCESSORY_OPTIONS.map((opt) => (
                                             <SelectItem key={opt.value || 'none'} value={opt.value || 'none'}>{opt.label}</SelectItem>
@@ -334,7 +360,6 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
 
                     {/* D: 포즈 상세 */}
                     <div className="space-y-2">
-                        <span className="text-[10px] text-zinc-500 font-medium">포즈</span>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <div className="space-y-1">
                                 <Label className="text-[10px] text-zinc-500">바디 포즈</Label>

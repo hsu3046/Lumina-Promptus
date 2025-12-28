@@ -36,67 +36,73 @@ export const APPEARANCE_PRESETS: AppearancePreset[] = [
 ];
 
 // ===== B: 스타일 프리셋 (20개) =====
+export type StyleTag = 'male' | 'female' | 'child' | 'teen' | 'adult' | 'senior' | 'athletic' | 'formal-ready';
+
 export interface StylePreset {
     id: string;
     label: string;
     keywords: string[];
     description: string;
+    tags: StyleTag[];
     values: Pick<StudioSubject, 'gender' | 'ageGroup' | 'hairStyle' | 'bodyType'>;
 }
 
 export const STYLE_PRESETS: StylePreset[] = [
-    { id: 'young-woman', label: '20대 여성', keywords: ['20대', '여성', 'young', 'woman', '젊은'], description: '긴 머리, 보통 체형의 젊은 여성', values: { gender: 'female', ageGroup: '20s', hairStyle: 'long', bodyType: 'average' } },
-    { id: 'young-man', label: '20대 남성', keywords: ['20대', '남성', 'young', 'man', '젊은'], description: '짧은 머리, 보통 체형의 젊은 남성', values: { gender: 'male', ageGroup: '20s', hairStyle: 'short', bodyType: 'average' } },
-    { id: 'beautiful-woman', label: '아름다운 여성', keywords: ['아름다운', '미인', 'beautiful', '예쁜', '모델'], description: '웨이브 머리, 슬림한 체형의 아름다운 여성', values: { gender: 'female', ageGroup: '20s', hairStyle: 'wavy', bodyType: 'slim' } },
-    { id: 'handsome-man', label: '잘생긴 남성', keywords: ['잘생긴', '미남', 'handsome', '멋있는', '훈남'], description: '짧은 머리, 건장한 체형의 잘생긴 남성', values: { gender: 'male', ageGroup: '30s', hairStyle: 'short', bodyType: 'athletic' } },
-    { id: 'teen-girl', label: '10대 소녀', keywords: ['10대', '소녀', 'teen', 'girl', '청소년'], description: '포니테일, 슬림한 10대 소녀', values: { gender: 'female', ageGroup: 'teen', hairStyle: 'ponytail', bodyType: 'slim' } },
-    { id: 'teen-boy', label: '10대 소년', keywords: ['10대', '소년', 'teen', 'boy', '청소년'], description: '짧은 머리, 슬림한 10대 소년', values: { gender: 'male', ageGroup: 'teen', hairStyle: 'short', bodyType: 'slim' } },
-    { id: 'mature-woman', label: '40대 여성', keywords: ['40대', '성숙', 'mature', 'woman', '중년'], description: '중간 길이 머리, 글래머 체형의 성숙한 여성', values: { gender: 'female', ageGroup: '40s', hairStyle: 'medium', bodyType: 'curvy' } },
-    { id: 'mature-man', label: '40대 남성', keywords: ['40대', '중년', 'mature', 'man', '아저씨'], description: '짧은 머리, 건장한 체형의 중년 남성', values: { gender: 'male', ageGroup: '40s', hairStyle: 'short', bodyType: 'athletic' } },
-    { id: 'elderly-woman', label: '노년 여성', keywords: ['노인', '할머니', 'elderly', 'grandmother', '시니어'], description: '올림머리, 보통 체형의 노년 여성', values: { gender: 'female', ageGroup: 'elderly', hairStyle: 'bun', bodyType: 'average' } },
-    { id: 'elderly-man', label: '노년 남성', keywords: ['노인', '할아버지', 'elderly', 'grandfather', '시니어'], description: '대머리, 보통 체형의 노년 남성', values: { gender: 'male', ageGroup: 'elderly', hairStyle: 'bald', bodyType: 'average' } },
-    { id: 'child-girl', label: '어린 소녀', keywords: ['어린이', '소녀', 'child', 'girl', '아이'], description: '땋은 머리, 슬림한 어린 소녀', values: { gender: 'female', ageGroup: 'child', hairStyle: 'braids', bodyType: 'slim' } },
-    { id: 'child-boy', label: '어린 소년', keywords: ['어린이', '소년', 'child', 'boy', '아이'], description: '짧은 머리, 슬림한 어린 소년', values: { gender: 'male', ageGroup: 'child', hairStyle: 'short', bodyType: 'slim' } },
-    { id: 'athletic-woman', label: '운동선수 여성', keywords: ['운동선수', 'athletic', 'fitness', '스포츠', '근육'], description: '포니테일, 건장한 체형의 운동선수 여성', values: { gender: 'female', ageGroup: '20s', hairStyle: 'ponytail', bodyType: 'athletic' } },
-    { id: 'athletic-man', label: '운동선수 남성', keywords: ['운동선수', 'athletic', 'fitness', '스포츠', '근육'], description: '짧은 머리, 건장한 체형의 운동선수 남성', values: { gender: 'male', ageGroup: '20s', hairStyle: 'short', bodyType: 'athletic' } },
-    { id: 'plus-size-woman', label: '플러스 사이즈 여성', keywords: ['플러스', 'plus-size', 'curvy', '통통', '빅사이즈'], description: '긴 머리, 플러스 사이즈 체형의 여성', values: { gender: 'female', ageGroup: '30s', hairStyle: 'long', bodyType: 'plus' } },
-    { id: 'curly-woman', label: '곱슬머리 여성', keywords: ['곱슬', 'curly', '웨이브', '아프로', '펌'], description: '곱슬머리, 보통 체형의 여성', values: { gender: 'female', ageGroup: '20s', hairStyle: 'curly', bodyType: 'average' } },
-    { id: 'bald-man', label: '대머리 남성', keywords: ['대머리', 'bald', '삭발', '민머리', '스킨헤드'], description: '대머리, 건장한 체형의 남성', values: { gender: 'male', ageGroup: '40s', hairStyle: 'bald', bodyType: 'athletic' } },
-    { id: 'long-hair-man', label: '장발 남성', keywords: ['장발', 'long hair', '긴머리', '히피', '록커'], description: '긴 머리, 슬림한 체형의 남성', values: { gender: 'male', ageGroup: '20s', hairStyle: 'long', bodyType: 'slim' } },
-    { id: 'bob-woman', label: '단발 여성', keywords: ['단발', 'bob', '숏컷', '짧은머리', '커트'], description: '짧은 머리, 슬림한 체형의 여성', values: { gender: 'female', ageGroup: '30s', hairStyle: 'short', bodyType: 'slim' } },
-    { id: 'worker-man', label: '60대 현장 노동자', keywords: ['노동자', 'worker', '현장', '60대', '일꾼', '건설'], description: '짧은 머리, 건장한 체형의 현장 노동자', values: { gender: 'male', ageGroup: '50plus', hairStyle: 'short', bodyType: 'athletic' } },
+    { id: 'young-woman', label: '20대 여성', keywords: ['20대', '여성', 'young', 'woman', '젊은'], description: '긴 머리, 보통 체형의 젊은 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: '20s', hairStyle: 'long', bodyType: 'average' } },
+    { id: 'young-man', label: '20대 남성', keywords: ['20대', '남성', 'young', 'man', '젊은'], description: '짧은 머리, 보통 체형의 젊은 남성', tags: ['male', 'adult', 'formal-ready'], values: { gender: 'male', ageGroup: '20s', hairStyle: 'short', bodyType: 'average' } },
+    { id: 'beautiful-woman', label: '아름다운 여성', keywords: ['아름다운', '미인', 'beautiful', '예쁜', '모델'], description: '웨이브 머리, 슬림한 체형의 아름다운 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: '20s', hairStyle: 'wavy', bodyType: 'slim' } },
+    { id: 'handsome-man', label: '잘생긴 남성', keywords: ['잘생긴', '미남', 'handsome', '멋있는', '훈남'], description: '짧은 머리, 건장한 체형의 잘생긴 남성', tags: ['male', 'adult', 'formal-ready'], values: { gender: 'male', ageGroup: '30s', hairStyle: 'short', bodyType: 'athletic' } },
+    { id: 'teen-girl', label: '10대 소녀', keywords: ['10대', '소녀', 'teen', 'girl', '청소년'], description: '포니테일, 슬림한 10대 소녀', tags: ['female', 'teen'], values: { gender: 'female', ageGroup: 'teen', hairStyle: 'ponytail', bodyType: 'slim' } },
+    { id: 'teen-boy', label: '10대 소년', keywords: ['10대', '소년', 'teen', 'boy', '청소년'], description: '짧은 머리, 슬림한 10대 소년', tags: ['male', 'teen'], values: { gender: 'male', ageGroup: 'teen', hairStyle: 'short', bodyType: 'slim' } },
+    { id: 'mature-woman', label: '40대 여성', keywords: ['40대', '성숙', 'mature', 'woman', '중년'], description: '중간 길이 머리, 글래머 체형의 성숙한 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: '40s', hairStyle: 'medium', bodyType: 'curvy' } },
+    { id: 'mature-man', label: '40대 남성', keywords: ['40대', '중년', 'mature', 'man', '아저씨'], description: '짧은 머리, 건장한 체형의 중년 남성', tags: ['male', 'adult', 'formal-ready'], values: { gender: 'male', ageGroup: '40s', hairStyle: 'short', bodyType: 'athletic' } },
+    { id: 'elderly-woman', label: '노년 여성', keywords: ['노인', '할머니', 'elderly', 'grandmother', '시니어'], description: '올림머리, 보통 체형의 노년 여성', tags: ['female', 'senior'], values: { gender: 'female', ageGroup: 'elderly', hairStyle: 'bun', bodyType: 'average' } },
+    { id: 'elderly-man', label: '노년 남성', keywords: ['노인', '할아버지', 'elderly', 'grandfather', '시니어'], description: '대머리, 보통 체형의 노년 남성', tags: ['male', 'senior'], values: { gender: 'male', ageGroup: 'elderly', hairStyle: 'bald', bodyType: 'average' } },
+    { id: 'child-girl', label: '어린 소녀', keywords: ['어린이', '소녀', 'child', 'girl', '아이'], description: '땋은 머리, 슬림한 어린 소녀', tags: ['female', 'child'], values: { gender: 'female', ageGroup: 'child', hairStyle: 'braids', bodyType: 'slim' } },
+    { id: 'child-boy', label: '어린 소년', keywords: ['어린이', '소년', 'child', 'boy', '아이'], description: '짧은 머리, 슬림한 어린 소년', tags: ['male', 'child'], values: { gender: 'male', ageGroup: 'child', hairStyle: 'short', bodyType: 'slim' } },
+    { id: 'athletic-woman', label: '운동선수 여성', keywords: ['운동선수', 'athletic', 'fitness', '스포츠', '근육'], description: '포니테일, 건장한 체형의 운동선수 여성', tags: ['female', 'adult', 'athletic'], values: { gender: 'female', ageGroup: '20s', hairStyle: 'ponytail', bodyType: 'athletic' } },
+    { id: 'athletic-man', label: '운동선수 남성', keywords: ['운동선수', 'athletic', 'fitness', '스포츠', '근육'], description: '짧은 머리, 건장한 체형의 운동선수 남성', tags: ['male', 'adult', 'athletic'], values: { gender: 'male', ageGroup: '20s', hairStyle: 'short', bodyType: 'athletic' } },
+    { id: 'plus-size-woman', label: '플러스 사이즈 여성', keywords: ['플러스', 'plus-size', 'curvy', '통통', '빅사이즈'], description: '긴 머리, 플러스 사이즈 체형의 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: '30s', hairStyle: 'long', bodyType: 'plus' } },
+    { id: 'curly-woman', label: '곱슬머리 여성', keywords: ['곱슬', 'curly', '웨이브', '아프로', '펌'], description: '곱슬머리, 보통 체형의 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: '20s', hairStyle: 'curly', bodyType: 'average' } },
+    { id: 'bald-man', label: '대머리 남성', keywords: ['대머리', 'bald', '삭발', '민머리', '스킨헤드'], description: '대머리, 건장한 체형의 남성', tags: ['male', 'adult', 'formal-ready'], values: { gender: 'male', ageGroup: '40s', hairStyle: 'bald', bodyType: 'athletic' } },
+    { id: 'long-hair-man', label: '장발 남성', keywords: ['장발', 'long hair', '긴머리', '히피', '록커'], description: '긴 머리, 슬림한 체형의 남성', tags: ['male', 'adult'], values: { gender: 'male', ageGroup: '20s', hairStyle: 'long', bodyType: 'slim' } },
+    { id: 'bob-woman', label: '단발 여성', keywords: ['단발', 'bob', '숏컷', '짧은머리', '커트'], description: '짧은 머리, 슬림한 체형의 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: '30s', hairStyle: 'short', bodyType: 'slim' } },
+    { id: 'worker-man', label: '60대 현장 노동자', keywords: ['노동자', 'worker', '현장', '60대', '일꾼', '건설'], description: '짧은 머리, 건장한 체형의 현장 노동자', tags: ['male', 'senior'], values: { gender: 'male', ageGroup: '50plus', hairStyle: 'short', bodyType: 'athletic' } },
 ];
 
 // ===== C: 패션 프리셋 (20개) =====
+export type FashionTag = 'male' | 'female' | 'unisex' | 'child' | 'teen' | 'adult' | 'senior' | 'athletic' | 'formal';
+
 export interface FashionPreset {
     id: string;
     label: string;
     keywords: string[];
     description: string;
+    tags: FashionTag[];
     values: Pick<StudioSubject, 'topWear' | 'bottomWear' | 'footwear' | 'accessory'>;
 }
 
 export const FASHION_PRESETS: FashionPreset[] = [
-    { id: 'casual', label: '캐주얼', keywords: ['캐주얼', 'casual', '편한', '일상', '데일리'], description: '흰 티셔츠, 청바지, 스니커즈의 편안한 룩', values: { topWear: 'white-tshirt', bottomWear: 'blue-jeans', footwear: 'white-sneakers', accessory: '' } },
-    { id: 'formal', label: '포멀', keywords: ['포멀', 'formal', '정장', '비즈니스', '면접'], description: '검은 정장, 드레스 팬츠, 구두, 넥타이', values: { topWear: 'suit-jacket', bottomWear: 'dress-pants', footwear: 'leather-shoes', accessory: 'necktie' } },
-    { id: 'business-casual', label: '비즈니스 캐주얼', keywords: ['비즈니스', 'business', '오피스', '사무실', '직장'], description: '드레스 셔츠, 치노 팬츠, 로퍼의 오피스 룩', values: { topWear: 'dress-shirt', bottomWear: 'chinos', footwear: 'loafers', accessory: '' } },
-    { id: 'streetwear', label: '스트릿웨어', keywords: ['스트릿', 'streetwear', '힙합', '도시', '언더그라운드'], description: '오버사이즈 후디, 카고 팬츠, 하이탑 스니커즈', values: { topWear: 'hoodie', bottomWear: 'cargo-pants', footwear: 'high-tops', accessory: 'baseball-cap' } },
-    { id: 'hiphop', label: '힙합 패션', keywords: ['힙합', 'hiphop', '래퍼', '골드체인', '블링블링'], description: '그래픽 티, 배기진, 하이탑, 골드체인 래퍼 스타일', values: { topWear: 'graphic-tee', bottomWear: 'baggy-jeans', footwear: 'high-tops', accessory: 'gold-chain' } },
-    { id: 'wedding-dress', label: '웨딩 드레스', keywords: ['웨딩', 'wedding', '신부', '결혼식', '드레스'], description: '레이스 웨딩드레스, 베일, 다이아몬드 귀걸이', values: { topWear: 'wedding-dress', bottomWear: '', footwear: 'white-heels', accessory: 'veil' } },
-    { id: 'tuxedo', label: '턱시도', keywords: ['턱시도', 'tuxedo', '신랑', '결혼식', '갈라'], description: '블랙 턱시도, 보타이, 에나멜 구두', values: { topWear: 'tuxedo', bottomWear: 'tuxedo-pants', footwear: 'patent-leather', accessory: 'bow-tie' } },
-    { id: 'korean-hanbok', label: '한복', keywords: ['한복', 'hanbok', '전통', '한국', '설날'], description: '한국 전통 의상, 저고리, 치마, 비녀', values: { topWear: 'hanbok-jeogori', bottomWear: 'hanbok-chima', footwear: 'gomusin', accessory: 'binyeo' } },
-    { id: 'summer', label: '여름 패션', keywords: ['여름', 'summer', '시원', '바캉스', '해변'], description: '블라우스, 반바지, 샌들, 선글라스', values: { topWear: 'blouse', bottomWear: 'shorts', footwear: 'sandals', accessory: 'sunglasses' } },
-    { id: 'winter', label: '겨울 패션', keywords: ['겨울', 'winter', '따뜻', '코트', '눈'], description: '울 코트, 청바지, 부츠, 비니', values: { topWear: 'wool-coat', bottomWear: 'blue-jeans', footwear: 'ankle-boots', accessory: 'beanie' } },
-    { id: 'athletic', label: '스포츠웨어', keywords: ['운동복', 'athletic', '스포츠', '헬스', '요가'], description: '탱크탑, 요가 팬츠, 러닝화의 운동 룩', values: { topWear: 'tank-top', bottomWear: 'yoga-pants', footwear: 'running-shoes', accessory: 'watch' } },
-    { id: 'bohemian', label: '보헤미안', keywords: ['보헤미안', 'bohemian', '히피', '자유로운', '빈티지'], description: '블라우스, 맥시 스커트, 샌들', values: { topWear: 'blouse', bottomWear: 'maxi-skirt', footwear: 'sandals', accessory: 'earrings' } },
-    { id: 'punk', label: '펑크', keywords: ['펑크', 'punk', '록', '반항', '가죽'], description: '가죽 재킷, 스키니진, 컴뱃 부츠', values: { topWear: 'leather-jacket', bottomWear: 'skinny-jeans', footwear: 'combat-boots', accessory: 'choker' } },
-    { id: 'minimalist', label: '미니멀', keywords: ['미니멀', 'minimalist', '심플', '단순', '깔끔'], description: '블랙 터틀넥, 블랙 팬츠의 심플한 룩', values: { topWear: 'turtleneck', bottomWear: 'dress-pants', footwear: 'white-sneakers', accessory: '' } },
-    { id: 'preppy', label: '프레피', keywords: ['프레피', 'preppy', '교복', '학생', '아이비리그'], description: '폴로 셔츠, 가디건, 플리츠 스커트', values: { topWear: 'polo-shirt', bottomWear: 'pleated-skirt', footwear: 'loafers', accessory: '' } },
-    { id: 'gothic', label: '고스', keywords: ['고스', 'gothic', '다크', '검은색', '뱀파이어'], description: '코르셋, 맥시 스커트, 플랫폼 부츠', values: { topWear: 'corset', bottomWear: 'maxi-skirt', footwear: 'platform-shoes', accessory: 'choker' } },
-    { id: 'vintage', label: '빈티지', keywords: ['빈티지', 'vintage', '레트로', '50년대', '클래식'], description: '캐주얼 드레스, 메리 제인 힐, 진주 귀걸이', values: { topWear: 'casual-dress', bottomWear: '', footwear: 'mary-janes', accessory: 'pearl-necklace' } },
-    { id: 'swimwear', label: '수영복', keywords: ['수영복', 'swimwear', '비키니', '해변', '수영장'], description: '비키니, 플립플롭, 밀짚모자의 비치 룩', values: { topWear: 'bikini-top', bottomWear: 'bikini-bottom', footwear: 'flip-flops', accessory: 'straw-hat' } },
-    { id: 'pajamas', label: '잠옷', keywords: ['잠옷', 'pajamas', '홈웨어', '실크', '편안'], description: '스웨터, 조거 팬츠, 슬리퍼', values: { topWear: 'sweater', bottomWear: 'joggers', footwear: 'slippers', accessory: '' } },
-    { id: 'uniform', label: '유니폼', keywords: ['유니폼', 'uniform', '제복', '근무복', '직원'], description: '드레스 셔츠, 드레스 팬츠, 가죽구두, 넥타이', values: { topWear: 'dress-shirt', bottomWear: 'dress-pants', footwear: 'leather-shoes', accessory: 'necktie' } },
+    { id: 'casual', label: '캐주얼', keywords: ['캐주얼', 'casual', '편한', '일상', '데일리'], description: '흰 티셔츠, 청바지, 스니커즈의 편안한 룩', tags: ['unisex', 'teen', 'adult', 'senior'], values: { topWear: 'white-tshirt', bottomWear: 'blue-jeans', footwear: 'white-sneakers', accessory: '' } },
+    { id: 'formal', label: '포멀', keywords: ['포멀', 'formal', '정장', '비즈니스', '면접'], description: '검은 정장, 드레스 팬츠, 구두, 넥타이', tags: ['male', 'adult', 'formal'], values: { topWear: 'suit-jacket', bottomWear: 'dress-pants', footwear: 'leather-shoes', accessory: 'necktie' } },
+    { id: 'business-casual', label: '비즈니스 캐주얼', keywords: ['비즈니스', 'business', '오피스', '사무실', '직장'], description: '드레스 셔츠, 치노 팬츠, 로퍼의 오피스 룩', tags: ['unisex', 'adult', 'formal'], values: { topWear: 'dress-shirt', bottomWear: 'chinos', footwear: 'loafers', accessory: '' } },
+    { id: 'streetwear', label: '스트릿웨어', keywords: ['스트릿', 'streetwear', '힙합', '도시', '언더그라운드'], description: '오버사이즈 후디, 카고 팬츠, 하이탑 스니커즈', tags: ['unisex', 'teen', 'adult'], values: { topWear: 'hoodie', bottomWear: 'cargo-pants', footwear: 'high-tops', accessory: 'baseball-cap' } },
+    { id: 'hiphop', label: '힙합 패션', keywords: ['힙합', 'hiphop', '래퍼', '골드체인', '블링블링'], description: '그래픽 티, 배기진, 하이탑, 골드체인 래퍼 스타일', tags: ['unisex', 'teen', 'adult'], values: { topWear: 'graphic-tee', bottomWear: 'baggy-jeans', footwear: 'high-tops', accessory: 'gold-chain' } },
+    { id: 'wedding-dress', label: '웨딩 드레스', keywords: ['웨딩', 'wedding', '신부', '결혼식', '드레스'], description: '레이스 웨딩드레스, 베일, 다이아몬드 귀걸이', tags: ['female', 'adult', 'formal'], values: { topWear: 'wedding-dress', bottomWear: '', footwear: 'white-heels', accessory: 'veil' } },
+    { id: 'tuxedo', label: '턱시도', keywords: ['턱시도', 'tuxedo', '신랑', '결혼식', '갈라'], description: '블랙 턱시도, 보타이, 에나멜 구두', tags: ['male', 'adult', 'formal'], values: { topWear: 'tuxedo', bottomWear: 'tuxedo-pants', footwear: 'patent-leather', accessory: 'bow-tie' } },
+    { id: 'korean-hanbok', label: '한복', keywords: ['한복', 'hanbok', '전통', '한국', '설날'], description: '한국 전통 의상, 저고리, 치마, 비녀', tags: ['unisex', 'child', 'teen', 'adult', 'senior'], values: { topWear: 'hanbok-jeogori', bottomWear: 'hanbok-chima', footwear: 'gomusin', accessory: 'binyeo' } },
+    { id: 'summer', label: '여름 패션', keywords: ['여름', 'summer', '시원', '바캉스', '해변'], description: '블라우스, 반바지, 샌들, 선글라스', tags: ['unisex', 'teen', 'adult'], values: { topWear: 'blouse', bottomWear: 'shorts', footwear: 'sandals', accessory: 'sunglasses' } },
+    { id: 'winter', label: '겨울 패션', keywords: ['겨울', 'winter', '따뜻', '코트', '눈'], description: '울 코트, 청바지, 부츠, 비니', tags: ['unisex', 'teen', 'adult', 'senior'], values: { topWear: 'wool-coat', bottomWear: 'blue-jeans', footwear: 'ankle-boots', accessory: 'beanie' } },
+    { id: 'athletic', label: '스포츠웨어', keywords: ['운동복', 'athletic', '스포츠', '헬스', '요가'], description: '탱크탑, 요가 팬츠, 러닝화의 운동 룩', tags: ['unisex', 'teen', 'adult', 'athletic'], values: { topWear: 'tank-top', bottomWear: 'yoga-pants', footwear: 'running-shoes', accessory: 'watch' } },
+    { id: 'bohemian', label: '보헤미안', keywords: ['보헤미안', 'bohemian', '히피', '자유로운', '빈티지'], description: '블라우스, 맥시 스커트, 샌들', tags: ['female', 'adult'], values: { topWear: 'blouse', bottomWear: 'maxi-skirt', footwear: 'sandals', accessory: 'earrings' } },
+    { id: 'punk', label: '펑크', keywords: ['펑크', 'punk', '록', '반항', '가죽'], description: '가죽 재킷, 스키니진, 컴뱃 부츠', tags: ['unisex', 'teen', 'adult'], values: { topWear: 'leather-jacket', bottomWear: 'skinny-jeans', footwear: 'combat-boots', accessory: 'choker' } },
+    { id: 'minimalist', label: '미니멀', keywords: ['미니멀', 'minimalist', '심플', '단순', '깔끔'], description: '블랙 터틀넥, 블랙 팬츠의 심플한 룩', tags: ['unisex', 'adult', 'formal'], values: { topWear: 'turtleneck', bottomWear: 'dress-pants', footwear: 'white-sneakers', accessory: '' } },
+    { id: 'preppy', label: '프레피', keywords: ['프레피', 'preppy', '교복', '학생', '아이비리그'], description: '폴로 셔츠, 가디건, 플리츠 스커트', tags: ['unisex', 'teen', 'adult'], values: { topWear: 'polo-shirt', bottomWear: 'pleated-skirt', footwear: 'loafers', accessory: '' } },
+    { id: 'gothic', label: '고스', keywords: ['고스', 'gothic', '다크', '검은색', '뱀파이어'], description: '코르셋, 맥시 스커트, 플랫폼 부츠', tags: ['female', 'teen', 'adult'], values: { topWear: 'corset', bottomWear: 'maxi-skirt', footwear: 'platform-shoes', accessory: 'choker' } },
+    { id: 'vintage', label: '빈티지', keywords: ['빈티지', 'vintage', '레트로', '50년대', '클래식'], description: '캐주얼 드레스, 메리 제인 힐, 진주 귀걸이', tags: ['female', 'adult'], values: { topWear: 'casual-dress', bottomWear: '', footwear: 'mary-janes', accessory: 'pearl-necklace' } },
+    { id: 'swimwear', label: '수영복', keywords: ['수영복', 'swimwear', '비키니', '해변', '수영장'], description: '비키니, 플립플롭, 밀짚모자의 비치 룩', tags: ['female', 'teen', 'adult'], values: { topWear: 'bikini-top', bottomWear: 'bikini-bottom', footwear: 'flip-flops', accessory: 'straw-hat' } },
+    { id: 'pajamas', label: '잠옷', keywords: ['잠옷', 'pajamas', '홈웨어', '실크', '편안'], description: '스웨터, 조거 팬츠, 슬리퍼', tags: ['unisex', 'child', 'teen', 'adult', 'senior'], values: { topWear: 'sweater', bottomWear: 'joggers', footwear: 'slippers', accessory: '' } },
+    { id: 'uniform', label: '유니폼', keywords: ['유니폼', 'uniform', '제복', '근무복', '직원'], description: '드레스 셔츠, 드레스 팬츠, 가죽구두, 넥타이', tags: ['unisex', 'adult', 'formal'], values: { topWear: 'dress-shirt', bottomWear: 'dress-pants', footwear: 'leather-shoes', accessory: 'necktie' } },
 ];
 
 // ===== D: 포즈 프리셋 (20개) =====

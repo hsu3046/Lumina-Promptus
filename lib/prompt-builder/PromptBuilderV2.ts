@@ -111,6 +111,13 @@ export class PromptBuilderV2 {
                 locked: false
             });
         }
+
+        // 사진 비율 (Aspect Ratio)
+        this.setSlot('aspect_ratio', this.getAspectRatio(), {
+            priority: 7,
+            source: 'deterministic',
+            locked: false
+        });
     }
 
     // Studio 모드 피사체 프롬프트 생성
@@ -335,17 +342,19 @@ export class PromptBuilderV2 {
         const parts: string[] = [];
         const isStudioMode = this.settings.artDirection.lensCharacteristicType === 'studio';
 
-        // 1. category 정보
+        // 1. focalLength + category 조합 (예: "24mm wide lens look")
         const categoryMap: Record<string, string> = {
-            ultra_wide: 'ultra wide angle',
-            wide: 'wide angle',
+            ultra_wide: 'ultra wide',
+            wide: 'wide',
             standard: 'standard',
             medium_telephoto: 'medium telephoto',
             telephoto: 'telephoto',
             macro: 'macro'
         };
-        if (lens.category && categoryMap[lens.category]) {
-            parts.push(categoryMap[lens.category]);
+        if (lens.focalLength && lens.category && categoryMap[lens.category]) {
+            parts.push(`${lens.focalLength} ${categoryMap[lens.category]} lens look`);
+        } else if (lens.focalLength) {
+            parts.push(`${lens.focalLength} lens`);
         }
 
         // 현재 조리개가 maxAperture인지 확인
@@ -381,7 +390,7 @@ export class PromptBuilderV2 {
     }
 
     private getCameraSettings(): string {
-        const { iso, aperture, whiteBalance, shutterSpeed } = this.settings.camera;
+        const { iso, aperture, whiteBalance, shutterSpeed, isoAuto, shutterSpeedAuto, apertureAuto } = this.settings.camera;
         const parts: string[] = [];
 
         const isStudioMode = this.settings.artDirection.lensCharacteristicType === 'studio';
@@ -395,8 +404,8 @@ export class PromptBuilderV2 {
 
         // 라이팅 OFF: 언어 표현 매핑 사용
 
-        // ISO → 그레인 표현
-        if (iso) {
+        // ISO → 그레인 표현 (Auto가 아닐 때만)
+        if (!isoAuto && iso) {
             if (iso <= 200) {
                 parts.push('clean, noise-free image');
             } else if (iso <= 800) {
@@ -421,8 +430,8 @@ export class PromptBuilderV2 {
             }
         }
 
-        // 셔터스피드 → 모션 표현 (극단적인 경우만)
-        if (shutterSpeed) {
+        // 셔터스피드 → 모션 표현 (Auto가 아닐 때만, 극단적인 경우만)
+        if (!shutterSpeedAuto && shutterSpeed) {
             const shutterNum = this.parseShutterSpeed(shutterSpeed);
             if (shutterNum <= 1 / 15) {
                 parts.push('motion blur, long exposure');
@@ -468,9 +477,9 @@ export class PromptBuilderV2 {
         if (this.settings.artDirection.compositionRule) {
             const compositionMap: Record<string, string> = {
                 'rule_of_thirds': 'rule of thirds composition',
-                'golden_ratio': 'golden ratio composition, fibonacci spiral',
+                'golden_ratio': 'naturally balanced composition',
                 'center': 'centered composition, symmetrical framing',
-                'leading_lines': 'leading lines composition, visual flow',
+                'leading_lines': 'leading lines composition',
                 'symmetry': 'perfect symmetry, mirror composition'
             };
             parts.push(compositionMap[this.settings.artDirection.compositionRule] || '');
@@ -478,9 +487,9 @@ export class PromptBuilderV2 {
 
         if (this.settings.artDirection.cameraAngle) {
             const angleMap: Record<string, string> = {
-                'eye_level': 'eye level angle, straight-on view',
-                'high_angle': 'high angle shot, looking down',
-                'low_angle': 'low angle shot, looking up',
+                'eye_level': 'eye level angle',
+                'high_angle': 'high angle shot',
+                'low_angle': 'low angle shot',
                 'birds_eye': 'bird\'s eye view, top-down perspective',
                 'worms_eye': 'worm\'s eye view, extreme low angle',
                 'drone': 'aerial drone shot, cinematic overhead view'
@@ -490,6 +499,32 @@ export class PromptBuilderV2 {
 
         return parts.filter(Boolean).join(', ');
     }
+
+    private getAspectRatio(): string {
+        const { aspectRatio, orientation } = this.settings.camera;
+        if (!aspectRatio) return '';
+
+        // 가로/세로에 따른 실제 비율 계산
+        const displayRatio = orientation === 'portrait'
+            ? aspectRatio.split(':').reverse().join(':')
+            : aspectRatio;
+
+        // 비율별 설명
+        const ratioDescriptions: Record<string, string> = {
+            '3:2': 'classic 35mm film aspect ratio',
+            '2:3': 'vertical portrait format',
+            '4:3': 'traditional photo format',
+            '3:4': 'vertical traditional format',
+            '16:9': 'cinematic widescreen format',
+            '9:16': 'vertical video format',
+            '1:1': 'square format',
+            '4:5': 'Instagram portrait format',
+            '5:4': 'large format photography',
+        };
+
+        return ratioDescriptions[displayRatio] || `${displayRatio} aspect ratio`;
+    }
+
 
 
     // ===== 우선순위 적용 =====
