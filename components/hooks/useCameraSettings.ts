@@ -30,7 +30,7 @@ export interface ExposureInfo {
     currentEV: number;
     targetEV: number;
     difference: number;
-    status: 'overexposed' | 'underexposed' | 'normal';
+    status: import('@/lib/exposure-calculator').ExposureStatusLevel;
 }
 
 export function useCameraSettings() {
@@ -48,19 +48,22 @@ export function useCameraSettings() {
         return maxIdx >= 0 ? APERTURE_STOPS.slice(maxIdx) : APERTURE_STOPS;
     }, [selectedLens]);
 
-    // 노출 계산
+    // 노출 계산 (exposureCompensation 반영)
     const exposureInfo: ExposureInfo = useMemo(() => {
         const currentEV = calculateEV(camera.aperture, camera.shutterSpeed, camera.iso);
-        const targetEV = TARGET_EV_BY_CHARACTERISTIC[artDirection.lensCharacteristicType] || 12;
+        const baseTargetEV = TARGET_EV_BY_CHARACTERISTIC[artDirection.lensCharacteristicType] || 12;
+        // +EV = 밝게 = targetEV 감소, -EV = 어둡게 = targetEV 증가
+        const targetEV = baseTargetEV - camera.exposureCompensation;
         const difference = getEVDifference(camera.aperture, camera.shutterSpeed, camera.iso, targetEV);
         const status = getExposureStatus(difference);
         return { currentEV, targetEV, difference, status };
-    }, [camera.aperture, camera.shutterSpeed, camera.iso, artDirection.lensCharacteristicType]);
+    }, [camera.aperture, camera.shutterSpeed, camera.iso, camera.exposureCompensation, artDirection.lensCharacteristicType]);
 
     // Auto 토글 핸들러
     const handleAutoToggle = (type: 'aperture' | 'shutter' | 'iso') => {
-        const { aperture, shutterSpeed, iso, apertureAuto, shutterSpeedAuto, isoAuto } = camera;
-        const targetEV = TARGET_EV_BY_CHARACTERISTIC[artDirection.lensCharacteristicType] || 12;
+        const { aperture, shutterSpeed, iso, apertureAuto, shutterSpeedAuto, isoAuto, exposureCompensation } = camera;
+        const baseTargetEV = TARGET_EV_BY_CHARACTERISTIC[artDirection.lensCharacteristicType] || 12;
+        const targetEV = baseTargetEV - exposureCompensation;
 
         switch (type) {
             case 'aperture':
@@ -95,8 +98,9 @@ export function useCameraSettings() {
 
     // 수동 값 변경 핸들러
     const handleManualChange = (type: 'aperture' | 'shutter' | 'iso', value: string | number) => {
-        const { apertureAuto, shutterSpeedAuto, isoAuto } = camera;
-        const targetEV = TARGET_EV_BY_CHARACTERISTIC[artDirection.lensCharacteristicType] || 12;
+        const { apertureAuto, shutterSpeedAuto, isoAuto, exposureCompensation } = camera;
+        const baseTargetEV = TARGET_EV_BY_CHARACTERISTIC[artDirection.lensCharacteristicType] || 12;
+        const targetEV = baseTargetEV - exposureCompensation;
 
         switch (type) {
             case 'aperture':

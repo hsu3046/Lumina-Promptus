@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Lightbulb, AlertTriangle } from 'lucide-react';
+import { Lightbulb, AlertTriangle, AlertCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -23,12 +23,25 @@ import { useCameraSettings } from '@/components/hooks/useCameraSettings';
 import { CAMERA_BODIES_BY_BRAND, getCameraById } from '@/config/mappings/cameras';
 import { getLensesByMount, LENS_CATEGORY_LABELS, getLensById } from '@/config/mappings/lenses';
 import type { Lens } from '@/types';
+import type { ExposureStatusLevel } from '@/lib/exposure-calculator';
 
 // 카메라 브랜드 정렬 순서
 const BRAND_ORDER = ['Canon', 'Nikon', 'Sony', 'Fujifilm', 'Leica', 'Hasselblad', 'Pentax'];
 
 // 카테고리 정렬 순서
 const CATEGORY_ORDER: Lens['category'][] = ['ultra_wide', 'wide', 'standard', 'medium_telephoto', 'telephoto', 'macro'];
+
+// 노출 상태별 스타일 헬퍼
+function getExposureStatusStyle(status: ExposureStatusLevel): { color: string; icon: 'critical' | 'warning' | 'none' } {
+    if (status.startsWith('critical_')) {
+        return { color: 'text-red-500', icon: 'critical' };
+    }
+    if (status.startsWith('warning_')) {
+        return { color: 'text-amber-400', icon: 'warning' };
+    }
+    // slight와 normal은 경고 표시 없음
+    return { color: 'text-amber-400', icon: 'none' };
+}
 
 export function CameraTab() {
     const { settings, updateCamera } = useSettingsStore();
@@ -122,8 +135,8 @@ export function CameraTab() {
     }, []);
 
     return (
-        <Card className="bg-zinc-900/50 border-zinc-800/50">
-            <CardContent className="pt-3 space-y-6">
+        <Card className="bg-zinc-900/50 border-zinc-800/50 py-4 gap-2">
+            <CardContent className="space-y-4">
                 {/* 카메라 바디 / 렌즈 - 2줄 배치 */}
                 <div className="grid grid-cols-2 gap-4">
                     {/* 카메라 바디 (브랜드별 그룹) */}
@@ -186,26 +199,30 @@ export function CameraTab() {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Label>조리개</Label>
-                            <div className="flex items-center gap-1">
-                                <Switch
-                                    checked={settings.camera.apertureAuto}
-                                    onCheckedChange={() => handleAutoToggle('aperture')}
-                                />
-                                <span className="text-xs text-zinc-500">Auto</span>
-                            </div>
+                            {!lightingEnabled && (
+                                <div className="flex items-center gap-1">
+                                    <Switch
+                                        checked={settings.camera.apertureAuto}
+                                        onCheckedChange={() => handleAutoToggle('aperture')}
+                                    />
+                                    <span className="text-xs text-zinc-500">Auto</span>
+                                </div>
+                            )}
                         </div>
                         <div className="flex items-center gap-1">
-                            {!settings.camera.apertureAuto && exposureInfo.status !== 'normal' && (
-                                <AlertTriangle className="w-4 h-4 text-red-500" />
-                            )}
-                            <span
-                                className={`text-sm font-mono ${!settings.camera.apertureAuto && exposureInfo.status !== 'normal'
-                                    ? 'text-red-500'
-                                    : 'text-amber-400'
-                                    }`}
-                            >
-                                {settings.camera.aperture}
-                            </span>
+                            {(() => {
+                                const style = getExposureStatusStyle(exposureInfo.status);
+                                const showIcon = !lightingEnabled && !settings.camera.apertureAuto && style.icon !== 'none';
+                                return (
+                                    <>
+                                        {showIcon && style.icon === 'critical' && <AlertCircle className={`w-4 h-4 ${style.color}`} />}
+                                        {showIcon && style.icon === 'warning' && <AlertTriangle className={`w-4 h-4 ${style.color}`} />}
+                                        <span className={`text-sm font-mono ${!settings.camera.apertureAuto && style.icon !== 'none' ? style.color : 'text-amber-400'}`}>
+                                            {settings.camera.aperture}
+                                        </span>
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
                     <Slider
@@ -217,7 +234,7 @@ export function CameraTab() {
                         className="py-1"
                         disabled={settings.camera.apertureAuto}
                     />
-                    <div className="flex justify-between text-xs text-zinc-500">
+                    <div className="flex justify-between text-xs text-zinc-500 -mt-2">
                         <span>{apertureStops[0]}</span>
                         <span>{apertureStops[apertureStops.length - 1]}</span>
                     </div>
@@ -230,7 +247,7 @@ export function CameraTab() {
                             <Label>셔터 스피드</Label>
                             {lightingEnabled ? (
                                 <Badge className="bg-amber-600 text-white">
-                                    <Lightbulb className="w-3 h-3" /> Lights On
+                                    <Lightbulb className="w-3 h-3" /> 조명 촬영
                                 </Badge>
                             ) : (
                                 <div className="flex items-center gap-1">
@@ -243,21 +260,23 @@ export function CameraTab() {
                             )}
                         </div>
                         <div className="flex items-center gap-1">
-                            {!lightingEnabled && !settings.camera.shutterSpeedAuto && exposureInfo.status !== 'normal' && (
-                                <AlertTriangle className="w-4 h-4 text-red-500" />
-                            )}
-                            <span
-                                className={`text-sm font-mono ${!lightingEnabled && !settings.camera.shutterSpeedAuto && exposureInfo.status !== 'normal'
-                                    ? 'text-red-500'
-                                    : 'text-amber-400'
-                                    }`}
-                            >
-                                {lightingEnabled ? '1/200' : settings.camera.shutterSpeed}
-                            </span>
+                            {(() => {
+                                const style = getExposureStatusStyle(exposureInfo.status);
+                                const showIcon = !lightingEnabled && !settings.camera.shutterSpeedAuto && style.icon !== 'none';
+                                return (
+                                    <>
+                                        {showIcon && style.icon === 'critical' && <AlertCircle className={`w-4 h-4 ${style.color}`} />}
+                                        {showIcon && style.icon === 'warning' && <AlertTriangle className={`w-4 h-4 ${style.color}`} />}
+                                        <span className={`text-sm font-mono ${lightingEnabled ? 'text-zinc-500' : (showIcon ? style.color : 'text-amber-400')}`}>
+                                            {lightingEnabled ? '1/125' : settings.camera.shutterSpeed}
+                                        </span>
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
                     <Slider
-                        value={[Math.max(0, shutterStops.indexOf(lightingEnabled ? '1/200' : settings.camera.shutterSpeed))]}
+                        value={[Math.max(0, shutterStops.indexOf(lightingEnabled ? '1/125' : settings.camera.shutterSpeed))]}
                         min={0}
                         max={shutterStops.length - 1}
                         step={1}
@@ -265,7 +284,7 @@ export function CameraTab() {
                         className="py-1"
                         disabled={lightingEnabled || settings.camera.shutterSpeedAuto}
                     />
-                    <div className="flex justify-between text-xs text-zinc-500">
+                    <div className="flex justify-between text-xs text-zinc-500 -mt-2">
                         <span>{shutterStops[0]}s</span>
                         <span>{shutterStops[shutterStops.length - 1]}s</span>
                     </div>
@@ -278,7 +297,7 @@ export function CameraTab() {
                             <Label>ISO</Label>
                             {lightingEnabled ? (
                                 <Badge className="bg-amber-600 text-white">
-                                    <Lightbulb className="w-3 h-3" /> Lights On
+                                    <Lightbulb className="w-3 h-3" /> 조명 촬영
                                 </Badge>
                             ) : (
                                 <div className="flex items-center gap-1">
@@ -291,17 +310,19 @@ export function CameraTab() {
                             )}
                         </div>
                         <div className="flex items-center gap-1">
-                            {!lightingEnabled && !settings.camera.isoAuto && exposureInfo.status !== 'normal' && (
-                                <AlertTriangle className="w-4 h-4 text-red-500" />
-                            )}
-                            <span
-                                className={`text-sm font-mono ${!lightingEnabled && !settings.camera.isoAuto && exposureInfo.status !== 'normal'
-                                    ? 'text-red-500'
-                                    : 'text-amber-400'
-                                    }`}
-                            >
-                                {lightingEnabled ? '100' : settings.camera.iso}
-                            </span>
+                            {(() => {
+                                const style = getExposureStatusStyle(exposureInfo.status);
+                                const showIcon = !lightingEnabled && !settings.camera.isoAuto && style.icon !== 'none';
+                                return (
+                                    <>
+                                        {showIcon && style.icon === 'critical' && <AlertCircle className={`w-4 h-4 ${style.color}`} />}
+                                        {showIcon && style.icon === 'warning' && <AlertTriangle className={`w-4 h-4 ${style.color}`} />}
+                                        <span className={`text-sm font-mono ${lightingEnabled ? 'text-zinc-500' : (showIcon ? style.color : 'text-amber-400')}`}>
+                                            {lightingEnabled ? '100' : settings.camera.iso}
+                                        </span>
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
                     <Slider
@@ -313,9 +334,70 @@ export function CameraTab() {
                         className="py-1"
                         disabled={lightingEnabled || settings.camera.isoAuto}
                     />
-                    <div className="flex justify-between text-xs text-zinc-500">
+                    <div className="flex justify-between text-xs text-zinc-500 -mt-2">
                         <span>{isoStops[0]}</span>
                         <span>{isoStops[isoStops.length - 1]}</span>
+                    </div>
+                </div>
+
+                {/* 노출 보정 (EV) */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Label>노출 보정</Label>
+                            {lightingEnabled && (
+                                <Badge className="bg-amber-600 text-white">
+                                    <Lightbulb className="w-3 h-3" /> 조명 촬영
+                                </Badge>
+                            )}
+                        </div>
+                        <span className={`text-sm font-mono ${lightingEnabled ? 'text-zinc-500' : 'text-amber-400'}`}>
+                            {lightingEnabled ? '0' : (settings.camera.exposureCompensation > 0 ? '+' : '') + settings.camera.exposureCompensation} EV
+                        </span>
+                    </div>
+                    <Slider
+                        value={[lightingEnabled ? 0 : settings.camera.exposureCompensation]}
+                        min={-3}
+                        max={3}
+                        step={0.3}
+                        onValueChange={([val]) => updateCamera({ exposureCompensation: Math.round(val * 10) / 10 })}
+                        className="py-1"
+                        disabled={lightingEnabled}
+                    />
+                    <div className="flex justify-between text-xs text-zinc-500 -mt-2">
+                        <span>-3 EV</span>
+                        <span>0</span>
+                        <span>+3 EV</span>
+                    </div>
+                </div>
+
+                {/* 색온도 (White Balance) */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Label>색온도</Label>
+                            {lightingEnabled && (
+                                <Badge className="bg-amber-600 text-white">
+                                    <Lightbulb className="w-3 h-3" /> 조명 촬영
+                                </Badge>
+                            )}
+                        </div>
+                        <span className={`text-sm font-mono ${lightingEnabled ? 'text-zinc-500' : 'text-amber-400'}`}>
+                            {lightingEnabled ? '5600' : settings.camera.whiteBalance}K
+                        </span>
+                    </div>
+                    <Slider
+                        value={[lightingEnabled ? 5600 : settings.camera.whiteBalance]}
+                        min={2500}
+                        max={10000}
+                        step={100}
+                        onValueChange={([val]) => updateCamera({ whiteBalance: val })}
+                        className="py-1"
+                        disabled={lightingEnabled}
+                    />
+                    <div className="flex justify-between text-xs text-zinc-500 -mt-2">
+                        <span>2500K</span>
+                        <span>10000K</span>
                     </div>
                 </div>
 

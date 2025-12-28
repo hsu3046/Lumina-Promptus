@@ -128,14 +128,15 @@ export const SLOT_ORDER_BY_PRIORITY = PROMPT_SLOTS
     .map(slot => slot.id);
 
 // Nano Banana Pro용 프롬프트 조합 순서
+// 스펙: [피사체] + [라이팅] + [카메라/렌즈]
 export const NANO_BANANA_PRO_SLOT_ORDER = [
-    'meta_tokens',
-    'camera_body',
-    'lens',
-    'camera_settings',
-    'lighting',
-    'subject',
-    'composition',
+    'subject',          // 1. 피사체
+    'composition',      // 1-1. 구도 (피사체의 일부)
+    'lighting',         // 2. 라이팅
+    'meta_tokens',      // 3. 카메라 metaToken
+    'camera_body',      // 3-1. 카메라 바디
+    'lens',             // 3-2. 렌즈
+    'camera_settings',  // 3-3. 카메라 설정 (라이팅 OFF일 때만)
     'color_grading',
     'style',
     'quality'

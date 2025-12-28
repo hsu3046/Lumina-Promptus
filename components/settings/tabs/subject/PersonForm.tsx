@@ -32,7 +32,7 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
             {/* 기본 필드: 인종, 성별, 나이, 체형 (4개) */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <div className="space-y-1">
-                    <Label className="text-xs">인종</Label>
+                    <Label className="text-[10px] text-zinc-500">인종</Label>
                     <Select
                         value={subject.ethnicity}
                         onValueChange={(v) => onUpdate({ ethnicity: v as StudioSubject['ethnicity'] })}
@@ -51,7 +51,7 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
                     </Select>
                 </div>
                 <div className="space-y-1">
-                    <Label className="text-xs">성별</Label>
+                    <Label className="text-[10px] text-zinc-500">성별</Label>
                     <Select
                         value={subject.gender}
                         onValueChange={(v) => {
@@ -69,7 +69,7 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
                     </Select>
                 </div>
                 <div className="space-y-1">
-                    <Label className="text-xs">나이</Label>
+                    <Label className="text-[10px] text-zinc-500">나이</Label>
                     <Select
                         value={subject.ageGroup}
                         onValueChange={(v) => onUpdate({ ageGroup: v as StudioSubject['ageGroup'] })}
@@ -89,7 +89,7 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
                     </Select>
                 </div>
                 <div className="space-y-1">
-                    <Label className="text-xs">체형</Label>
+                    <Label className="text-[10px] text-zinc-500">체형</Label>
                     <Select
                         value={subject.bodyType}
                         onValueChange={(v) => onUpdate({ bodyType: v as StudioSubject['bodyType'] })}
@@ -114,7 +114,7 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
                     {/* 머리색, 헤어스타일, 눈동자색, 시선 (4개) */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                         <div className="space-y-1">
-                            <Label className="text-xs">머리색</Label>
+                            <Label className="text-[10px] text-zinc-500">머리색</Label>
                             <Select
                                 value={subject.hairColor}
                                 onValueChange={(v) => onUpdate({ hairColor: v as StudioSubject['hairColor'] })}
@@ -133,7 +133,7 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
                             </Select>
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">헤어스타일</Label>
+                            <Label className="text-[10px] text-zinc-500">헤어스타일</Label>
                             <Select
                                 value={subject.hairStyle}
                                 onValueChange={(v) => onUpdate({ hairStyle: v as StudioSubject['hairStyle'] })}
@@ -167,7 +167,7 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
                             </Select>
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">포즈</Label>
+                            <Label className="text-[10px] text-zinc-500">포즈</Label>
                             <Select
                                 value={subject.pose}
                                 onValueChange={(v) => onUpdate({ pose: v as StudioSubject['pose'] })}
@@ -185,7 +185,7 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
                             </Select>
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">시선</Label>
+                            <Label className="text-[10px] text-zinc-500">시선</Label>
                             <Select
                                 value={subject.gazeDirection}
                                 onValueChange={(v) => onUpdate({ gazeDirection: v as StudioSubject['gazeDirection'] })}
@@ -205,7 +205,7 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
 
                     {/* 패션 */}
                     <div className="space-y-1">
-                        <Label className="text-xs">패션</Label>
+                        <Label className="text-[10px] text-zinc-500">패션</Label>
                         <input
                             type="text"
                             placeholder="예: 하얀 셔츠와 검은 슬랙스..."

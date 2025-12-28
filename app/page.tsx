@@ -1,9 +1,17 @@
 'use client';
 
-import { Sparkles } from 'lucide-react';
+import { Sparkles, HelpCircle } from 'lucide-react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { User02Icon, Sun03Icon, Camera02Icon } from '@hugeicons/core-free-icons';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { CharacteristicTypeSelector, PromptPreview } from '@/components/settings';
@@ -30,7 +38,7 @@ export default function Home() {
       });
       updateLighting({
         enabled: true,
-        exposure: 'normal',
+        key: 'mid-key',
       });
     }
   };
@@ -39,7 +47,7 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 text-zinc-50">
       {/* Header */}
       <header className="border-b border-zinc-800/50 bg-zinc-950/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="md:container md:mx-auto px-2 sm:px-4 md:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
               <Sparkles className="w-5 h-5 text-white" />
@@ -49,14 +57,45 @@ export default function Home() {
               <p className="text-xs text-zinc-500">프로페셔널 AI 사진 시뮬레이터</p>
             </div>
           </div>
-          <Badge variant="secondary" className="bg-amber-500/10 text-amber-400 border-amber-500/20">
-            v0.2.0 Refactored
-          </Badge>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-1 text-zinc-400 hover:text-amber-400">
+                <HelpCircle className="w-4 h-4" />
+                <span className="hidden sm:inline">도움말</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px] bg-zinc-900 border-zinc-800">
+              <DialogHeader>
+                <DialogTitle className="text-amber-400">Lumina Promptus 도움말</DialogTitle>
+                <DialogDescription className="text-zinc-400">
+                  프로페셔널 AI 사진 시뮬레이터 사용 가이드
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 text-sm text-zinc-300">
+                <section>
+                  <h3 className="font-medium text-white mb-1">📸 피사체 설정</h3>
+                  <p>인원수, 배경, 구도를 선택하고 상세 옵션으로 인물 특성을 지정합니다.</p>
+                </section>
+                <section>
+                  <h3 className="font-medium text-white mb-1">💡 라이팅 설정</h3>
+                  <p>렘브란트, 버터플라이, 루프, 스플릿 중 조명 패턴을 선택합니다. 디테일 레벨이 높을수록 AI가 더 정확한 조명을 생성합니다.</p>
+                </section>
+                <section>
+                  <h3 className="font-medium text-white mb-1">📷 카메라 설정</h3>
+                  <p>카메라 바디, 렌즈, 조리개, 셔터스피드, ISO를 실제 장비처럼 설정합니다.</p>
+                </section>
+                <section>
+                  <h3 className="font-medium text-white mb-1">✨ 프롬프트 생성</h3>
+                  <p>설정을 완료한 후 "프롬프트 생성" 버튼을 클릭하면 AI 이미지 생성용 프롬프트가 만들어집니다.</p>
+                </section>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+      <main className="md:container md:mx-auto px-2 sm:px-4 md:px-6 py-6 md:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* 설정 패널 (데스크탑: 왼쪽 2/3, 모바일: 전체) */}
           <div className="lg:col-span-2 space-y-6">

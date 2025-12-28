@@ -9,8 +9,8 @@ export function SubjectTab() {
     const characteristicType = settings.artDirection.lensCharacteristicType;
 
     return (
-        <Card className="bg-zinc-900/50 border-zinc-800/50">
-            <CardContent className="space-y-6 pt-3">
+        <Card className="bg-zinc-900/50 border-zinc-800/50 py-4 gap-2">
+            <CardContent className="space-y-4">
                 {/* 타입별 피사체 설정 */}
                 {characteristicType === 'studio' && <StudioSubjectForm />}
 

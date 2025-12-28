@@ -199,10 +199,26 @@ export function getEVDifference(
 }
 
 /**
- * 노출 상태 확인
+ * 노출 상태 확인 (4단계)
+ * - critical: 완전 날아가거나 암전 (±3 EV 이상)
+ * - warning: 과다/부족 노출 (±1.5 ~ ±3 EV)
+ * - slight: 약간 벗어남 (±0.5 ~ ±1.5 EV)
+ * - normal: 정상 (±0.5 EV 이내)
  */
-export function getExposureStatus(evDifference: number, tolerance = 0.5): 'underexposed' | 'normal' | 'overexposed' {
-    if (evDifference < -tolerance) return 'underexposed';
-    if (evDifference > tolerance) return 'overexposed';
+export type ExposureStatusLevel = 'critical_over' | 'critical_under' | 'warning_over' | 'warning_under' | 'slight_over' | 'slight_under' | 'normal';
+
+export function getExposureStatus(evDifference: number): ExposureStatusLevel {
+    // 완전 날아감/암전 (±3 EV 이상)
+    if (evDifference >= 3) return 'critical_over';
+    if (evDifference <= -3) return 'critical_under';
+
+    // 과다/부족 (±1.5 ~ ±3 EV)
+    if (evDifference >= 1.5) return 'warning_over';
+    if (evDifference <= -1.5) return 'warning_under';
+
+    // 약간 벗어남 (±0.5 ~ ±1.5 EV)
+    if (evDifference >= 0.5) return 'slight_over';
+    if (evDifference <= -0.5) return 'slight_under';
+
     return 'normal';
 }

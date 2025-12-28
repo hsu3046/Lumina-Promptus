@@ -266,31 +266,8 @@ export class PromptBuilderV2 {
         const camera = getCameraById(this.settings.camera.bodyId);
         if (!camera) return '';
 
-        // 프롬프트 조합: 1) metaToken, 2) "shot with" + brand + model, 3) 나머지 promptKeywords
-        const parts: string[] = [];
-
-        // 1. metaToken (가장 앞)
-        if (camera.metaToken) {
-            parts.push(camera.metaToken);
-        }
-
-        // 3. 나머지 promptKeywords (metaToken과 "shot with..."가 이미 포함된 경우 제외)
-        if (camera.promptKeywords) {
-            // 기존 promptKeywords에서 metaToken과 "shot with..." 패턴 제거
-            let cleanedKeywords = camera.promptKeywords
-                .replace(new RegExp(`^${camera.metaToken},?\\s*`, 'i'), '')
-                .replace(/shot (with|on) [^,]+,?\s*/i, '')
-                .trim();
-
-            // 선행 쉼표 제거
-            cleanedKeywords = cleanedKeywords.replace(/^,\s*/, '');
-
-            if (cleanedKeywords) {
-                parts.push(cleanedKeywords);
-            }
-        }
-
-        return parts.join(', ');
+        // 스펙: metaToken만 사용
+        return camera.metaToken || '';
     }
 
     private getLens(): string {
@@ -298,18 +275,16 @@ export class PromptBuilderV2 {
         if (!lens) return '';
 
         const parts: string[] = [];
+        const isStudioMode = this.settings.artDirection.lensCharacteristicType === 'studio';
 
-        // 1. brand + model (가장 앞)
-        parts.push(`${lens.brand} ${lens.model}`);
-
-        // 2. category 정보
+        // 1. category 정보
         const categoryMap: Record<string, string> = {
-            ultra_wide: 'ultra wide angle lens',
-            wide: 'wide angle lens',
-            standard: 'standard lens',
-            medium_telephoto: 'medium telephoto lens',
-            telephoto: 'telephoto lens',
-            macro: 'macro lens'
+            ultra_wide: 'ultra wide angle',
+            wide: 'wide angle',
+            standard: 'standard',
+            medium_telephoto: 'medium telephoto',
+            telephoto: 'telephoto',
+            macro: 'macro'
         };
         if (lens.category && categoryMap[lens.category]) {
             parts.push(categoryMap[lens.category]);
@@ -319,87 +294,114 @@ export class PromptBuilderV2 {
         const currentAperture = this.settings.camera.aperture;
         const isMaxAperture = currentAperture === lens.maxAperture;
 
-        // 3. maxAperture 조건부 추가 (현재 설정된 조리개가 maxAperture와 일치하면)
+        // 2. maxAperture 분기 처리
         if (isMaxAperture) {
-            parts.push(`a maximum aperture of ${lens.maxAperture}`);
-        }
+            // maxAperture일 때: bokeh + vignetting
+            if (lens.bokeh) {
+                parts.push(lens.bokeh);
+            }
+            if (lens.vignetting) {
+                parts.push(lens.vignetting);
+            }
+        } else {
+            // 그 외일 때: characteristic_studio (또는 선택된 characteristic 타입)
+            const charType = this.settings.artDirection.lensCharacteristicType;
+            const charKeywords = {
+                studio: lens.characteristic_studio,
+                landscape: lens.characteristic_landscape,
+                architecture: lens.characteristic_architecture,
+                product: lens.characteristic_product,
+                street: lens.characteristic_street,
+            }[charType];
 
-        // 4. bokeh (maxAperture일 때만)
-        if (lens.bokeh && isMaxAperture) {
-            parts.push(lens.bokeh);
-        }
-
-        // 5. 선택된 characteristic 타입에 따른 키워드
-        const charType = this.settings.artDirection.lensCharacteristicType;
-        const charKeywords = {
-            studio: lens.characteristic_studio,
-            landscape: lens.characteristic_landscape,
-            architecture: lens.characteristic_architecture,
-            product: lens.characteristic_product,
-            street: lens.characteristic_street,
-        }[charType];
-
-        if (charKeywords) {
-            parts.push(charKeywords);
-        }
-
-        // 6. vignetting (maxAperture일 때만)
-        if (lens.vignetting && isMaxAperture) {
-            parts.push(lens.vignetting);
+            if (charKeywords) {
+                parts.push(charKeywords);
+            }
         }
 
         return parts.join(', ');
     }
 
     private getCameraSettings(): string {
-        const { iso, aperture, whiteBalance } = this.settings.camera;
+        const { iso, aperture, whiteBalance, shutterSpeed } = this.settings.camera;
         const parts: string[] = [];
 
-        // ISO → Grain/Noise 표현으로 변환
-        if (iso) {
-            if (iso <= 100) {
-                parts.push('clean very low noise image, high dynamic range');
-            } else if (iso <= 400) {
-                parts.push('clean image, smooth tonal transitions');
-            } else if (iso <= 800) {
-                parts.push('slight film grain, natural texture');
-            } else if (iso <= 1600) {
-                parts.push('visible film grain, textured look');
-            } else if (iso <= 3200) {
-                parts.push('prominent grain, artistic noise');
-            } else {
-                parts.push('heavy grain, high ISO aesthetic');
-            }
-        }
-
-        // 조리개
-        if (aperture) {
-            parts.push(`${aperture} aperture`);
-            const fNumber = parseFloat(aperture.replace('f/', ''));
-            if (fNumber <= 2.0) {
-                parts.push('shallow depth of field, beautiful bokeh');
-            } else if (fNumber >= 8) {
-                parts.push('deep depth of field, everything in focus');
-            }
-        }
-
-        // 색온도 (스튜디오 모드에서는 Lighting의 studioColorTemp 사용하므로 생략)
         const isStudioMode = this.settings.artDirection.lensCharacteristicType === 'studio';
-        if (whiteBalance && !isStudioMode) {
-            if (whiteBalance < 4000) {
-                parts.push(`warm ${whiteBalance}K color temperature`);
-            } else if (whiteBalance > 6000) {
-                parts.push(`cool ${whiteBalance}K color temperature`);
+        const isLightingOn = this.settings.lighting.enabled;
+
+        // 스펙: 라이팅 ON일 때는 ISO/셔터/색온도 생략
+        if (isStudioMode && isLightingOn) {
+            // 라이팅 ON: 이 함수에서는 아무것도 추가 안함 (렌즈 특성은 getLens에서 처리)
+            return '';
+        }
+
+        // 라이팅 OFF: 언어 표현 매핑 사용
+
+        // ISO → 그레인 표현
+        if (iso) {
+            if (iso <= 200) {
+                parts.push('clean, noise-free image');
+            } else if (iso <= 800) {
+                parts.push('subtle film grain');
+            } else if (iso <= 3200) {
+                parts.push('visible grain, analog feel');
             } else {
-                parts.push(`neutral ${whiteBalance}K daylight white balance`);
+                parts.push('heavy grain, gritty texture');
             }
+        }
+
+        // 색온도 → 색감 표현
+        if (whiteBalance) {
+            if (whiteBalance <= 3500) {
+                parts.push('warm golden tones');
+            } else if (whiteBalance <= 5000) {
+                parts.push('neutral balanced colors');
+            } else if (whiteBalance <= 6500) {
+                parts.push('daylight white balance');
+            } else {
+                parts.push('cool blue tint');
+            }
+        }
+
+        // 셔터스피드 → 모션 표현 (극단적인 경우만)
+        if (shutterSpeed) {
+            const shutterNum = this.parseShutterSpeed(shutterSpeed);
+            if (shutterNum <= 1 / 15) {
+                parts.push('motion blur, long exposure');
+            } else if (shutterNum >= 1 / 250) {
+                parts.push('frozen motion, sharp');
+            }
+            // 일반적인 범위(1/30-1/125)는 생략
         }
 
         return parts.join(', ');
     }
 
+    private parseShutterSpeed(shutter: string): number {
+        if (shutter.startsWith('1/')) {
+            return 1 / parseInt(shutter.replace('1/', ''));
+        }
+        return parseFloat(shutter);
+    }
+
     private getLighting(): string {
-        return buildLightingPrompt(this.settings.lighting);
+        const lighting = this.settings.lighting;
+
+        // 스펙: 스튜디오 라이팅 OFF일 때 프롬프트 없음
+        if (!lighting.enabled) {
+            return '';
+        }
+
+        return buildLightingPrompt({
+            pattern: lighting.pattern,
+            key: lighting.key,
+            ratio: lighting.ratio,
+            quality: lighting.quality,
+            colorTemp: lighting.colorTemp,
+            mood: lighting.mood,
+            timeBase: lighting.timeBase === 'none' ? undefined : lighting.timeBase,
+            special: lighting.special,
+        });
     }
 
     private getComposition(): string {

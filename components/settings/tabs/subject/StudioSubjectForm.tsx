@@ -1,8 +1,8 @@
 'use client';
 
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { ButtonGroup } from '@/components/ui/button-group';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { PersonForm } from './PersonForm';
 import type { StudioSubject, UserInputSettings } from '@/types';
@@ -26,7 +26,6 @@ const COUNT_OPTIONS = [
     { value: 1, label: '1명' },
     { value: 2, label: '2명' },
     { value: 3, label: '3명' },
-    { value: 'group', label: '단체' },
 ] as const;
 
 const BACKGROUND_OPTIONS = [
@@ -43,13 +42,61 @@ const COMPOSITION_OPTIONS = [
     { value: 'full', label: '풀샷' },
 ] as const;
 
+// 캐러셀 스타일 피커 컴포넌트
+interface CarouselPickerProps<T extends string | number> {
+    label: string;
+    options: readonly { value: T; label: string }[];
+    value: T;
+    onChange: (value: T) => void;
+}
+
+function CarouselPicker<T extends string | number>({ label, options, value, onChange }: CarouselPickerProps<T>) {
+    const currentIndex = options.findIndex(opt => opt.value === value);
+    const currentLabel = options[currentIndex]?.label || '';
+
+    const handlePrev = () => {
+        const newIndex = currentIndex <= 0 ? options.length - 1 : currentIndex - 1;
+        onChange(options[newIndex].value);
+    };
+
+    const handleNext = () => {
+        const newIndex = currentIndex >= options.length - 1 ? 0 : currentIndex + 1;
+        onChange(options[newIndex].value);
+    };
+
+    return (
+        <div className="flex-1 min-w-0">
+            <Label className="text-[10px] text-zinc-500 block text-center mb-0.5">{label}</Label>
+            <div className="flex items-center justify-center">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handlePrev}
+                    className="h-6 w-6 text-zinc-500 hover:text-white hover:bg-transparent p-0"
+                >
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="min-w-[3.5rem] text-center text-sm font-medium text-amber-400 truncate">
+                    {currentLabel}
+                </span>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleNext}
+                    className="h-6 w-6 text-zinc-500 hover:text-white hover:bg-transparent p-0"
+                >
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+            </div>
+        </div>
+    );
+}
+
 export function StudioSubjectForm() {
     const { settings, updateUserInput } = useSettingsStore();
     const { studioSubjectCount, studioComposition, studioBackgroundType, studioSubjects } = settings.userInput;
 
-    const handleCountChange = (count: 1 | 2 | 3 | 'group') => {
-        if (count === 'group') return;
-
+    const handleCountChange = (count: 1 | 2 | 3) => {
         let newSubjects = [...studioSubjects];
         while (newSubjects.length < count) {
             newSubjects.push({ ...DEFAULT_SUBJECT });
@@ -66,67 +113,26 @@ export function StudioSubjectForm() {
 
     return (
         <>
-            {/* 인원수 + 배경 + 구도 (PC: 3열, Mobile: 스택) */}
-            <div className="flex flex-col md:flex-row md:justify-between gap-4">
-                {/* 인원수 */}
-                <div className="space-y-2">
-                    <Label>인원수</Label>
-                    <ButtonGroup>
-                        {COUNT_OPTIONS.map((option) => (
-                            <Button
-                                key={option.value}
-                                variant={studioSubjectCount === option.value ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => handleCountChange(option.value)}
-                                className={`w-12 ${studioSubjectCount === option.value
-                                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                                    : ''}`}
-                            >
-                                {option.label}
-                            </Button>
-                        ))}
-                    </ButtonGroup>
-                </div>
-
-                {/* 배경 */}
-                <div className="space-y-2">
-                    <Label>배경</Label>
-                    <ButtonGroup>
-                        {BACKGROUND_OPTIONS.map((option) => (
-                            <Button
-                                key={option.value}
-                                variant={studioBackgroundType === option.value ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => updateUserInput({ studioBackgroundType: option.value as UserInputSettings['studioBackgroundType'] })}
-                                className={`w-14 lg:w-16 ${studioBackgroundType === option.value
-                                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                                    : ''}`}
-                            >
-                                {option.label}
-                            </Button>
-                        ))}
-                    </ButtonGroup>
-                </div>
-
-                {/* 구도 */}
-                <div className="space-y-2 md:text-right">
-                    <Label>구도</Label>
-                    <ButtonGroup>
-                        {COMPOSITION_OPTIONS.map((option) => (
-                            <Button
-                                key={option.value}
-                                variant={studioComposition === option.value ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => updateUserInput({ studioComposition: option.value })}
-                                className={`w-16 ${studioComposition === option.value
-                                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                                    : ''}`}
-                            >
-                                {option.label}
-                            </Button>
-                        ))}
-                    </ButtonGroup>
-                </div>
+            {/* 인원수 + 배경 + 구도 (캐러셀 피커) */}
+            <div className="flex justify-between gap-2">
+                <CarouselPicker
+                    label="인원수"
+                    options={COUNT_OPTIONS}
+                    value={studioSubjectCount}
+                    onChange={handleCountChange}
+                />
+                <CarouselPicker
+                    label="배경"
+                    options={BACKGROUND_OPTIONS}
+                    value={studioBackgroundType}
+                    onChange={(value) => updateUserInput({ studioBackgroundType: value as UserInputSettings['studioBackgroundType'] })}
+                />
+                <CarouselPicker
+                    label="구도"
+                    options={COMPOSITION_OPTIONS}
+                    value={studioComposition}
+                    onChange={(value) => updateUserInput({ studioComposition: value as UserInputSettings['studioComposition'] })}
+                />
             </div>
 
             {/* 인원별 상세 정보 */}

@@ -90,8 +90,8 @@ export function PromptPreview() {
 
     return (
         <div className="space-y-6">
-            <Card className="bg-zinc-900/50 border-zinc-800/50 sticky top-24">
-                <CardContent className="pt-4 space-y-4">
+            <Card className="bg-zinc-900/50 border-zinc-800/50 sticky top-24 py-4 gap-2">
+                <CardContent className="space-y-3">
                     {/* 생성 버튼 */}
                     <Button
                         onClick={handleGenerate}

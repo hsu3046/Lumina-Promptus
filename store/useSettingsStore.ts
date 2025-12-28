@@ -20,6 +20,7 @@ const defaultCameraSettings: CameraSettings = {
     aperture: 'f/2.8',
     shutterSpeed: '1/200',
     whiteBalance: 5600,
+    exposureCompensation: 0, // EV 0
     apertureAuto: false,
     shutterSpeedAuto: false,
     isoAuto: false,
@@ -29,17 +30,16 @@ const defaultCameraSettings: CameraSettings = {
 
 const defaultLightingSettings: LightingSettings = {
     enabled: false,
-    exposure: 'normal',
-    patternId: 'rembrandt',
+    // 필수 설정 (Rembrandt 권장 조합)
+    pattern: 'rembrandt',
+    key: 'mid-key',
+    // 선택 설정
+    ratio: '4:1',
     quality: 'soft',
-    colorTemp: 5600,
-    timeOfDay: 'daylight',
-    keyFillBackRatio: '4:2:1',
-    // 스튜디오 전용 라이팅 기본값
-    studioLightingSetup: '2point',
-    studioLightingTool: 'softbox',
-    studioBackgroundDetail: 'circular',
-    studioColorTemp: '5600k',
+    colorTemp: 'daylight',
+    mood: 'natural',
+    timeBase: 'none',
+    special: undefined,
 };
 
 const defaultColorGradingSettings: ColorGradingSettings = {

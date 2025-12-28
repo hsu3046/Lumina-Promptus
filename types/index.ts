@@ -74,6 +74,7 @@ export interface CameraSettings {
   aperture: string; // "f/1.4", "f/2.8", etc
   shutterSpeed: string; // "1/200", "1/60", etc
   whiteBalance: number; // Kelvin
+  exposureCompensation: number; // EV (-3 to +3)
   apertureAuto: boolean;
   shutterSpeedAuto: boolean;
   isoAuto: boolean;
@@ -83,17 +84,16 @@ export interface CameraSettings {
 
 export interface LightingSettings {
   enabled: boolean; // 라이팅 ON/OFF
-  exposure: 'low_key' | 'normal' | 'high_key'; // 노출
-  patternId: string;
-  quality: 'hard' | 'soft';
-  colorTemp: number;
-  timeOfDay?: string;
-  keyFillBackRatio: string; // "4:2:1"
-  // 스튜디오 전용 라이팅
-  studioLightingSetup: '1point' | '2point' | '3point' | 'backlight';
-  studioLightingTool: 'softbox' | 'beautydish' | 'spotlight' | 'umbrella';
-  studioBackgroundDetail: 'circular' | 'window' | 'halo' | 'blackout';
-  studioColorTemp: '5600k' | '3200k' | '7500k' | 'colorgel';
+  // 필수 설정
+  pattern: 'rembrandt' | 'butterfly' | 'loop' | 'split';
+  key: 'high-key' | 'mid-key' | 'low-key';
+  // 선택 설정
+  ratio?: '2:1' | '3:1' | '4:1' | '8:1' | '16:1';
+  quality?: 'soft' | 'hard';
+  colorTemp?: 'warm-golden' | 'tungsten' | 'daylight' | 'cloudy' | 'shade' | 'cool-blue';
+  mood?: 'dramatic' | 'natural' | 'glamorous' | 'mysterious' | 'editorial' | 'cinematic';
+  timeBase?: 'none' | 'golden-hour' | 'blue-hour' | 'midday-sun' | 'overcast' | 'window-light';
+  special?: ('rim-light' | 'hair-light' | 'background-light' | 'chiaroscuro' | 'clamshell' | 'broad-lighting' | 'short-lighting' | 'edge-lighting')[];
 }
 
 export interface ColorGradingSettings {
