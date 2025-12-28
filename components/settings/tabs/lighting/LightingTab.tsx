@@ -53,6 +53,7 @@ interface ItemConflictInfo {
 export function LightingTab() {
     const { settings, updateLighting } = useSettingsStore();
     const lighting = settings.lighting;
+    const studioComposition = settings.userInput.studioComposition;  // 구도 가져오기
 
     // 현재 설정 기반 config 생성
     const currentConfig = useMemo((): LightingConfig => ({
@@ -208,11 +209,21 @@ export function LightingTab() {
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-900 border-zinc-800">
-                            {PATTERN_OPTIONS.map(opt => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                    {opt.label} - {opt.desc}
-                                </SelectItem>
-                            ))}
+                            {PATTERN_OPTIONS.map(opt => {
+                                const patternStatus = LightingValidator.getPatternStatusForFraming(studioComposition, opt.value);
+                                // disabled면 표시하지 않음
+                                if (patternStatus.level === 'disabled') return null;
+                                return (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                        <div className="flex items-center gap-1">
+                                            {patternStatus.level === 'recommend' && <Lightbulb className="w-3 h-3 text-blue-500" />}
+                                            {patternStatus.level === 'critical' && <CircleAlert className="w-3 h-3 text-red-500" />}
+                                            {patternStatus.level === 'warning' && <AlertTriangle className="w-3 h-3 text-amber-500" />}
+                                            <span>{opt.label} - {opt.desc}</span>
+                                        </div>
+                                    </SelectItem>
+                                );
+                            })}
                         </SelectContent>
                     </Select>
                 </div>

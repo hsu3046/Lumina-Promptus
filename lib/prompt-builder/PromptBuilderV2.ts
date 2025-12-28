@@ -7,6 +7,12 @@ import { getCameraById } from '@/config/mappings/cameras';
 import { getLensById } from '@/config/mappings/lenses';
 import { buildLightingPrompt } from '@/config/mappings/lighting-patterns';
 import { detectConflicts } from '@/lib/conflict-resolver/rules';
+import {
+    TOP_WEAR_OPTIONS,
+    BOTTOM_WEAR_OPTIONS,
+    FOOTWEAR_OPTIONS,
+    ACCESSORY_OPTIONS,
+} from '@/config/mappings/fashion-options';
 
 export class PromptBuilderV2 {
     private ir: PromptIR;
@@ -124,13 +130,16 @@ export class PromptBuilderV2 {
         const { studioSubjectCount, studioComposition, studioBackgroundType, studioSubjects } = this.settings.userInput;
         const parts: string[] = [];
 
-        // 구도 매핑
+        // 구도 매핑 (PortraitFraming 타입과 일치)
         const compositionMap: Record<string, string> = {
-            extreme_closeup: 'extreme close-up portrait',
-            closeup: 'close-up portrait',
-            bust: 'bust shot portrait',
-            waist: 'waist-up portrait',
-            full: 'full body portrait'
+            'extreme-close-up': 'extreme close-up portrait, face detail',
+            'close-up': 'close-up portrait',
+            'bust-shot': 'bust shot portrait',
+            'waist-shot': 'waist shot portrait',
+            'half-shot': 'half shot portrait',
+            'three-quarter-shot': 'three-quarter shot portrait',
+            'full-shot': 'full body shot',
+            'long-shot': 'long shot, environmental portrait'
         };
         parts.push(compositionMap[studioComposition] || 'portrait');
 
@@ -181,15 +190,15 @@ export class PromptBuilderV2 {
             parts.push(gazeMap[subject.gazeDirection] || '');
         }
 
-        // 2. 성별 + 인종 + 나이대 (핵심 정체성)
+        // 2. 성별 + 피부톤 + 나이대 (핵심 정체성)
         const genderMap: Record<string, string> = { male: 'man', female: 'woman' };
-        const ethnicityMap: Record<string, string> = {
-            korean: 'Korean',
-            asian: 'Asian',
-            caucasian: 'Caucasian',
-            black: 'Black',
-            hispanic: 'Hispanic',
-            middle_eastern: 'Middle Eastern'
+        const skinToneMap: Record<string, string> = {
+            fair: 'fair-skinned',
+            light: 'light-skinned',
+            medium: 'medium-skinned',
+            tan: 'tan-skinned',
+            brown: 'brown-skinned',
+            dark: 'dark-skinned'
         };
         const ageMap: Record<string, string> = {
             child: 'young',
@@ -201,12 +210,12 @@ export class PromptBuilderV2 {
             elderly: 'elderly'
         };
 
-        const ethnicity = ethnicityMap[subject.ethnicity] || '';
+        const skinTone = skinToneMap[subject.skinTone] || '';
         const age = ageMap[subject.ageGroup] || '';
         const gender = genderMap[subject.gender] || 'person';
 
-        // "Korean young adult woman" 형식
-        parts.push(`${ethnicity} ${age} ${gender}`.trim());
+        // "fair-skinned young adult woman" 형식
+        parts.push(`${skinTone} ${age} ${gender}`.trim());
 
         // 3. 체형 (전체적인 실루엣)
         const bodyMap: Record<string, string> = {
@@ -236,19 +245,68 @@ export class PromptBuilderV2 {
                 parts.push(`${hairStyleMap[subject.hairStyle]} ${hairColorMap[subject.hairColor]} hair`);
             }
 
-            // 5. 포즈
-            const poseMap: Record<string, string> = {
-                contrapposto: 'classic contrapposto, weight shifted to one hip, one knee slightly bent, elegant body curve, shoulders angled 45 degrees, confident editorial stance',
-                sitting: 'sitting on a minimalist studio stool, legs crossed elegantly, leaning slightly back, hands resting naturally on knees, effortless high-fashion aesthetic, relaxed posture',
-                shoulder_lookback: 'looking back over the shoulder, dynamic body twist, elegant neck line, hair gently flowing, sophisticated gaze, subtle side-profile',
-                hands_to_face: 'editorial hand-to-face gesture, slender fingers near jawline, soft hand placement, intense eye contact, high-fashion beauty pose, focus on facial expression',
-                walking: 'mid-action walking pose, forward motion, natural stride, fluid movement, hair and clothes in motion, candid fashion photography style'
+            // 5. Body Pose
+            const bodyPoseMap: Record<string, string> = {
+                straight: 'straight frontal stance',
+                contrapposto: 'elegant contrapposto pose',
+                's-curve': 's-curve body pose',
+                'three-quarter-turn': 'three-quarter turn pose',
+                sitting: 'sitting pose',
+                reclining: 'reclining pose'
             };
-            parts.push(poseMap[subject.pose] || poseMap['contrapposto']);
+            parts.push(bodyPoseMap[subject.bodyPose] || bodyPoseMap['contrapposto']);
 
-            // 6. 패션 (마지막 - 의상)
-            if (subject.fashion.trim()) {
-                parts.push(`wearing ${subject.fashion.trim()}`);
+            // 6. Hand Pose
+            const handPoseMap: Record<string, string> = {
+                'natural-relaxed': 'relaxed natural hands',
+                'editorial-hands': 'editorial hands touching face',
+                'pocket-hands': 'hands in pockets',
+                'crossed-arms': 'arms crossed',
+                'framing-face': 'hands framing face',
+                'hair-touch': 'touching hair'
+            };
+            parts.push(handPoseMap[subject.handPose] || '');
+
+            // 7. Expression
+            const expressionMap: Record<string, string> = {
+                'natural-smile': 'natural warm smile',
+                'bright-smile': 'bright joyful smile',
+                'subtle-smile': 'subtle elegant smile',
+                'neutral': 'neutral expression',
+                'serious': 'serious expression',
+                'pensive': 'pensive thoughtful expression',
+                'mysterious': 'mysterious expression',
+                'intense': 'intense expression',
+                'playful': 'playful expression',
+                'sensual': 'sensual expression'
+            };
+            parts.push(expressionMap[subject.expression] || '');
+
+            // 8. Gaze
+            const gazeMap: Record<string, string> = {
+                'direct-eye-contact': 'direct eye contact with camera',
+                'off-camera': 'looking off-camera',
+                'looking-up': 'looking upward',
+                'looking-down': 'looking downward',
+                'side-gaze': 'side gaze',
+                'over-shoulder': 'looking over shoulder',
+                'eyes-closed': 'eyes closed',
+                'half-closed-eyes': 'half-closed eyes'
+            };
+            parts.push(gazeMap[subject.gazeDirection] || '');
+
+            // 9. 패션 (마지막 - 의상) - value를 prompt로 변환
+            const fashionParts: string[] = [];
+            const topPrompt = TOP_WEAR_OPTIONS.find(o => o.value === subject.topWear)?.prompt;
+            const bottomPrompt = BOTTOM_WEAR_OPTIONS.find(o => o.value === subject.bottomWear)?.prompt;
+            const footPrompt = FOOTWEAR_OPTIONS.find(o => o.value === subject.footwear)?.prompt;
+            const accPrompt = ACCESSORY_OPTIONS.find(o => o.value === subject.accessory)?.prompt;
+            if (topPrompt) fashionParts.push(topPrompt);
+            if (bottomPrompt) fashionParts.push(bottomPrompt);
+            if (footPrompt) fashionParts.push(footPrompt);
+            if (accPrompt) fashionParts.push(accPrompt);
+            if (fashionParts.length > 0) {
+                parts.push(`wearing ${fashionParts.join(', ')}`);
             }
         }
 
@@ -422,22 +480,12 @@ export class PromptBuilderV2 {
             const angleMap: Record<string, string> = {
                 'eye_level': 'eye level angle, straight-on view',
                 'high_angle': 'high angle shot, looking down',
-                'low_angle': 'low angle shot, looking up, heroic perspective',
+                'low_angle': 'low angle shot, looking up',
                 'birds_eye': 'bird\'s eye view, top-down perspective',
-                'worms_eye': 'worm\'s eye view, extreme low angle'
+                'worms_eye': 'worm\'s eye view, extreme low angle',
+                'drone': 'aerial drone shot, cinematic overhead view'
             };
             parts.push(angleMap[this.settings.artDirection.cameraAngle] || '');
-        }
-
-        if (this.settings.artDirection.shotType) {
-            const shotMap: Record<string, string> = {
-                'close_up': 'close-up shot, face detail',
-                'medium': 'medium shot, waist up',
-                'full_body': 'full body shot, entire figure',
-                'wide': 'wide shot, environment context',
-                'extreme_close_up': 'extreme close-up, macro detail'
-            };
-            parts.push(shotMap[this.settings.artDirection.shotType] || '');
         }
 
         return parts.filter(Boolean).join(', ');

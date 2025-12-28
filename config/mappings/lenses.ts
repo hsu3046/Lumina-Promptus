@@ -46,7 +46,7 @@ export const LENSES: Lens[] = [
         category: 'wide',
         bokeh: 'soft wide-angle bokeh, gentle foreground-background separation at close focus',
         vignetting: 'visible natural vignetting at f/1.4, subtle at mid apertures',
-        characteristic_studio: 'full-body fashion portrait, environmental studio set, natural wide rendering',
+        characteristic_studio: 'full-body fashion portrait, natural wide rendering',
         characteristic_landscape: 'detailed wide vistas, sharp foreground interest, balanced depth',
         characteristic_architecture: 'natural interior framing, wide room perspective, controlled edge distortion',
         characteristic_product: 'environmental product shots, lifestyle context, high-end commercial look',

@@ -22,6 +22,7 @@ import { useSettingsStore } from '@/store/useSettingsStore';
 import { useCameraSettings } from '@/components/hooks/useCameraSettings';
 import { CAMERA_BODIES_BY_BRAND, getCameraById } from '@/config/mappings/cameras';
 import { getLensesByMount, LENS_CATEGORY_LABELS, getLensById } from '@/config/mappings/lenses';
+import { getLensStatusForOption, type LensConflictLevel } from '@/lib/lens-composition-validator';
 import type { Lens } from '@/types';
 import type { ExposureStatusLevel } from '@/lib/exposure-calculator';
 
@@ -68,6 +69,11 @@ export function CameraTab() {
             return acc;
         }, {} as Partial<Record<Lens['category'], Lens[]>>);
     }, [settings.camera.bodyId]);
+
+    // 충돌 감지용 설정 값
+    const framing = settings.userInput.studioComposition;
+    const angle = settings.artDirection.cameraAngle;
+    const compositionRule = settings.artDirection.compositionRule;
 
     // 카메라 변경 시 호환 렌즈 자동 선택
     const handleCameraChange = (cameraId: string) => {
@@ -180,11 +186,21 @@ export function CameraTab() {
                                         <SelectLabel className="text-amber-400 font-medium">
                                             {LENS_CATEGORY_LABELS[category]}
                                         </SelectLabel>
-                                        {compatibleLensesByCategory[category]!.map((lens) => (
-                                            <SelectItem key={lens.id} value={lens.id}>
-                                                {lens.model}
-                                            </SelectItem>
-                                        ))}
+                                        {compatibleLensesByCategory[category]!.map((lens) => {
+                                            const status = getLensStatusForOption(framing, angle, compositionRule, lens.id);
+                                            // disabled면 표시하지 않음
+                                            if (status.level === 'disabled') return null;
+                                            return (
+                                                <SelectItem key={lens.id} value={lens.id}>
+                                                    <div className="flex items-center gap-1">
+                                                        {status.level === 'recommend' && <Lightbulb className="w-3 h-3 text-blue-500" />}
+                                                        {status.level === 'critical' && <AlertCircle className="w-3 h-3 text-red-500" />}
+                                                        {status.level === 'warning' && <AlertTriangle className="w-3 h-3 text-amber-400" />}
+                                                        <span>{lens.model}</span>
+                                                    </div>
+                                                </SelectItem>
+                                            );
+                                        })}
                                     </SelectGroup>
                                 ))}
                             </SelectContent>

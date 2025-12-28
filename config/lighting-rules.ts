@@ -293,6 +293,61 @@ export const LIGHTING_CONFLICTS = {
     ]
 };
 
+// ===== 구도 × 조명 패턴 충돌 매트릭스 =====
+// 레벨: 'disabled' | 'critical' | 'warning' | 'ok' | 'recommend'
+export type FramingPatternConflictLevel = 'disabled' | 'critical' | 'warning' | 'ok' | 'recommend';
+
+export const FRAMING_PATTERN_CONFLICTS: Record<string, Record<LightingPattern, FramingPatternConflictLevel>> = {
+    'extreme-close-up': {
+        rembrandt: 'recommend',
+        butterfly: 'recommend',
+        loop: 'ok',
+        split: 'warning',  // 피부 결함 강조
+    },
+    'close-up': {
+        rembrandt: 'recommend',
+        butterfly: 'recommend',
+        loop: 'ok',
+        split: 'warning',
+    },
+    'bust-shot': {
+        rembrandt: 'ok',
+        butterfly: 'recommend',
+        loop: 'recommend',
+        split: 'warning',
+    },
+    'waist-shot': {
+        rembrandt: 'warning',  // 얼굴 비중 감소
+        butterfly: 'ok',
+        loop: 'recommend',
+        split: 'critical',
+    },
+    'half-shot': {
+        rembrandt: 'warning',
+        butterfly: 'warning',
+        loop: 'recommend',
+        split: 'critical',
+    },
+    'three-quarter-shot': {
+        rembrandt: 'critical',  // 얼굴 그림자 식별 어려움
+        butterfly: 'critical',
+        loop: 'warning',
+        split: 'critical',
+    },
+    'full-shot': {
+        rembrandt: 'disabled',  // 얼굴 패턴 무의미
+        butterfly: 'disabled',
+        loop: 'warning',
+        split: 'disabled',
+    },
+    'long-shot': {
+        rembrandt: 'disabled',
+        butterfly: 'disabled',
+        loop: 'warning',
+        split: 'disabled',
+    },
+};
+
 // ===== 권장 조합 =====
 
 export const RECOMMENDED_COMBINATIONS: Record<LightingPattern, {

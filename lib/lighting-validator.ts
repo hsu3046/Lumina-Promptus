@@ -12,7 +12,9 @@ import type {
 
 import {
     LIGHTING_CONFLICTS,
-    RECOMMENDED_COMBINATIONS
+    RECOMMENDED_COMBINATIONS,
+    FRAMING_PATTERN_CONFLICTS,
+    type FramingPatternConflictLevel
 } from '@/config/lighting-rules';
 
 export class LightingValidator {
@@ -334,5 +336,30 @@ export class LightingValidator {
             const result = this.validate(testConfig);
             return result.errors.length === 0;
         });
+    }
+
+    /**
+     * 구도 기반 패턴 상태 조회
+     */
+    static getPatternStatusForFraming(
+        framing: string,
+        pattern: LightingPattern
+    ): { level: FramingPatternConflictLevel; message: string } {
+        const matrix = FRAMING_PATTERN_CONFLICTS[framing];
+        if (!matrix) {
+            return { level: 'ok', message: '' };
+        }
+
+        const level = matrix[pattern] ?? 'ok';
+
+        const messages: Record<FramingPatternConflictLevel, string> = {
+            recommend: '권장 조합',
+            ok: '',
+            warning: '얼굴 비중 감소로 패턴 효과 약화',
+            critical: '얼굴 그림자 패턴 식별 어려움',
+            disabled: '전신에서 얼굴 기반 패턴 무의미',
+        };
+
+        return { level, message: messages[level] };
     }
 }

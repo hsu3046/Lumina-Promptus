@@ -114,21 +114,88 @@ export interface ArtDirectionSettings {
   lensCharacteristicType: 'studio' | 'landscape' | 'architecture' | 'product' | 'street';
 }
 
+// ===== Portrait Composition Types (4대 요소) =====
+
+// 1. 구도 (Framing)
+export type PortraitFraming =
+  | 'extreme-close-up'   // 익스트림 클로즈업 - 얼굴 일부
+  | 'close-up'           // 클로즈업 - 얼굴 전체
+  | 'bust-shot'          // 바스트샷 - 가슴까지
+  | 'waist-shot'         // 웨이스트샷 - 허리까지
+  | 'half-shot'          // 하프샷 - 무릎까지
+  | 'three-quarter-shot' // 3/4샷 - 무릎 위까지
+  | 'full-shot'          // 풀샷 - 전신
+  | 'long-shot';         // 롱샷 - 전신+배경
+
+// 2. 포즈 - Body Pose (신체 자세)
+export type PortraitBodyPose =
+  | 'straight'           // 스트레이트 - 정면
+  | 'contrapposto'       // 컨트라포스토 - 한쪽 다리 체중
+  | 's-curve'            // S커브 - 몸통 S자
+  | 'three-quarter-turn' // 3/4 턴 - 비스듬히
+  | 'sitting'            // 시팅 - 앉음
+  | 'reclining';         // 리클라인 - 기대거나 누움
+
+// 2. 포즈 - Hand Pose (손 자세)
+export type PortraitHandPose =
+  | 'natural-relaxed'    // 자연스럽게 - 몸 옆
+  | 'editorial-hands'    // 에디토리얼 - 얼굴/머리/목 터치
+  | 'pocket-hands'       // 포켓 핸즈 - 주머니에 손
+  | 'crossed-arms'       // 크로스 암즈 - 팔짱
+  | 'framing-face'       // 프레이밍 - 양손으로 얼굴 프레임
+  | 'hair-touch';        // 헤어 터치 - 머리카락 만지기
+
+// 3. 표정 (Expression)
+export type PortraitExpression =
+  | 'natural-smile'      // 자연스러운 미소
+  | 'bright-smile'       // 활짝 웃음
+  | 'subtle-smile'       // 은은한 미소
+  | 'neutral'            // 중립적/무표정
+  | 'serious'            // 시리어스
+  | 'pensive'            // 사색적
+  | 'mysterious'         // 신비로운
+  | 'intense'            // 강렬한
+  | 'playful'            // 장난스러운
+  | 'sensual';           // 관능적
+
+// 4. 시선 (Gaze)
+export type PortraitGaze =
+  | 'direct-eye-contact' // 카메라 직시
+  | 'off-camera'         // 카메라 밖
+  | 'looking-up'         // 위 응시
+  | 'looking-down'       // 아래 응시
+  | 'side-gaze'          // 옆 응시
+  | 'over-shoulder'      // 어깨 너머
+  | 'eyes-closed'        // 눈 감음
+  | 'half-closed-eyes';  // 반쯤 뜬 눈
 
 // Studio 인물 정보
 export interface StudioSubject {
-  autoMode: boolean; // Auto 모드 - ON이면 인종/성별/나이만 활성화
+  autoMode: boolean; // Auto 모드 - ON이면 검색창만 표시
+
+  // A: 외모
+  skinTone: 'fair' | 'light' | 'medium' | 'tan' | 'brown' | 'dark';
+  hairColor: 'black' | 'brown' | 'blonde' | 'red' | 'gray' | 'white' | 'pink' | 'blue';
+  eyeColor: 'brown' | 'black' | 'blue' | 'green' | 'hazel' | 'gray';
+  faceShape: 'oval' | 'round' | 'square' | 'heart' | 'oblong';
+
+  // B: 스타일
   gender: 'male' | 'female';
   ageGroup: 'child' | 'teen' | '20s' | '30s' | '40s' | '50plus' | 'elderly';
-  ethnicity: 'korean' | 'asian' | 'caucasian' | 'black' | 'hispanic' | 'middle_eastern';
-  bodyType: 'slim' | 'average' | 'athletic' | 'curvy' | 'plus';
-  skinTexture: 'smooth' | 'natural' | 'freckled' | 'weathered';
-  hairColor: 'black' | 'brown' | 'blonde' | 'red' | 'gray' | 'white';
   hairStyle: 'short' | 'medium' | 'long' | 'wavy' | 'curly' | 'straight' | 'bald' | 'ponytail' | 'bun' | 'braids';
-  gazeDirection: 'camera' | 'aside' | 'down' | 'up';
-  pose: 'contrapposto' | 'sitting' | 'shoulder_lookback' | 'hands_to_face' | 'walking';
-  accessory: 'none' | 'glasses' | 'sunglasses' | 'earrings' | 'necklace' | 'hat' | 'scarf';
-  fashion: string;
+  bodyType: 'slim' | 'average' | 'athletic' | 'curvy' | 'plus';
+
+  // C: 패션
+  topWear: string;
+  bottomWear: string;
+  footwear: string;
+  accessory: string;
+
+  // D: 포즈
+  bodyPose: PortraitBodyPose;
+  handPose: PortraitHandPose;
+  expression: PortraitExpression;
+  gazeDirection: PortraitGaze;
 }
 
 export interface UserInputSettings {
@@ -136,7 +203,7 @@ export interface UserInputSettings {
   moodDescription: string;
   // Studio 전용
   studioSubjectCount: 1 | 2 | 3;
-  studioComposition: 'closeup' | 'bust' | 'waist' | 'full' | 'extreme_closeup';
+  studioComposition: PortraitFraming;
   studioBackgroundType: 'seamless_white' | 'seamless_gray' | 'seamless_blue' | 'textured';
   studioSubjects: StudioSubject[];
 }

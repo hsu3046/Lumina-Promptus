@@ -5,21 +5,35 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { PersonForm } from './PersonForm';
-import type { StudioSubject, UserInputSettings } from '@/types';
+import { FRAMING_OPTIONS, FRAMING_ANGLE_CONFLICTS, type FramingAngleConflictLevel } from '@/config/mappings/portrait-composition';
+import type { StudioSubject, UserInputSettings, PortraitFraming } from '@/types';
 
 const DEFAULT_SUBJECT: StudioSubject = {
     autoMode: true,
+
+    // A: 외모
+    skinTone: 'light',
+    hairColor: 'black',
+    eyeColor: 'brown',
+    faceShape: 'oval',
+
+    // B: 스타일
     gender: 'female',
     ageGroup: '20s',
-    ethnicity: 'asian',
-    bodyType: 'average',
-    skinTexture: 'natural',
-    hairColor: 'black',
     hairStyle: 'long',
-    gazeDirection: 'camera',
-    pose: 'contrapposto',
-    accessory: 'none',
-    fashion: '',
+    bodyType: 'average',
+
+    // C: 패션
+    topWear: '',
+    bottomWear: '',
+    footwear: '',
+    accessory: '',
+
+    // D: 포즈
+    bodyPose: 'contrapposto',
+    handPose: 'natural-relaxed',
+    expression: 'natural-smile',
+    gazeDirection: 'direct-eye-contact',
 };
 
 const COUNT_OPTIONS = [
@@ -35,11 +49,29 @@ const BACKGROUND_OPTIONS = [
     { value: 'textured', label: '텍스처' },
 ] as const;
 
-const COMPOSITION_OPTIONS = [
-    { value: 'closeup', label: '클로즈업' },
-    { value: 'bust', label: '바스트' },
-    { value: 'waist', label: '웨이스트' },
-    { value: 'full', label: '풀샷' },
+// 구도 옵션 - portrait-composition.ts에서 가져옴 (전체)
+const ALL_COMPOSITION_OPTIONS = FRAMING_OPTIONS.map(opt => ({
+    value: opt.value,
+    label: opt.label,
+}));
+
+// 카메라 앵글 옵션
+const CAMERA_ANGLE_OPTIONS = [
+    { value: 'eye_level', label: '아이레벨' },
+    { value: 'high_angle', label: '하이앵글' },
+    { value: 'low_angle', label: '로우앵글' },
+    { value: 'birds_eye', label: '버즈아이' },
+    { value: 'worms_eye', label: '웜즈아이' },
+    { value: 'drone', label: '드론' },
+] as const;
+
+// 구성 규칙 옵션
+const COMPOSITION_RULE_OPTIONS = [
+    { value: 'rule_of_thirds', label: '삼분법' },
+    { value: 'golden_ratio', label: '황금비' },
+    { value: 'center', label: '중앙' },
+    { value: 'leading_lines', label: '시선유도' },
+    { value: 'symmetry', label: '대칭' },
 ] as const;
 
 // 캐러셀 스타일 피커 컴포넌트
@@ -93,8 +125,21 @@ function CarouselPicker<T extends string | number>({ label, options, value, onCh
 }
 
 export function StudioSubjectForm() {
-    const { settings, updateUserInput } = useSettingsStore();
+    const { settings, updateUserInput, updateArtDirection } = useSettingsStore();
     const { studioSubjectCount, studioComposition, studioBackgroundType, studioSubjects } = settings.userInput;
+    const { cameraAngle, compositionRule } = settings.artDirection;
+
+    // 인원수 ≥ 2 → 익스트림 클로즈업 숨김 (disabled)
+    const compositionOptions = studioSubjectCount >= 2
+        ? ALL_COMPOSITION_OPTIONS.filter(opt => opt.value !== 'extreme-close-up')
+        : ALL_COMPOSITION_OPTIONS;
+
+    // 구도 기반 앵글 옵션 필터링 (disabled 숨김)
+    const angleOptions = CAMERA_ANGLE_OPTIONS.filter(opt => {
+        const matrix = FRAMING_ANGLE_CONFLICTS[studioComposition as keyof typeof FRAMING_ANGLE_CONFLICTS];
+        if (!matrix) return true;
+        return matrix[opt.value] !== 'disabled';
+    });
 
     const handleCountChange = (count: 1 | 2 | 3) => {
         let newSubjects = [...studioSubjects];
@@ -102,7 +147,17 @@ export function StudioSubjectForm() {
             newSubjects.push({ ...DEFAULT_SUBJECT });
         }
         newSubjects = newSubjects.slice(0, count);
-        updateUserInput({ studioSubjectCount: count, studioSubjects: newSubjects });
+        // 인원수 증가 시 현재 구도가 숨겨지면 자동 변경
+        const newComposition = count >= 2 && studioComposition === 'extreme-close-up'
+            ? 'close-up'
+            : studioComposition;
+        updateUserInput({ studioSubjectCount: count, studioSubjects: newSubjects, studioComposition: newComposition as UserInputSettings['studioComposition'] });
+
+        // 새로운 구도에서 현재 앵글이 disabled면 eye_level로 변경
+        const newMatrix = FRAMING_ANGLE_CONFLICTS[newComposition as keyof typeof FRAMING_ANGLE_CONFLICTS];
+        if (newMatrix && newMatrix[cameraAngle] === 'disabled') {
+            updateArtDirection({ cameraAngle: 'eye_level' });
+        }
     };
 
     const handleSubjectUpdate = (index: number, updates: Partial<StudioSubject>) => {
@@ -113,7 +168,7 @@ export function StudioSubjectForm() {
 
     return (
         <>
-            {/* 인원수 + 배경 + 구도 (캐러셀 피커) */}
+            {/* 인원수 + 배경 + 구도 + 앵글 (캐러셀 피커) */}
             <div className="flex justify-between gap-2">
                 <CarouselPicker
                     label="인원수"
@@ -129,9 +184,29 @@ export function StudioSubjectForm() {
                 />
                 <CarouselPicker
                     label="구도"
-                    options={COMPOSITION_OPTIONS}
+                    options={compositionOptions}
                     value={studioComposition}
-                    onChange={(value) => updateUserInput({ studioComposition: value as UserInputSettings['studioComposition'] })}
+                    onChange={(value) => {
+                        const newComposition = value as UserInputSettings['studioComposition'];
+                        updateUserInput({ studioComposition: newComposition });
+                        // 새로운 구도에서 현재 앵글이 disabled면 eye_level로 변경
+                        const matrix = FRAMING_ANGLE_CONFLICTS[newComposition as keyof typeof FRAMING_ANGLE_CONFLICTS];
+                        if (matrix && matrix[cameraAngle] === 'disabled') {
+                            updateArtDirection({ cameraAngle: 'eye_level' });
+                        }
+                    }}
+                />
+                <CarouselPicker
+                    label="앵글"
+                    options={angleOptions}
+                    value={cameraAngle}
+                    onChange={(value) => updateArtDirection({ cameraAngle: value })}
+                />
+                <CarouselPicker
+                    label="구성"
+                    options={COMPOSITION_RULE_OPTIONS}
+                    value={compositionRule}
+                    onChange={(value) => updateArtDirection({ compositionRule: value })}
                 />
             </div>
 

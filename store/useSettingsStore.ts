@@ -64,24 +64,37 @@ const defaultArtDirectionSettings: ArtDirectionSettings = {
 // Studio 인물 기본값
 const createDefaultStudioSubject = (): StudioSubject => ({
     autoMode: true,
+
+    // A: 외모
+    skinTone: 'light',
+    hairColor: 'black',
+    eyeColor: 'brown',
+    faceShape: 'oval',
+
+    // B: 스타일
     gender: 'female',
     ageGroup: '20s',
-    ethnicity: 'korean',
-    bodyType: 'average',
-    skinTexture: 'natural',
-    hairColor: 'black',
     hairStyle: 'long',
-    gazeDirection: 'camera',
-    pose: 'contrapposto',
-    accessory: 'none',
-    fashion: '',
+    bodyType: 'average',
+
+    // C: 패션
+    topWear: '',
+    bottomWear: '',
+    footwear: '',
+    accessory: '',
+
+    // D: 포즈
+    bodyPose: 'contrapposto',
+    handPose: 'natural-relaxed',
+    expression: 'natural-smile',
+    gazeDirection: 'direct-eye-contact',
 });
 
 const defaultUserInputSettings: UserInputSettings = {
     subjectDescription: '',
     moodDescription: '',
     studioSubjectCount: 1,
-    studioComposition: 'bust',
+    studioComposition: 'bust-shot',
     studioBackgroundType: 'seamless_gray',
     studioSubjects: [createDefaultStudioSubject()],
 };
