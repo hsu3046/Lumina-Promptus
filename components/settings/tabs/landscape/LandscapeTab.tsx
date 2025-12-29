@@ -17,6 +17,7 @@ import { LocationSearch } from './LocationSearch';
 import { SunPositionInfo } from './SunPositionInfo';
 import { TilesPreview } from './TilesPreview';
 import { OcclusionInfo } from './OcclusionInfo';
+import { ReferenceImageCapturer } from './ReferenceImageCapturer';
 import {
     LANDSCAPE_TIME_OPTIONS,
     LANDSCAPE_WEATHER_OPTIONS,
@@ -117,13 +118,31 @@ export function LandscapeTab() {
 
                 <hr className="border-zinc-700/50" />
 
-                {/* Street View 미리보기 */}
-                <StreetViewPreview />
-
-                <hr className="border-zinc-700/50" />
-
-                {/* 3D Tiles 미리보기 */}
-                <TilesPreview width={400} height={250} />
+                {/* 미리보기 섹션 - 탭으로 분리하여 WebGL 충돌 방지 */}
+                <section className="space-y-3">
+                    <Tabs defaultValue="streetview" className="w-full">
+                        <TabsList className="w-full grid grid-cols-2 h-8">
+                            <TabsTrigger
+                                value="streetview"
+                                className="text-xs gap-1 data-[state=active]:!text-amber-500"
+                            >
+                                📷 Street View
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="3dtiles"
+                                className="text-xs gap-1 data-[state=active]:!text-amber-500"
+                            >
+                                🏢 3D 공간
+                            </TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="streetview" className="mt-3">
+                            <StreetViewPreview />
+                        </TabsContent>
+                        <TabsContent value="3dtiles" className="mt-3">
+                            <TilesPreview width={400} height={280} />
+                        </TabsContent>
+                    </Tabs>
+                </section>
 
                 <hr className="border-zinc-700/50" />
 
@@ -196,6 +215,11 @@ export function LandscapeTab() {
 
                 {/* 공간 분석 (Occlusion) */}
                 <OcclusionInfo />
+
+                <hr className="border-zinc-700/50" />
+
+                {/* Hybrid 14 참조 이미지 캐처 */}
+                <ReferenceImageCapturer />
             </TabsContent>
 
             {/* 환경 설정 탭 */}
