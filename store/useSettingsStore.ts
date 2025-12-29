@@ -123,6 +123,7 @@ const defaultLandscapeSettings: LandscapeSettings = {
         weather: 'clear',
         season: 'autumn',
     },
+    landmarks: [],
 };
 
 export const defaultSettings: UserSettings & { landscape: LandscapeSettings } = {

@@ -15,6 +15,15 @@ import {
     getSeasonDescription,
     getCompassLabel,
 } from '@/config/mappings/landscape-environment';
+import {
+    calculateSunPosition,
+    calculateShadowInfo,
+    generateLightingPrompt,
+} from '@/lib/landscape/sun-calculator';
+import {
+    analyzeOcclusion,
+    generateCompactSpatialPrompt,
+} from '@/lib/landscape/occlusion-analyzer';
 
 /**
  * 렌즈 ID에서 초점거리 추출 (예: 'nikon_af_s_24mm_f14g_ed' -> '24mm')
@@ -59,27 +68,26 @@ export function buildLandscapePromptConfig(
 }
 
 /**
- * 랜드마크 설명 생성 (전경/중경/배경 분류)
+ * 랜드마크 설명 생성 (전경/중경/배경 분류 - layer 속성 사용)
  */
 function generateLandmarkDescription(
     landmarks: LandscapeLandmark[],
     heading: number,
     fov: number
 ): string {
-    // 유저가 보는 방향 기준으로 가시성 판단
-    const visibleLandmarks = landmarks.filter(lm => {
-        const angleDiff = Math.abs(lm.direction - heading);
-        return angleDiff < fov / 2 || angleDiff > 360 - fov / 2;
-    });
+    // layer 속성 기반 분류
+    const foreground = landmarks.filter(lm => lm.layer === 'foreground');
+    const middleground = landmarks.filter(lm => lm.layer === 'middleground');
+    const background = landmarks.filter(lm => lm.layer === 'background');
 
-    const foreground = visibleLandmarks.filter(lm => lm.distance < 500);
-    const middleground = visibleLandmarks.filter(lm => lm.distance >= 500 && lm.distance < 2000);
-    const background = visibleLandmarks.filter(lm => lm.distance >= 2000);
+    const fgNames = foreground.map(lm => lm.name).filter(Boolean).join(', ') || 'Natural terrain';
+    const mgNames = middleground.map(lm => lm.name).filter(Boolean).join(', ') || 'Urban landscape';
+    const bgNames = background.map(lm => lm.name).filter(Boolean).join(', ') || 'Distant horizon';
 
     return [
-        `Foreground (0-500m): ${foreground.map(lm => lm.name).join(', ') || 'Natural terrain'}`,
-        `Middleground (500m-2km): ${middleground.map(lm => lm.name).join(', ') || 'Urban landscape'}`,
-        `Background (2km+): ${background.map(lm => lm.name).join(', ') || 'Distant horizon'}`,
+        `Foreground (0-50m): ${fgNames}`,
+        `Middleground (50-500m): ${mgNames}`,
+        `Background (500m+): ${bgNames}`,
     ].join('\n');
 }
 
@@ -132,12 +140,28 @@ Weather: ${environment.weather} ${weatherDesc}
 Season: ${environment.season} ${seasonDesc}
 Location: ${location.name || 'Unnamed location'} at ${location.elevation}m elevation
 Coordinates: ${location.coordinates.lat.toFixed(4)}, ${location.coordinates.lng.toFixed(4)}
-  `.trim();
+    `.trim();
 
-    // 랜드마크
-    const visibleLandmarks = landmarks.length > 0
-        ? generateLandmarkDescription(landmarks, camera.heading, camera.fov)
-        : 'Foreground: Natural terrain\nMiddleground: Urban landscape\nBackground: Distant horizon';
+    // 태양/그림자 물리 계산 (현재 시간 기준)
+    const lightingPhysics = generateLightingPrompt(
+        location.coordinates.lat,
+        location.coordinates.lng,
+        new Date(),
+        50 // 기본 건물 높이 50m
+    );
+
+    // 랜드마크 및 Occlusion 분석
+    let visibleLandmarks: string;
+    let spatialContext: string = '';
+
+    if (landmarks.length > 0) {
+        // Occlusion 분석 수행
+        const occlusionAnalysis = analyzeOcclusion(landmarks, camera.heading, camera.fov);
+        visibleLandmarks = generateLandmarkDescription(landmarks, camera.heading, camera.fov);
+        spatialContext = generateCompactSpatialPrompt(occlusionAnalysis);
+    } else {
+        visibleLandmarks = 'Foreground: Natural terrain\nMiddleground: Urban landscape\nBackground: Distant horizon';
+    }
 
     // 최종 프롬프트
     return `
@@ -151,6 +175,12 @@ ${environmentalContext}
 
 Visible Elements:
 ${visibleLandmarks}
+
+${spatialContext ? `Spatial Depth Analysis:
+${spatialContext}
+` : ''}
+Lighting Physics:
+${lightingPhysics}
 
 Photography Style:
 - Professional landscape photography
