@@ -24,7 +24,7 @@ const defaultCameraSettings: CameraSettings = {
     apertureAuto: true,
     shutterSpeedAuto: true,
     isoAuto: true,
-    aspectRatio: '3:2',
+    aspectRatio: '2:3',
     orientation: 'portrait',
 };
 
@@ -65,7 +65,8 @@ const defaultArtDirectionSettings: ArtDirectionSettings = {
 const createDefaultStudioSubject = (): StudioSubject => ({
     autoMode: true,
 
-    // A: 외모
+    // A: 외모 (한국인 프리셋 기본값)
+    appearancePresetId: 'korean',
     skinTone: 'light',
     hairColor: 'black',
     eyeColor: 'brown',
@@ -73,8 +74,8 @@ const createDefaultStudioSubject = (): StudioSubject => ({
 
     // B: 스타일
     gender: 'female',
-    ageGroup: '20s',
-    hairStyle: 'long',
+    ageGroup: 'early-20s',
+    hairStyle: 'long-straight',
     bodyType: 'average',
 
     // C: 패션
@@ -82,12 +83,17 @@ const createDefaultStudioSubject = (): StudioSubject => ({
     bottomWear: '',
     footwear: '',
     accessory: '',
+    accessory2: '',
 
     // D: 포즈
-    bodyPose: 'contrapposto',
+    bodyPose: 'straight',
     handPose: 'natural-relaxed',
     expression: 'natural-smile',
     gazeDirection: 'direct-eye-contact',
+
+    // E: 위치/여백
+    position: 'center',
+    margin: 'normal',
 });
 
 const defaultUserInputSettings: UserInputSettings = {

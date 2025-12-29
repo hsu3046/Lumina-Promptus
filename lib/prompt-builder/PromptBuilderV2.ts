@@ -198,39 +198,49 @@ export class PromptBuilderV2 {
         }
 
         // 2. 성별 + 피부톤 + 나이대 (핵심 정체성)
-        const genderMap: Record<string, string> = { male: 'man', female: 'woman' };
+        const genderMap: Record<string, string> = { male: 'man', female: 'woman', androgynous: 'androgynous person' };
         const skinToneMap: Record<string, string> = {
-            fair: 'fair-skinned',
-            light: 'light-skinned',
-            medium: 'medium-skinned',
-            tan: 'tan-skinned',
-            brown: 'brown-skinned',
-            dark: 'dark-skinned'
+            fair: 'very fair complexion',
+            light: 'fair complexion',
+            medium: 'light medium complexion',
+            tan: 'medium complexion',
+            brown: 'olive tan complexion',
+            dark: 'deep dark complexion'
         };
         const ageMap: Record<string, string> = {
-            child: 'young',
-            teen: 'teenage',
-            '20s': 'young adult',
-            '30s': 'adult',
-            '40s': 'mature',
-            '50plus': 'middle-aged',
-            elderly: 'elderly'
+            'early-20s': 'young adult in early 20s',
+            'late-20s': 'young adult in late 20s',
+            '30s': 'adult in 30s',
+            '40s-50s': 'middle-aged adult in 40s-50s',
+            '60s-70s': 'senior adult in 60s-70s',
+            '80plus': 'elderly adult 80 plus'
         };
 
         const skinTone = skinToneMap[subject.skinTone] || '';
         const age = ageMap[subject.ageGroup] || '';
         const gender = genderMap[subject.gender] || 'person';
 
-        // "fair-skinned young adult woman" 형식
-        parts.push(`${skinTone} ${age} ${gender}`.trim());
+        // 외모 프리셋 ID에서 국가/인종 정보 추출 (예: 'korean' -> 'Korean')
+        const nationalityLabel = subject.appearancePresetId
+            ? subject.appearancePresetId.split('-').map(word =>
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ')
+            : '';
+
+        // "Korean young adult woman with very fair complexion" 형식
+        if (nationalityLabel) {
+            parts.push(`${nationalityLabel} ${age} ${gender} with ${skinTone}`.trim());
+        } else {
+            parts.push(`${skinTone}, ${age} ${gender}`.trim());
+        }
 
         // 3. 체형 (전체적인 실루엣)
         const bodyMap: Record<string, string> = {
-            slim: 'with slim figure',
+            slim: 'with slim build',
             average: 'with average build',
-            athletic: 'with athletic physique',
-            curvy: 'with curvy figure',
-            plus: 'with plus-size body'
+            athletic: 'with athletic build',
+            muscular: 'with muscular build',
+            curvy: 'with curvy build'
         };
         parts.push(bodyMap[subject.bodyType] || '');
 
@@ -238,8 +248,12 @@ export class PromptBuilderV2 {
         if (!subject.autoMode) {
             // 4. 머리카락 (시각적 특징)
             const hairColorMap: Record<string, string> = {
-                black: 'black', brown: 'brown', blonde: 'blonde',
-                red: 'red', gray: 'gray', white: 'white'
+                black: 'jet black',
+                brown: 'dark brown',
+                blonde: 'golden blonde',
+                red: 'auburn',
+                gray: 'silver gray',
+                white: 'platinum blonde'
             };
             const hairStyleMap: Record<string, string> = {
                 short: 'short', medium: 'medium-length', long: 'long flowing',
@@ -251,6 +265,29 @@ export class PromptBuilderV2 {
             } else {
                 parts.push(`${hairStyleMap[subject.hairStyle]} ${hairColorMap[subject.hairColor]} hair`);
             }
+
+            // 4.5. 눈색 (Eye Color)
+            const eyeColorMap: Record<string, string> = {
+                black: 'deep black eyes',
+                brown: 'dark brown eyes',
+                'light-brown': 'light brown eyes',
+                hazel: 'hazel eyes',
+                blue: 'blue eyes',
+                green: 'green eyes',
+                gray: 'gray eyes'
+            };
+            parts.push(eyeColorMap[subject.eyeColor] || '');
+
+            // 4.6. 얼굴형 (Face Shape)
+            const faceShapeMap: Record<string, string> = {
+                oval: 'oval face shape',
+                round: 'round face shape',
+                square: 'square face shape',
+                heart: 'heart face shape',
+                diamond: 'diamond face shape',
+                oblong: 'oblong face shape'
+            };
+            parts.push(faceShapeMap[subject.faceShape] || '');
 
             // 5. Body Pose
             const bodyPoseMap: Record<string, string> = {
@@ -466,24 +503,12 @@ export class PromptBuilderV2 {
             quality: lighting.quality,
             colorTemp: lighting.colorTemp,
             mood: lighting.mood,
-            timeBase: lighting.timeBase === 'none' ? undefined : lighting.timeBase,
             special: lighting.special,
         });
     }
 
     private getComposition(): string {
         const parts: string[] = [];
-
-        if (this.settings.artDirection.compositionRule) {
-            const compositionMap: Record<string, string> = {
-                'rule_of_thirds': 'rule of thirds composition',
-                'golden_ratio': 'naturally balanced composition',
-                'center': 'centered composition, symmetrical framing',
-                'leading_lines': 'leading lines composition',
-                'symmetry': 'perfect symmetry, mirror composition'
-            };
-            parts.push(compositionMap[this.settings.artDirection.compositionRule] || '');
-        }
 
         if (this.settings.artDirection.cameraAngle) {
             const angleMap: Record<string, string> = {
@@ -501,28 +526,37 @@ export class PromptBuilderV2 {
     }
 
     private getAspectRatio(): string {
-        const { aspectRatio, orientation } = this.settings.camera;
+        const { aspectRatio } = this.settings.camera;
         if (!aspectRatio) return '';
 
-        // 가로/세로에 따른 실제 비율 계산
-        const displayRatio = orientation === 'portrait'
-            ? aspectRatio.split(':').reverse().join(':')
-            : aspectRatio;
+        // 가로(3:2, 4:3 등) vs 세로(2:3, 3:4 등) 판단
+        const [w, h] = aspectRatio.split(':').map(Number);
+        const isPortrait = h > w;
 
-        // 비율별 설명
-        const ratioDescriptions: Record<string, string> = {
-            '3:2': 'classic 35mm film aspect ratio',
-            '2:3': 'vertical portrait format',
-            '4:3': 'traditional photo format',
-            '3:4': 'vertical traditional format',
-            '16:9': 'cinematic widescreen format',
-            '9:16': 'vertical video format',
-            '1:1': 'square format',
-            '4:5': 'Instagram portrait format',
-            '5:4': 'large format photography',
+        // 비율별 전체 프롬프트 (세로 비율은 맞춤 프롬프트 사용)
+        const ratioPrompts: Record<string, string> = {
+            // 세로 (Portrait)
+            '2:3': 'A 2:3 ratio DSLR portrait',
+            '3:4': 'A 3:4 ratio portrait',
+            '9:16': 'A 9:16 smartphone portrait',
+            '4:5': 'A 4:5 ratio large format portrait',
+            // 가로 (Landscape)
+            '3:2': 'A 3:2 ratio DSLR photograph',
+            '4:3': 'A 4:3 ratio photograph',
+            '16:9': 'A 16:9 cinematic widescreen photograph',
+            '5:4': 'A 5:4 ratio large format photograph',
+            // 정사각형
+            '1:1': 'A 1:1 square format photograph',
         };
 
-        return ratioDescriptions[displayRatio] || `${displayRatio} aspect ratio`;
+        const prompt = ratioPrompts[aspectRatio];
+        if (prompt) {
+            return prompt;
+        }
+
+        // 기본 폴백
+        const orientationText = isPortrait ? 'vertical portrait' : 'horizontal landscape';
+        return `A ${aspectRatio} ${orientationText}`;
     }
 
 

@@ -16,14 +16,14 @@ export const FRAMING_OPTIONS: { value: PortraitFraming; label: string; prompt: s
     { value: 'close-up', label: '클로즈업', prompt: 'close-up portrait' },
     { value: 'bust-shot', label: '바스트샷', prompt: 'bust shot portrait' },
     { value: 'waist-shot', label: '웨이스트샷', prompt: 'waist shot portrait' },
-    { value: 'half-shot', label: '하프샷', prompt: 'half shot portrait' },
-    { value: 'three-quarter-shot', label: '3/4샷', prompt: 'three-quarter shot portrait' },
+    { value: 'half-shot', label: '미디엄샷', prompt: 'medium shot portrait' },
+    { value: 'three-quarter-shot', label: '니샷', prompt: 'knee shot portrait' },
     { value: 'full-shot', label: '풀샷', prompt: 'full body shot' },
     { value: 'long-shot', label: '롱샷', prompt: 'long shot, environmental portrait' },
 ];
 
 export const BODY_POSE_OPTIONS: { value: PortraitBodyPose; label: string; prompt: string }[] = [
-    { value: 'straight', label: '스트레이트', prompt: 'straight frontal pose' },
+    { value: 'straight', label: '자연스럽게', prompt: 'natural relaxed standing pose' },
     { value: 'contrapposto', label: '컨트라포스토', prompt: 'elegant contrapposto pose' },
     { value: 's-curve', label: 'S커브', prompt: 's-curve body pose' },
     { value: 'three-quarter-turn', label: '3/4 턴', prompt: 'three-quarter turn pose' },
@@ -50,7 +50,6 @@ export const EXPRESSION_OPTIONS: { value: PortraitExpression; label: string; pro
     { value: 'mysterious', label: '신비로운', prompt: 'mysterious expression' },
     { value: 'intense', label: '강렬한', prompt: 'intense expression' },
     { value: 'playful', label: '장난스러운', prompt: 'playful expression' },
-    { value: 'sensual', label: '관능적', prompt: 'sensual expression' },
 ];
 
 export const GAZE_OPTIONS: { value: PortraitGaze; label: string; prompt: string }[] = [
@@ -59,9 +58,7 @@ export const GAZE_OPTIONS: { value: PortraitGaze; label: string; prompt: string 
     { value: 'looking-up', label: '위 응시', prompt: 'looking upward' },
     { value: 'looking-down', label: '아래 응시', prompt: 'looking downward' },
     { value: 'side-gaze', label: '옆 응시', prompt: 'side gaze' },
-    { value: 'over-shoulder', label: '어깨 너머', prompt: 'looking over shoulder' },
     { value: 'eyes-closed', label: '눈 감음', prompt: 'eyes closed' },
-    { value: 'half-closed-eyes', label: '반쯤 뜬 눈', prompt: 'half-closed eyes' },
 ];
 
 // ===== 충돌 레벨 =====
@@ -175,67 +172,154 @@ export type FramingAngleConflictLevel = 'disabled' | 'critical' | 'warning' | 'o
 
 export const FRAMING_ANGLE_CONFLICTS: Record<PortraitFraming, Record<string, FramingAngleConflictLevel>> = {
     'extreme-close-up': {
-        eye_level: 'recommend',
+        eye_level: 'recommend',  // 클로즈업은 아이레벨 최적
         high_angle: 'ok',
         low_angle: 'warning',  // 턱 과장
         birds_eye: 'disabled',  // 정수리만 보임
         worms_eye: 'disabled',  // 극단적 왜곡
-        drone: 'disabled',  // 드론으로 클로즈업 불가
     },
     'close-up': {
-        eye_level: 'recommend',
+        eye_level: 'recommend',  // 클로즈업은 아이레벨 최적
         high_angle: 'ok',
         low_angle: 'warning',
         birds_eye: 'critical',  // 정수리만 보임
         worms_eye: 'critical',  // 극단적 턱 왜곡
-        drone: 'disabled',
     },
     'bust-shot': {
-        eye_level: 'recommend',
+        eye_level: 'recommend',  // 바스트샷은 아이레벨 최적
         high_angle: 'ok',
         low_angle: 'ok',
         birds_eye: 'warning',  // 어색한 상반신
         worms_eye: 'warning',
-        drone: 'disabled',
     },
     'waist-shot': {
-        eye_level: 'recommend',
+        eye_level: 'recommend',  // 웨이스트샷은 아이레벨 최적
         high_angle: 'ok',
         low_angle: 'ok',
         birds_eye: 'warning',
         worms_eye: 'warning',
-        drone: 'warning',  // 가능하지만 비추천
     },
     'half-shot': {
-        eye_level: 'recommend',
+        eye_level: 'recommend',  // 하프샷은 아이레벨 최적
         high_angle: 'ok',
         low_angle: 'ok',
         birds_eye: 'warning',
         worms_eye: 'warning',
-        drone: 'warning',
     },
     'three-quarter-shot': {
         eye_level: 'ok',
         high_angle: 'ok',
-        low_angle: 'recommend',  // 히어로 앵글
+        low_angle: 'recommend',  // 3/4샷은 로우앵글로 히어로 느낌
         birds_eye: 'ok',
         worms_eye: 'ok',
-        drone: 'warning',
     },
     'full-shot': {
         eye_level: 'ok',
         high_angle: 'ok',
-        low_angle: 'recommend',  // 히어로샷
-        birds_eye: 'recommend',  // 환경+전신
-        worms_eye: 'recommend',  // 웅장함
-        drone: 'recommend',
+        low_angle: 'recommend',  // 풀샷은 로우앵글로 웅장함+ 히어로샷
+        birds_eye: 'ok',  // 환경+전신
+        worms_eye: 'ok',  // 웅장함
     },
     'long-shot': {
         eye_level: 'ok',
         high_angle: 'ok',
-        low_angle: 'recommend',
-        birds_eye: 'recommend',
-        worms_eye: 'recommend',
-        drone: 'recommend',
+        low_angle: 'ok',
+        birds_eye: 'recommend',  // 롱샷은 버즈아이로 환경+인물 조화
+        worms_eye: 'ok',
+    },
+};
+
+// ===== 구성(Composition Rule) ↔ 앵글 충돌 =====
+// 구성 규칙별 앵글 호환성
+export const COMPOSITION_ANGLE_CONFLICTS: Record<string, Record<string, FramingAngleConflictLevel>> = {
+    'rule_of_thirds': {
+        eye_level: 'recommend',  // 삼분법은 아이레벨에서 계산 용이
+        high_angle: 'ok',
+        low_angle: 'ok',
+        birds_eye: 'warning',  // 극단적 앵글에서 1/3 배치 어색
+        worms_eye: 'warning',
+    },
+    'golden_ratio': {
+        eye_level: 'recommend',  // 황금비는 아이레벨에서 정교한 배치 가능
+        high_angle: 'ok',
+        low_angle: 'ok',
+        birds_eye: 'warning',
+        worms_eye: 'warning',
+    },
+    'center': {
+        eye_level: 'recommend',  // 중앙 구도는 아이레벨이 가장 안정적
+        high_angle: 'ok',
+        low_angle: 'ok',
+        birds_eye: 'ok',  // 중앙 배치는 앵글에 덜 민감
+        worms_eye: 'ok',
+    },
+    'leading_lines': {
+        eye_level: 'ok',
+        high_angle: 'ok',
+        low_angle: 'ok',
+        birds_eye: 'recommend',  // 버즈아이에서 배경 라인이 잘 보임
+        worms_eye: 'warning',  // 바닥 라인 안 보임
+    },
+    'symmetry': {
+        eye_level: 'recommend',  // 대칭은 아이레벨에서 가장 정확
+        high_angle: 'ok',
+        low_angle: 'critical',  // 로우앵글은 대칭 깨짐 (상하 불균형)
+        birds_eye: 'ok',
+        worms_eye: 'critical',  // 대칭 완전 깨짐
+    },
+};
+
+// ===== 구성(Composition Rule) ↔ 구도 충돌 =====
+// 구성 규칙별 구도 호환성
+export const COMPOSITION_FRAMING_CONFLICTS: Record<string, Record<PortraitFraming, FramingAngleConflictLevel>> = {
+    'rule_of_thirds': {
+        'extreme-close-up': 'ok',
+        'close-up': 'recommend',  // 얼굴 1/3 배치에 효과적
+        'bust-shot': 'recommend',
+        'waist-shot': 'ok',
+        'half-shot': 'ok',
+        'three-quarter-shot': 'ok',
+        'full-shot': 'ok',
+        'long-shot': 'ok',
+    },
+    'golden_ratio': {
+        'extreme-close-up': 'ok',
+        'close-up': 'ok',
+        'bust-shot': 'recommend',  // 황금비 배치에 적합
+        'waist-shot': 'recommend',
+        'half-shot': 'ok',
+        'three-quarter-shot': 'ok',
+        'full-shot': 'ok',
+        'long-shot': 'ok',
+    },
+    'center': {
+        'extreme-close-up': 'recommend',  // 클로즈업은 중앙 배치 자연스러움
+        'close-up': 'ok',
+        'bust-shot': 'ok',
+        'waist-shot': 'ok',
+        'half-shot': 'ok',
+        'three-quarter-shot': 'warning',  // 넓은 프레임에 중앙 배치 어색
+        'full-shot': 'warning',
+        'long-shot': 'warning',  // 작은 피사체가 넓은 프레임 중앙에 어색
+    },
+    'leading_lines': {
+        'extreme-close-up': 'critical',  // 배경이 거의 안 보여 시선유도 불가
+        'close-up': 'warning',  // 배경 적음
+        'bust-shot': 'ok',
+        'waist-shot': 'ok',
+        'half-shot': 'ok',
+        'three-quarter-shot': 'ok',
+        'full-shot': 'ok',
+        'long-shot': 'recommend',  // 환경이 많이 보여 시선유도 극대화
+    },
+    'symmetry': {
+        'extreme-close-up': 'ok',
+        'close-up': 'ok',
+        'bust-shot': 'ok',
+        'waist-shot': 'recommend',  // 대칭 구도에 적합한 중간 크기
+        'half-shot': 'ok',
+        'three-quarter-shot': 'ok',
+        'full-shot': 'ok',
+        'long-shot': 'ok',
     },
 };

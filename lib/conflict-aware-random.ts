@@ -29,9 +29,9 @@ import {
     ACCESSORY_CATEGORIES,
 } from '@/config/mappings/framing-fashion-conflicts';
 
-// ===== 헬퍼: 충돌 레벨 확인 =====
-function isCritical(level: ConflictLevel | undefined): boolean {
-    return level === 'critical' || level === 'disabled';
+// ===== 헬퍼: 충돌 레벨 확인 (warning, critical, disabled 모두 피함) =====
+function isConflict(level: ConflictLevel | undefined): boolean {
+    return level === 'warning' || level === 'critical' || level === 'disabled';
 }
 
 // ===== 배열에서 랜덤 선택 =====
@@ -66,21 +66,21 @@ export function selectConflictAwarePose(params: ConflictAwareRandomParams): Conf
     // 1. 구도에 호환되는 바디포즈 필터링
     const framingBodyConflicts = FRAMING_BODY_POSE_CONFLICTS[framing] || {};
     const compatibleBodyPoses = BODY_POSE_OPTIONS.filter(
-        opt => !isCritical(framingBodyConflicts[opt.value])
+        opt => !isConflict(framingBodyConflicts[opt.value])
     );
     const bodyPose = pickRandom(compatibleBodyPoses).value;
 
     // 2. 구도에 호환되는 핸드포즈 필터링
     const framingHandConflicts = FRAMING_HAND_POSE_CONFLICTS[framing] || {};
     const compatibleHandPoses = HAND_POSE_OPTIONS.filter(
-        opt => !isCritical(framingHandConflicts[opt.value])
+        opt => !isConflict(framingHandConflicts[opt.value])
     );
     const handPose = pickRandom(compatibleHandPoses).value;
 
     // 3. 핸드포즈에 호환되는 표정 필터링
     const handExpressionConflicts = HAND_POSE_EXPRESSION_CONFLICTS[handPose] || {};
     const compatibleExpressions = EXPRESSION_OPTIONS.filter(
-        opt => !isCritical(handExpressionConflicts[opt.value])
+        opt => !isConflict(handExpressionConflicts[opt.value])
     );
     const expression = pickRandom(compatibleExpressions).value;
 
@@ -92,10 +92,10 @@ export function selectConflictAwarePose(params: ConflictAwareRandomParams): Conf
 
     const compatibleGazes = GAZE_OPTIONS.filter(opt => {
         const value = opt.value;
-        return !isCritical(expressionGazeConflicts[value])
-            && !isCritical(bodyGazeConflicts[value])
-            && !isCritical(handGazeConflicts[value])
-            && !isCritical(angleGazeConflicts[value]);
+        return !isConflict(expressionGazeConflicts[value])
+            && !isConflict(bodyGazeConflicts[value])
+            && !isConflict(handGazeConflicts[value])
+            && !isConflict(angleGazeConflicts[value]);
     });
     const gaze = compatibleGazes.length > 0
         ? pickRandom(compatibleGazes).value

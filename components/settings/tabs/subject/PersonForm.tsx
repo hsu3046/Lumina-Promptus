@@ -1,11 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import { AlertTriangle, CircleAlert } from 'lucide-react';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
+import { ComboboxField, GroupedComboboxField, type ConflictLevel as ComboboxConflictLevel } from '@/components/ui/combobox-field';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { getFieldConflictLevel, type PortraitConfig } from '@/lib/portrait-conflict-validator';
 import { PresetSearchPicker } from './PresetSearchPicker';
@@ -20,13 +17,13 @@ import {
     HAND_POSE_OPTIONS,
     EXPRESSION_OPTIONS,
     GAZE_OPTIONS,
-    type ConflictLevel,
 } from '@/config/mappings/portrait-composition';
 import {
-    TOP_WEAR_OPTIONS,
-    BOTTOM_WEAR_OPTIONS,
-    FOOTWEAR_OPTIONS,
-    ACCESSORY_OPTIONS,
+    TOP_WEAR_GROUPS,
+    BOTTOM_WEAR_GROUPS,
+    FOOTWEAR_GROUPS,
+    ACCESSORY1_GROUPS,
+    ACCESSORY2_GROUPS,
 } from '@/config/mappings/fashion-options';
 import {
     checkFashionConflicts,
@@ -41,32 +38,114 @@ import type {
     PortraitGaze
 } from '@/types';
 
+// === 정적 옵션 데이터 ===
+const SKIN_TONE_OPTIONS = [
+    { value: 'fair', label: '매우 밝음', color: '#FFE4D0' },
+    { value: 'light', label: '밝음', color: '#F5D0B0' },
+    { value: 'medium', label: '화사한 중간톤', color: '#D4A574' },
+    { value: 'tan', label: '내추럴', color: '#C09060' },
+    { value: 'brown', label: '구릿빛', color: '#8D5524' },
+    { value: 'dark', label: '매우 어두움', color: '#4A2C2A' },
+] as const;
+
+const HAIR_COLOR_OPTIONS = [
+    { value: 'black', label: '블랙', color: '#1A1A1A' },
+    { value: 'brown', label: '다크 브라운', color: '#4A3020' },
+    { value: 'blonde', label: '금발', color: '#E8D590' },
+    { value: 'red', label: '적갈색', color: '#8B3A2F' },
+    { value: 'gray', label: '실버 그레이', color: '#A0A0A0' },
+    { value: 'white', label: '백금발', color: '#F0F0F0' },
+] as const;
+
+const EYE_COLOR_OPTIONS = [
+    { value: 'black', label: '딥 블랙', color: '#1A1A1A' },
+    { value: 'brown', label: '다크 브라운', color: '#4A3020' },
+    { value: 'light-brown', label: '라이트 브라운', color: '#87613E' },
+    { value: 'hazel', label: '헤이즐', color: '#8E7618' },
+    { value: 'blue', label: '블루', color: '#4A90D9' },
+    { value: 'green', label: '에메랄드', color: '#50C878' },
+    { value: 'gray', label: '그레이', color: '#808080' },
+] as const;
+
+const FACE_SHAPE_OPTIONS = [
+    { value: 'oval', label: '계란형' },
+    { value: 'round', label: '둥근형' },
+    { value: 'square', label: '각진형' },
+    { value: 'heart', label: '하트형' },
+    { value: 'diamond', label: '다이아몬드형' },
+    { value: 'oblong', label: '긴 얼굴형' },
+] as const;
+
+const GENDER_OPTIONS = [
+    { value: 'female', label: '여성' },
+    { value: 'male', label: '남성' },
+    { value: 'androgynous', label: '중성적' },
+] as const;
+
+const AGE_GROUP_OPTIONS = [
+    { value: 'early-20s', label: '20대 초반' },
+    { value: 'late-20s', label: '20대 후반' },
+    { value: '30s', label: '30대' },
+    { value: '40s-50s', label: '40~50대' },
+    { value: '60s-70s', label: '60~70대' },
+    { value: '80plus', label: '80대 이상' },
+] as const;
+
+// 헤어 스타일 그룹 옵션
+const HAIR_STYLE_GROUPS = [
+    {
+        label: '스트레이트',
+        options: [
+            { value: 'short-straight', label: '짧은' },
+            { value: 'medium-straight', label: '중간' },
+            { value: 'long-straight', label: '긴' },
+        ],
+    },
+    {
+        label: '웨이브',
+        options: [
+            { value: 'short-wavy', label: '짧은 웨이브' },
+            { value: 'medium-wavy', label: '중간 웨이브' },
+            { value: 'long-wavy', label: '긴 웨이브' },
+        ],
+    },
+    {
+        label: '묶음',
+        options: [
+            { value: 'ponytail', label: '포니테일' },
+            { value: 'bun', label: '올림머리' },
+            { value: 'braids', label: '땁은머리' },
+            { value: 'half-up', label: '반묶음' },
+        ],
+    },
+    {
+        label: '특수',
+        options: [
+            { value: 'curly', label: '곱슬' },
+            { value: 'bald', label: '대머리' },
+        ],
+    },
+] as const;
+
+const BODY_TYPE_OPTIONS = [
+    { value: 'slim', label: '슬림' },
+    { value: 'average', label: '보통' },
+    { value: 'athletic', label: '운동선수형' },
+    { value: 'muscular', label: '근육질' },
+    { value: 'curvy', label: '풍만' },
+] as const;
+
 interface PersonFormProps {
     index: number;
     subject: StudioSubject;
     onUpdate: (updates: Partial<StudioSubject>) => void;
 }
 
-// 충돌 아이콘 컴포넌트
-function ConflictIcon({ level }: { level: ConflictLevel }) {
-    if (level === 'critical') {
-        return <CircleAlert className="h-3 w-3 text-red-500 shrink-0" />;
-    }
-    if (level === 'warning') {
-        return <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />;
-    }
-    return null;
-}
-
-
-
 export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
     const { settings } = useSettingsStore();
     const framing = settings.userInput.studioComposition;
 
-
-
-    // 현재 Portrait 설정 (D: 포즈 충돌 감지용)
+    // 현재 Portrait 설정 (포즈 충돌 감지용)
     const currentConfig = useMemo((): PortraitConfig => ({
         framing: framing as PortraitFraming,
         bodyPose: subject.bodyPose,
@@ -90,12 +169,19 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
         return fashionConflicts.find(c => c.field === field);
     };
 
+    // 구도에 따른 패션 아이템 disabled 상태
+    // 클로즈업/웨이스트샷: 하의, 신발 disabled
+    // 클로즈업 ~ 니샷: 신발 disabled
+    const isBottomDisabled = ['extreme-close-up', 'close-up', 'bust-shot', 'waist-shot'].includes(framing);
+    const isFootwearDisabled = ['extreme-close-up', 'close-up', 'bust-shot', 'waist-shot', 'half-shot', 'three-quarter-shot'].includes(framing);
+
     // autoMode: true = 검색창만, false = 모든 드롭다운 표시
     const showDetail = !subject.autoMode;
 
-    // 각 필드별 현재 충돌 레벨 계산
-    const getConflict = (field: keyof PortraitConfig, value: string) => {
-        return getFieldConflictLevel(currentConfig, field, value);
+    // 각 필드별 현재 충돌 레벨 계산 (ComboboxField용으로 변환)
+    const getConflict = (field: keyof PortraitConfig) => (value: string): ComboboxConflictLevel => {
+        const result = getFieldConflictLevel(currentConfig, field, value);
+        return result.level as ComboboxConflictLevel;
     };
 
     // 현재 선택된 프리셋 ID 계산
@@ -132,312 +218,167 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
                 </div>
             </div>
 
-            {/* 4개 검색창 (항상 표시) */}
+            {/* 외모 프리셋 + 성별/나이/체형 (항상 표시) */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {/* A: 외모 */}
                 <PresetSearchPicker
                     label="외모"
                     placeholder="한국인..."
                     options={APPEARANCE_PRESETS}
-                    value={selectedAppearance}
-                    onChange={(preset) => onUpdate(preset.values)}
+                    value={subject.appearancePresetId || ''}
+                    onChange={(preset) => onUpdate({ appearancePresetId: preset.id, ...preset.values })}
                 />
-
-                {/* B: 스타일 */}
-                <PresetSearchPicker
-                    label="스타일"
-                    placeholder="20대 여성..."
-                    options={STYLE_PRESETS}
-                    value={selectedStyle}
-                    onChange={(preset) => onUpdate(preset.values)}
+                <ComboboxField
+                    label="성별"
+                    options={GENDER_OPTIONS}
+                    value={subject.gender}
+                    onSelect={(v) => onUpdate({ gender: v as 'male' | 'female' })}
                 />
-
-                {/* C: 패션 (텍스트 프리셋) */}
-                <PresetSearchPicker
-                    label="패션"
-                    placeholder="캐주얼..."
-                    options={FASHION_PRESETS}
-                    value={selectedFashion}
-                    onChange={(preset) => onUpdate(preset.values)}
+                <ComboboxField
+                    label="나이"
+                    options={AGE_GROUP_OPTIONS}
+                    value={subject.ageGroup}
+                    onSelect={(v) => onUpdate({ ageGroup: v as StudioSubject['ageGroup'] })}
                 />
-
-                {/* D: 포즈 */}
-                <PresetSearchPicker
-                    label="포즈"
-                    placeholder="자연스러운..."
-                    options={POSE_PRESETS}
-                    value={selectedPose}
-                    onChange={(preset) => onUpdate(preset.values)}
+                <ComboboxField
+                    label="체형"
+                    options={BODY_TYPE_OPTIONS}
+                    value={subject.bodyType}
+                    onSelect={(v) => onUpdate({ bodyType: v as StudioSubject['bodyType'] })}
                 />
             </div>
 
             {/* 상세 모드: 개별 드롭다운 */}
             {showDetail && (
                 <div className="space-y-4 pt-4">
-                    {/* A: 외모 상세 */}
-                    <div className="space-y-2">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500">피부톤</Label>
-                                <Select value={subject.skinTone} onValueChange={(v) => onUpdate({ skinTone: v as StudioSubject['skinTone'] })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-zinc-800">
-                                        <SelectItem value="fair">페어</SelectItem>
-                                        <SelectItem value="light">라이트</SelectItem>
-                                        <SelectItem value="medium">미디움</SelectItem>
-                                        <SelectItem value="tan">탠</SelectItem>
-                                        <SelectItem value="brown">브라운</SelectItem>
-                                        <SelectItem value="dark">다크</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500">머리색</Label>
-                                <Select value={subject.hairColor} onValueChange={(v) => onUpdate({ hairColor: v as StudioSubject['hairColor'] })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-zinc-800">
-                                        <SelectItem value="black">검정</SelectItem>
-                                        <SelectItem value="brown">갈색</SelectItem>
-                                        <SelectItem value="blonde">금발</SelectItem>
-                                        <SelectItem value="red">빨강</SelectItem>
-                                        <SelectItem value="gray">회색</SelectItem>
-                                        <SelectItem value="white">흰색</SelectItem>
-                                        <SelectItem value="pink">핑크</SelectItem>
-                                        <SelectItem value="blue">블루</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500">눈색</Label>
-                                <Select value={subject.eyeColor} onValueChange={(v) => onUpdate({ eyeColor: v as StudioSubject['eyeColor'] })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-zinc-800">
-                                        <SelectItem value="brown">갈색</SelectItem>
-                                        <SelectItem value="black">검정</SelectItem>
-                                        <SelectItem value="blue">파랑</SelectItem>
-                                        <SelectItem value="green">녹색</SelectItem>
-                                        <SelectItem value="hazel">헤이즐</SelectItem>
-                                        <SelectItem value="gray">회색</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500">얼굴형</Label>
-                                <Select value={subject.faceShape} onValueChange={(v) => onUpdate({ faceShape: v as StudioSubject['faceShape'] })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-zinc-800">
-                                        <SelectItem value="oval">타원형</SelectItem>
-                                        <SelectItem value="round">둥근형</SelectItem>
-                                        <SelectItem value="square">각진형</SelectItem>
-                                        <SelectItem value="heart">하트형</SelectItem>
-                                        <SelectItem value="oblong">긴형</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+                    {/* Row 1: 피부톤 - 얼굴형 - 눈색 - 머리색 */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <ComboboxField
+                            label="피부톤"
+                            options={SKIN_TONE_OPTIONS}
+                            value={subject.skinTone}
+                            onSelect={(v) => onUpdate({ skinTone: v as StudioSubject['skinTone'] })}
+                        />
+                        <ComboboxField
+                            label="얼굴형"
+                            options={FACE_SHAPE_OPTIONS}
+                            value={subject.faceShape}
+                            onSelect={(v) => onUpdate({ faceShape: v as StudioSubject['faceShape'] })}
+                        />
+                        <ComboboxField
+                            label="눈색"
+                            options={EYE_COLOR_OPTIONS}
+                            value={subject.eyeColor}
+                            onSelect={(v) => onUpdate({ eyeColor: v as StudioSubject['eyeColor'] })}
+                        />
+                        <ComboboxField
+                            label="머리색"
+                            options={HAIR_COLOR_OPTIONS}
+                            value={subject.hairColor}
+                            onSelect={(v) => onUpdate({ hairColor: v as StudioSubject['hairColor'] })}
+                        />
                     </div>
 
-                    {/* B: 스타일 상세 */}
-                    <div className="space-y-2">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500">성별</Label>
-                                <Select value={subject.gender} onValueChange={(v) => onUpdate({ gender: v as 'male' | 'female' })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-zinc-800">
-                                        <SelectItem value="male">남성</SelectItem>
-                                        <SelectItem value="female">여성</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500">나이</Label>
-                                <Select value={subject.ageGroup} onValueChange={(v) => onUpdate({ ageGroup: v as StudioSubject['ageGroup'] })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-zinc-800">
-                                        <SelectItem value="child">어린이</SelectItem>
-                                        <SelectItem value="teen">10대</SelectItem>
-                                        <SelectItem value="20s">20대</SelectItem>
-                                        <SelectItem value="30s">30대</SelectItem>
-                                        <SelectItem value="40s">40대</SelectItem>
-                                        <SelectItem value="50plus">50대+</SelectItem>
-                                        <SelectItem value="elderly">노인</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500">헤어스타일</Label>
-                                <Select value={subject.hairStyle} onValueChange={(v) => onUpdate({ hairStyle: v as StudioSubject['hairStyle'] })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-zinc-800">
-                                        <SelectItem value="short">짧은</SelectItem>
-                                        <SelectItem value="medium">중간</SelectItem>
-                                        <SelectItem value="long">긴</SelectItem>
-                                        <SelectItem value="wavy">웨이브</SelectItem>
-                                        <SelectItem value="curly">곱슬</SelectItem>
-                                        <SelectItem value="straight">스트레이트</SelectItem>
-                                        <SelectItem value="bald">대머리</SelectItem>
-                                        <SelectItem value="ponytail">포니테일</SelectItem>
-                                        <SelectItem value="bun">올림머리</SelectItem>
-                                        <SelectItem value="braids">땋은머리</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500">체형</Label>
-                                <Select value={subject.bodyType} onValueChange={(v) => onUpdate({ bodyType: v as StudioSubject['bodyType'] })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-zinc-800">
-                                        <SelectItem value="slim">슬림</SelectItem>
-                                        <SelectItem value="average">보통</SelectItem>
-                                        <SelectItem value="athletic">건장</SelectItem>
-                                        <SelectItem value="curvy">글래머</SelectItem>
-                                        <SelectItem value="plus">플러스</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+                    {/* Row 2: 헤어스타일 - 상의 - 하의 - 신발 */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <GroupedComboboxField
+                            label="헤어스타일"
+                            groups={HAIR_STYLE_GROUPS}
+                            value={subject.hairStyle}
+                            onSelect={(v) => onUpdate({ hairStyle: v })}
+                        />
+                        <GroupedComboboxField
+                            label="상의"
+                            groups={TOP_WEAR_GROUPS}
+                            value={subject.topWear}
+                            onSelect={(v) => onUpdate({ topWear: v })}
+                            placeholder="선택 안함"
+                        />
+                        <GroupedComboboxField
+                            label="하의"
+                            groups={BOTTOM_WEAR_GROUPS}
+                            value={subject.bottomWear}
+                            onSelect={(v) => onUpdate({ bottomWear: v })}
+                            placeholder="선택 안함"
+                            disabled={isBottomDisabled}
+                        />
+                        <GroupedComboboxField
+                            label="신발"
+                            groups={FOOTWEAR_GROUPS}
+                            value={subject.footwear}
+                            onSelect={(v) => onUpdate({ footwear: v })}
+                            placeholder="선택 안함"
+                            disabled={isFootwearDisabled}
+                        />
                     </div>
 
-                    {/* C: 패션 상세 */}
-                    <div className="space-y-2">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500">상의</Label>
-                                <Select value={subject.topWear || 'none'} onValueChange={(v) => onUpdate({ topWear: v === 'none' ? '' : v })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue placeholder="선택 안함" /></SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-zinc-800 max-h-48">
-                                        {TOP_WEAR_OPTIONS.map((opt) => (
-                                            <SelectItem key={opt.value || 'none'} value={opt.value || 'none'}>{opt.label}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500 flex items-center gap-1">
-                                    하의
-                                    {getFashionConflict('bottomWear') && <ConflictIcon level={getFashionConflict('bottomWear')!.level} />}
-                                </Label>
-                                <Select value={subject.bottomWear || 'none'} onValueChange={(v) => onUpdate({ bottomWear: v === 'none' ? '' : v })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue placeholder="선택 안함" /></SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-zinc-800 max-h-48">
-                                        {BOTTOM_WEAR_OPTIONS.map((opt) => (
-                                            <SelectItem key={opt.value || 'none'} value={opt.value || 'none'}>{opt.label}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500 flex items-center gap-1">
-                                    신발
-                                    {getFashionConflict('footwear') && <ConflictIcon level={getFashionConflict('footwear')!.level} />}
-                                </Label>
-                                <Select value={subject.footwear || 'none'} onValueChange={(v) => onUpdate({ footwear: v === 'none' ? '' : v })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue placeholder="선택 안함" /></SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-zinc-800 max-h-48">
-                                        {FOOTWEAR_OPTIONS.map((opt) => (
-                                            <SelectItem key={opt.value || 'none'} value={opt.value || 'none'}>{opt.label}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500 flex items-center gap-1">
-                                    악세서리
-                                    {getFashionConflict('accessory') && <ConflictIcon level={getFashionConflict('accessory')!.level} />}
-                                </Label>
-                                <Select value={subject.accessory || 'none'} onValueChange={(v) => onUpdate({ accessory: v === 'none' ? '' : v })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue placeholder="선택 안함" /></SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-zinc-800 max-h-48">
-                                        {ACCESSORY_OPTIONS.map((opt) => (
-                                            <SelectItem key={opt.value || 'none'} value={opt.value || 'none'}>{opt.label}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+                    {/* Row 3: 악세서리1 - 악세서리2 - 표정 - 시선 */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <GroupedComboboxField
+                            label="악세서리1"
+                            groups={ACCESSORY1_GROUPS}
+                            value={subject.accessory}
+                            onSelect={(v) => onUpdate({ accessory: v })}
+                            placeholder="선택 안함"
+                        />
+                        <GroupedComboboxField
+                            label="악세서리2"
+                            groups={ACCESSORY2_GROUPS}
+                            value={subject.accessory2}
+                            onSelect={(v) => onUpdate({ accessory2: v })}
+                            placeholder="선택 안함"
+                        />
+                        <ComboboxField
+                            label="표정"
+                            options={EXPRESSION_OPTIONS}
+                            value={subject.expression}
+                            onSelect={(v) => onUpdate({ expression: v as PortraitExpression })}
+                            getConflictLevel={getConflict('expression')}
+                        />
+                        <ComboboxField
+                            label="시선"
+                            options={GAZE_OPTIONS}
+                            value={subject.gazeDirection}
+                            onSelect={(v) => onUpdate({ gazeDirection: v as PortraitGaze })}
+                            getConflictLevel={getConflict('gaze')}
+                        />
                     </div>
 
-                    {/* D: 포즈 상세 */}
-                    <div className="space-y-2">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500">바디 포즈</Label>
-                                <Select value={subject.bodyPose} onValueChange={(v) => onUpdate({ bodyPose: v as PortraitBodyPose })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-zinc-800">
-                                        {BODY_POSE_OPTIONS.map((opt) => {
-                                            const conflict = getConflict('bodyPose', opt.value);
-                                            return (
-                                                <SelectItem key={opt.value} value={opt.value}>
-                                                    <div className="flex items-center gap-1">
-                                                        <ConflictIcon level={conflict.level} />
-                                                        <span>{opt.label}</span>
-                                                    </div>
-                                                </SelectItem>
-                                            );
-                                        })}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500">핸드 포즈</Label>
-                                <Select value={subject.handPose} onValueChange={(v) => onUpdate({ handPose: v as PortraitHandPose })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-zinc-800">
-                                        {HAND_POSE_OPTIONS.map((opt) => {
-                                            const conflict = getConflict('handPose', opt.value);
-                                            return (
-                                                <SelectItem key={opt.value} value={opt.value}>
-                                                    <div className="flex items-center gap-1">
-                                                        <ConflictIcon level={conflict.level} />
-                                                        <span>{opt.label}</span>
-                                                    </div>
-                                                </SelectItem>
-                                            );
-                                        })}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500">표정</Label>
-                                <Select value={subject.expression} onValueChange={(v) => onUpdate({ expression: v as PortraitExpression })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-zinc-800">
-                                        {EXPRESSION_OPTIONS.map((opt) => {
-                                            const conflict = getConflict('expression', opt.value);
-                                            return (
-                                                <SelectItem key={opt.value} value={opt.value}>
-                                                    <div className="flex items-center gap-1">
-                                                        <ConflictIcon level={conflict.level} />
-                                                        <span>{opt.label}</span>
-                                                    </div>
-                                                </SelectItem>
-                                            );
-                                        })}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-zinc-500">시선</Label>
-                                <Select value={subject.gazeDirection} onValueChange={(v) => onUpdate({ gazeDirection: v as PortraitGaze })}>
-                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 h-8 text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-zinc-800">
-                                        {GAZE_OPTIONS.map((opt) => {
-                                            const conflict = getConflict('gaze', opt.value);
-                                            return (
-                                                <SelectItem key={opt.value} value={opt.value}>
-                                                    <div className="flex items-center gap-1">
-                                                        <ConflictIcon level={conflict.level} />
-                                                        <span>{opt.label}</span>
-                                                    </div>
-                                                </SelectItem>
-                                            );
-                                        })}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+                    {/* Row 4: 바디포즈 - 핸드포즈 - 위치 - 여백 */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <ComboboxField
+                            label="바디 포즈"
+                            options={BODY_POSE_OPTIONS}
+                            value={subject.bodyPose}
+                            onSelect={(v) => onUpdate({ bodyPose: v as PortraitBodyPose })}
+                            getConflictLevel={getConflict('bodyPose')}
+                        />
+                        <ComboboxField
+                            label="핸드 포즈"
+                            options={HAND_POSE_OPTIONS}
+                            value={subject.handPose}
+                            onSelect={(v) => onUpdate({ handPose: v as PortraitHandPose })}
+                            getConflictLevel={getConflict('handPose')}
+                        />
+                        <ComboboxField
+                            label="위치"
+                            options={[
+                                { value: 'left', label: '왼쪽' },
+                                { value: 'center', label: '기본' },
+                                { value: 'right', label: '오른쪽' },
+                            ]}
+                            value={subject.position}
+                            onSelect={(v) => onUpdate({ position: v as 'left' | 'center' | 'right' })}
+                        />
+                        <ComboboxField
+                            label="여백"
+                            options={[
+                                { value: 'tight', label: '타이트' },
+                                { value: 'normal', label: '기본' },
+                                { value: 'loose', label: '여유' },
+                            ]}
+                            value={subject.margin}
+                            onSelect={(v) => onUpdate({ margin: v as 'tight' | 'normal' | 'loose' })}
+                        />
                     </div>
                 </div>
             )}

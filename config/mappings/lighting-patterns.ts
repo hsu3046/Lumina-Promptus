@@ -1,5 +1,5 @@
 // config/mappings/lighting-patterns.ts
-// 조명 패턴 프롬프트 빌더 (8개 항목 기반)
+// 조명 패턴 프롬프트 빌더 (컴팩트 버전)
 
 import type {
     LightingPattern,
@@ -8,74 +8,64 @@ import type {
     LightQuality,
     ColorTemperature,
     LightingMood,
-    TimeLighting,
     SpecialLighting,
 } from '@/types/lighting.types';
 
-// ===== 패턴별 프롬프트 키워드 =====
+// ===== 컴팩트 프롬프트 키워드 =====
 
-const PATTERN_PROMPTS: Record<LightingPattern, string> = {
-    rembrandt: 'Rembrandt lighting with triangle highlight on shadow cheek, 45-degree key light position',
-    butterfly: 'Butterfly lighting with butterfly shadow under nose, overhead frontal key light, glamorous beauty look',
-    loop: 'Loop lighting with nose shadow looping toward cheek, 30-degree key light, natural flattering light',
-    split: 'Split lighting with face divided in half, 90-degree side light, dramatic mood',
+const PATTERN_NAMES: Record<LightingPattern, string> = {
+    rembrandt: 'Rembrandt lighting',
+    butterfly: 'Butterfly lighting',
+    loop: 'Loop lighting',
+    split: 'Split lighting',
 };
 
-const KEY_PROMPTS: Record<LightingKey, string> = {
-    'high-key': 'high-key bright and airy overall mood, minimal shadows',
-    'mid-key': 'balanced mid-key exposure, natural contrast',
-    'low-key': 'low-key dramatic dark mood, deep shadows',
+const KEY_NAMES: Record<LightingKey, string> = {
+    'high-key': 'high-key',
+    'mid-key': 'balanced',
+    'low-key': 'low-key dramatic',
 };
 
-const RATIO_PROMPTS: Record<LightingRatio, string> = {
-    '2:1': 'soft 2:1 key-to-fill ratio',
-    '3:1': 'natural 3:1 lighting ratio',
-    '4:1': 'medium 4:1 lighting contrast',
-    '8:1': 'strong 8:1 high contrast',
-    '16:1': 'dramatic 16:1 extreme contrast',
+const RATIO_NAMES: Record<LightingRatio, string> = {
+    '2:1': '2:1 soft',
+    '3:1': '3:1 natural',
+    '4:1': '4:1 medium',
+    '8:1': '8:1 high',
+    '16:1': '16:1 extreme',
 };
 
-const QUALITY_PROMPTS: Record<LightQuality, string> = {
-    soft: 'soft diffused light, gentle shadow transitions',
-    hard: 'hard direct light, sharp defined shadows',
+const QUALITY_NAMES: Record<LightQuality, string> = {
+    soft: 'soft diffused',
+    hard: 'hard direct',
 };
 
-const COLOR_TEMP_PROMPTS: Record<ColorTemperature, string> = {
-    'warm-golden': 'warm golden 2800K color temperature',
-    tungsten: 'tungsten 3200K warm amber glow',
-    daylight: 'daylight balanced 5600K neutral white',
-    cloudy: 'cool overcast 6500K slight blue tint',
-    shade: 'shade 7500K cool blue cast',
-    'cool-blue': 'cool blue 8000K+ clinical modern look',
+const COLOR_TEMP_NAMES: Record<ColorTemperature, string> = {
+    'warm-golden': 'warm 2800K',
+    tungsten: 'tungsten 3200K',
+    daylight: 'daylight 5600K',
+    cloudy: 'cloudy 6500K',
+    shade: 'shade 7500K',
+    'cool-blue': 'cool blue 8000K',
 };
 
-const MOOD_PROMPTS: Record<LightingMood, string> = {
-    dramatic: 'dramatic intense mood',
-    natural: 'natural organic atmosphere',
-    glamorous: 'glamorous sophisticated elegance',
-    mysterious: 'mysterious enigmatic ambiance',
-    editorial: 'editorial fashion-forward style',
-    cinematic: 'cinematic film-like quality',
+const MOOD_NAMES: Record<LightingMood, string> = {
+    dramatic: 'dramatic',
+    natural: 'natural',
+    glamorous: 'glamorous',
+    mysterious: 'mysterious',
+    editorial: 'editorial',
+    cinematic: 'cinematic',
 };
 
-const TIME_PROMPTS: Record<TimeLighting, string> = {
-    none: '', // 자연광 없음 - 프롬프트 생략
-    'golden-hour': 'golden hour warm sunset light',
-    'blue-hour': 'blue hour cool twilight atmosphere',
-    'midday-sun': 'midday sun harsh overhead lighting',
-    overcast: 'overcast soft diffused natural light',
-    'window-light': 'natural window light directional indoor',
-};
-
-const SPECIAL_PROMPTS: Record<SpecialLighting, string> = {
-    'rim-light': 'rim light edge separation',
-    'hair-light': 'hair light adding dimension',
-    'background-light': 'background light depth separation',
-    chiaroscuro: 'chiaroscuro Renaissance contrast',
-    clamshell: 'clamshell beauty lighting setup',
-    'broad-lighting': 'broad lighting illuminated side facing camera',
-    'short-lighting': 'short lighting shadow side facing camera',
-    'edge-lighting': 'edge lighting dramatic silhouette outline',
+const SPECIAL_NAMES: Record<SpecialLighting, string> = {
+    'rim-light': 'rim light',
+    'hair-light': 'hair light',
+    'background-light': 'background light',
+    chiaroscuro: 'chiaroscuro',
+    clamshell: 'clamshell',
+    'broad-lighting': 'broad lighting',
+    'short-lighting': 'short lighting',
+    'edge-lighting': 'edge lighting',
 };
 
 // ===== 패턴별 추천 프리셋 =====
@@ -118,7 +108,7 @@ export const PATTERN_PRESETS: Record<LightingPattern, PatternPreset> = {
     },
 };
 
-// ===== 프롬프트 빌더 =====
+// ===== 프롬프트 빌더 (컴팩트 문장형) =====
 
 interface LightingPromptParams {
     pattern: LightingPattern;
@@ -127,50 +117,41 @@ interface LightingPromptParams {
     quality?: LightQuality;
     colorTemp?: ColorTemperature;
     mood?: LightingMood;
-    timeBase?: TimeLighting;
     special?: SpecialLighting[];
 }
 
 export function buildLightingPrompt(params: LightingPromptParams): string {
-    const parts: string[] = [];
+    // 패턴 + 키 + 광질 결합: "high-key Rembrandt lighting with soft diffused quality"
+    const patternName = PATTERN_NAMES[params.pattern];
+    const keyName = KEY_NAMES[params.key];
+    const qualityName = params.quality ? QUALITY_NAMES[params.quality] : '';
 
-    // 1. 패턴 (핵심)
-    parts.push(PATTERN_PROMPTS[params.pattern]);
+    let result = qualityName
+        ? `${keyName} ${patternName} with ${qualityName} quality`
+        : `${keyName} ${patternName}`;
 
-    // 2. 키
-    parts.push(KEY_PROMPTS[params.key]);
-
-    // 3. 비율
+    // 콘트라스트 비율: "medium contrast ratio"
     if (params.ratio) {
-        parts.push(RATIO_PROMPTS[params.ratio]);
+        const ratioName = RATIO_NAMES[params.ratio].split(' ')[1]; // '4:1 medium' -> 'medium'
+        result += `, ${ratioName} contrast ratio`;
     }
 
-    // 4. 광질
-    if (params.quality) {
-        parts.push(QUALITY_PROMPTS[params.quality]);
-    }
-
-    // 5. 색온도
+    // 색온도 (화이트밸런스): "daylight white balance"
     if (params.colorTemp) {
-        parts.push(COLOR_TEMP_PROMPTS[params.colorTemp]);
+        const tempName = COLOR_TEMP_NAMES[params.colorTemp].split(' ')[0]; // 'daylight 5600K' -> 'daylight'
+        result += `, ${tempName} white balance`;
     }
 
-    // 6. 분위기
+    // 분위기: "natural mood"
     if (params.mood) {
-        parts.push(MOOD_PROMPTS[params.mood]);
+        result += `, ${MOOD_NAMES[params.mood]} mood`;
     }
 
-    // 7. 시간대
-    if (params.timeBase) {
-        parts.push(TIME_PROMPTS[params.timeBase]);
-    }
-
-    // 8. 특수 조명
+    // 특수 조명 (있으면 추가)
     if (params.special && params.special.length > 0) {
-        params.special.forEach(s => {
-            parts.push(SPECIAL_PROMPTS[s]);
-        });
+        const specials = params.special.map(s => SPECIAL_NAMES[s]).join(' and ');
+        result += ` with ${specials}`;
     }
 
-    return parts.join(', ');
+    return result;
 }

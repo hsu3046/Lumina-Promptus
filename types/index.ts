@@ -78,8 +78,8 @@ export interface CameraSettings {
   apertureAuto: boolean;
   shutterSpeedAuto: boolean;
   isoAuto: boolean;
-  aspectRatio: '3:2' | '4:3' | '16:9' | '1:1' | '4:5';
-  orientation: 'landscape' | 'portrait';
+  aspectRatio: string;  // "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "5:4", "4:5", "1:1"
+  orientation: 'landscape' | 'portrait';  // deprecated, 하위 호환용
 }
 
 export interface LightingSettings {
@@ -174,28 +174,34 @@ export interface StudioSubject {
   autoMode: boolean; // Auto 모드 - ON이면 검색창만 표시
 
   // A: 외모
+  appearancePresetId?: string; // 외모 프리셋 ID (프롬프트에 사용)
   skinTone: 'fair' | 'light' | 'medium' | 'tan' | 'brown' | 'dark';
-  hairColor: 'black' | 'brown' | 'blonde' | 'red' | 'gray' | 'white' | 'pink' | 'blue';
-  eyeColor: 'brown' | 'black' | 'blue' | 'green' | 'hazel' | 'gray';
-  faceShape: 'oval' | 'round' | 'square' | 'heart' | 'oblong';
+  hairColor: 'black' | 'brown' | 'blonde' | 'red' | 'gray' | 'white';
+  eyeColor: 'brown' | 'black' | 'blue' | 'green' | 'hazel' | 'gray' | 'light-brown';
+  faceShape: 'oval' | 'round' | 'square' | 'heart' | 'diamond' | 'oblong';
 
   // B: 스타일
-  gender: 'male' | 'female';
-  ageGroup: 'child' | 'teen' | '20s' | '30s' | '40s' | '50plus' | 'elderly';
-  hairStyle: 'short' | 'medium' | 'long' | 'wavy' | 'curly' | 'straight' | 'bald' | 'ponytail' | 'bun' | 'braids';
-  bodyType: 'slim' | 'average' | 'athletic' | 'curvy' | 'plus';
+  gender: 'male' | 'female' | 'androgynous';
+  ageGroup: 'early-20s' | 'late-20s' | '30s' | '40s-50s' | '60s-70s' | '80plus';
+  hairStyle: string;  // short-straight, medium-straight, long-straight, short-wavy, medium-wavy, long-wavy, ponytail, bun, braids, half-up, curly, bald
+  bodyType: 'slim' | 'average' | 'athletic' | 'muscular' | 'curvy';
 
   // C: 패션
   topWear: string;
   bottomWear: string;
   footwear: string;
-  accessory: string;
+  accessory: string;   // 악세서리1 (얼굴/머리)
+  accessory2: string;  // 악세서리2 (장신구)
 
   // D: 포즈
   bodyPose: PortraitBodyPose;
   handPose: PortraitHandPose;
   expression: PortraitExpression;
   gazeDirection: PortraitGaze;
+
+  // E: 위치/여백
+  position: 'left' | 'center' | 'right';
+  margin: 'tight' | 'normal' | 'loose';
 }
 
 export interface UserInputSettings {

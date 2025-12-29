@@ -72,7 +72,21 @@ export function CameraTab() {
     // 충돌 감지용 설정 값
     const framing = settings.userInput.studioComposition;
     const angle = settings.artDirection.cameraAngle;
-    const compositionRule = settings.artDirection.compositionRule;
+
+    // 첫 번째 추천 렌즈 ID (1순위만 아이콘 표시)
+    const firstRecommendedLensId = useMemo(() => {
+        for (const category of CATEGORY_ORDER) {
+            const lenses = compatibleLensesByCategory[category];
+            if (!lenses) continue;
+            for (const lens of lenses) {
+                const status = getLensStatusForOption(framing, angle, lens.id);
+                if (status.level === 'recommend') {
+                    return lens.id;
+                }
+            }
+        }
+        return null;
+    }, [compatibleLensesByCategory, framing, angle]);
 
     // 카메라 변경 시 호환 렌즈 자동 선택
     const handleCameraChange = (cameraId: string) => {
@@ -87,6 +101,7 @@ export function CameraTab() {
     };
 
     // 렌즈 변경 시 기본값 설정: 조리개(최대개방), 셔터스피드(화각*2), ISO(100)
+    // Auto 상태는 기존 값 유지
     const handleLensChange = (lensId: string) => {
         const lens = getLensById(lensId);
         if (!lens) {
@@ -107,14 +122,13 @@ export function CameraTab() {
             return Math.abs(currNum - targetShutter) < Math.abs(prevNum - targetShutter) ? curr : prev;
         });
 
+        // Auto 상태는 유지하고, 수동 값만 업데이트
         updateCamera({
             lensId,
             aperture: maxAperture,
             shutterSpeed: closestShutter,
             iso: 100,
-            apertureAuto: false,
-            shutterSpeedAuto: false,
-            isoAuto: false,
+            // apertureAuto, shutterSpeedAuto, isoAuto는 기존 값 유지
         });
     };
 
@@ -185,14 +199,20 @@ export function CameraTab() {
                                         {LENS_CATEGORY_LABELS[category]}
                                     </SelectLabel>
                                     {compatibleLensesByCategory[category]!.map((lens) => {
-                                        const status = getLensStatusForOption(framing, angle, compositionRule, lens.id);
+                                        const status = getLensStatusForOption(framing, angle, lens.id);
                                         // disabled면 표시하지 않음
                                         if (status.level === 'disabled') return null;
+                                        const isCritical = status.level === 'critical';
                                         return (
-                                            <SelectItem key={lens.id} value={lens.id}>
+                                            <SelectItem
+                                                key={lens.id}
+                                                value={lens.id}
+                                                disabled={isCritical}
+                                                className={isCritical ? "opacity-50" : ""}
+                                            >
                                                 <div className="flex items-center gap-1">
-                                                    {status.level === 'recommend' && <Lightbulb className="w-3 h-3 text-blue-500" />}
-                                                    {status.level === 'critical' && <AlertCircle className="w-3 h-3 text-red-500" />}
+                                                    {lens.id === firstRecommendedLensId && <Lightbulb className="w-3 h-3 text-blue-500" />}
+                                                    {isCritical && <AlertCircle className="w-3 h-3 text-red-500" />}
                                                     {status.level === 'warning' && <AlertTriangle className="w-3 h-3 text-amber-400" />}
                                                     <span>{lens.model}</span>
                                                 </div>
@@ -415,47 +435,6 @@ export function CameraTab() {
                 </div>
             </div>
 
-            <Separator className="bg-zinc-800" />
-
-            {/* 사진 비율 */}
-            <div className="space-y-3">
-                <Label>사진 비율</Label>
-                <div className="flex items-center gap-6">
-                    {/* 가로/세로 Radio Group */}
-                    <RadioGroup
-                        value={settings.camera.orientation}
-                        onValueChange={(v) => updateCamera({ orientation: v as 'landscape' | 'portrait' })}
-                        className="flex gap-4"
-                    >
-                        <div className="flex items-center gap-2">
-                            <RadioGroupItem value="landscape" id="landscape" />
-                            <Label htmlFor="landscape" className="text-sm font-normal cursor-pointer">가로</Label>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <RadioGroupItem value="portrait" id="portrait" />
-                            <Label htmlFor="portrait" className="text-sm font-normal cursor-pointer">세로</Label>
-                        </div>
-                    </RadioGroup>
-                </div>
-
-                {/* 비율 선택 버튼 */}
-                <div className="flex gap-2">
-                    {(['3:2', '4:3', '16:9', '1:1', '4:5'] as const).map((ratio) => (
-                        <button
-                            key={ratio}
-                            onClick={() => updateCamera({ aspectRatio: ratio })}
-                            className={`flex-1 py-2 px-3 text-sm rounded-md border transition-colors ${settings.camera.aspectRatio === ratio
-                                ? 'bg-amber-600 border-amber-500 text-white'
-                                : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-600'
-                                }`}
-                        >
-                            {settings.camera.orientation === 'landscape'
-                                ? ratio
-                                : ratio.split(':').reverse().join(':')}
-                        </button>
-                    ))}
-                </div>
-            </div>
         </div>
     );
 }

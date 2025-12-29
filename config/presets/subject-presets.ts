@@ -3,7 +3,7 @@
 
 import type { StudioSubject } from '@/types';
 
-// ===== A: 외모 프리셋 (20개) =====
+// ===== A: 외모 프리셋 (50개 - 국가/인종 기반) =====
 export interface AppearancePreset {
     id: string;
     label: string;
@@ -13,27 +13,86 @@ export interface AppearancePreset {
 }
 
 export const APPEARANCE_PRESETS: AppearancePreset[] = [
-    { id: 'korean', label: '한국인', keywords: ['korean', '한국', '동양', 'k-beauty'], description: '밝은 피부, 검은 머리, 갈색 눈, 타원형 얼굴', values: { skinTone: 'light', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+    // ===== 동아시아 =====
+    { id: 'korean', label: '한국인', keywords: ['korean', '한국', 'k-beauty', '동양'], description: '밝은 피부, 검은 머리, 갈색 눈, 타원형 얼굴', values: { skinTone: 'light', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
     { id: 'japanese', label: '일본인', keywords: ['japanese', '일본', '동양'], description: '창백한 피부, 검은 머리, 갈색 눈, 타원형 얼굴', values: { skinTone: 'fair', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
     { id: 'chinese', label: '중국인', keywords: ['chinese', '중국', '동양'], description: '밝은 피부, 검은 머리, 갈색 눈, 둥근 얼굴', values: { skinTone: 'light', hairColor: 'black', eyeColor: 'brown', faceShape: 'round' } },
-    { id: 'southeast-asian', label: '동남아시아인', keywords: ['southeast', '동남아', '태국', '베트남', '필리핀'], description: '탠 피부, 검은 머리, 갈색 눈의 열대 외모', values: { skinTone: 'tan', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
-    { id: 'indian', label: '인도인', keywords: ['indian', '인도', '남아시아', '볼리우드'], description: '브라운 피부, 검은 머리, 갈색 눈', values: { skinTone: 'brown', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
-    { id: 'caucasian-fair', label: '백인 페어', keywords: ['caucasian', '백인', 'fair', '창백', '북유럽'], description: '창백한 피부, 금발, 파란 눈의 서양인', values: { skinTone: 'fair', hairColor: 'blonde', eyeColor: 'blue', faceShape: 'oval' } },
-    { id: 'caucasian-tan', label: '백인 탠', keywords: ['caucasian', '백인', 'tan', '선탠', '지중해'], description: '선탠 피부, 갈색 머리, 녹색 눈', values: { skinTone: 'tan', hairColor: 'brown', eyeColor: 'green', faceShape: 'square' } },
-    { id: 'hispanic', label: '히스패닉', keywords: ['hispanic', '라틴', '스페인', '멕시코', '남미'], description: '미디움 피부, 갈색 머리, 갈색 눈의 라틴 외모', values: { skinTone: 'medium', hairColor: 'brown', eyeColor: 'brown', faceShape: 'oval' } },
-    { id: 'african', label: '아프리카인', keywords: ['african', '아프리카', '흑인', '다크스킨'], description: '다크 피부, 검은 머리, 갈색 눈', values: { skinTone: 'dark', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
-    { id: 'african-american', label: '아프리카계 미국인', keywords: ['african-american', '미국 흑인', '브라운스킨'], description: '브라운 피부, 검은 머리, 동그란 얼굴', values: { skinTone: 'brown', hairColor: 'black', eyeColor: 'brown', faceShape: 'round' } },
-    { id: 'middle-eastern', label: '중동인', keywords: ['middle eastern', '중동', '아랍', '페르시아', '터키'], description: '미디움 피부, 검은 머리, 진한 눈썹', values: { skinTone: 'medium', hairColor: 'black', eyeColor: 'brown', faceShape: 'oblong' } },
-    { id: 'nordic', label: '북유럽인', keywords: ['nordic', '스칸디나비아', '북유럽', '바이킹', '스웨덴'], description: '창백한 피부, 금발, 파란 눈, 긴 얼굴', values: { skinTone: 'fair', hairColor: 'blonde', eyeColor: 'blue', faceShape: 'oblong' } },
-    { id: 'mediterranean', label: '지중해인', keywords: ['mediterranean', '이탈리아', '그리스', '스페인', '포르투갈'], description: '올리브 피부, 갈색 머리, 헤이즐 눈', values: { skinTone: 'medium', hairColor: 'brown', eyeColor: 'hazel', faceShape: 'oval' } },
-    { id: 'redhead', label: '레드헤드', keywords: ['redhead', '빨간머리', '주근깨', '아일랜드', '스코틀랜드'], description: '창백한 피부, 빨간 머리, 녹색 눈, 주근깨', values: { skinTone: 'fair', hairColor: 'red', eyeColor: 'green', faceShape: 'heart' } },
-    { id: 'fantasy-pink', label: '판타지 핑크', keywords: ['fantasy', '판타지', '핑크', '애니메이션', '코스프레'], description: '분홍 머리, 파란 눈의 환상적인 외모', values: { skinTone: 'fair', hairColor: 'pink', eyeColor: 'blue', faceShape: 'heart' } },
-    { id: 'fantasy-blue', label: '판타지 블루', keywords: ['fantasy', '판타지', '블루', '사이버펑크', 'sf'], description: '파란 머리, 회색 눈의 미래적 외모', values: { skinTone: 'fair', hairColor: 'blue', eyeColor: 'gray', faceShape: 'oval' } },
-    { id: 'mixed-asian', label: '혼혈 아시안', keywords: ['mixed', '혼혈', '하프', '다문화'], description: '밝은 피부, 갈색 머리, 헤이즐 눈의 혼혈 외모', values: { skinTone: 'light', hairColor: 'brown', eyeColor: 'hazel', faceShape: 'oval' } },
-    { id: 'albino', label: '알비노', keywords: ['albino', '알비노', '하얀', '희귀', '백색'], description: '매우 창백한 피부, 흰 머리, 회색 눈', values: { skinTone: 'fair', hairColor: 'white', eyeColor: 'gray', faceShape: 'oval' } },
-    { id: 'mature-gray', label: '성숙한 그레이', keywords: ['gray', '그레이', '백발', '성숙', '실버'], description: '밝은 피부, 회색 머리의 성숙한 외모', values: { skinTone: 'light', hairColor: 'gray', eyeColor: 'brown', faceShape: 'oblong' } },
-    { id: 'tropical', label: '트로피컬', keywords: ['tropical', '열대', '하와이', '폴리네시아', '태평양'], description: '탠 피부, 검은 머리, 둥근 얼굴의 열대 외모', values: { skinTone: 'tan', hairColor: 'black', eyeColor: 'brown', faceShape: 'round' } },
+    { id: 'chinese-northern', label: '북중국인', keywords: ['chinese', '중국', '북방', '만주'], description: '밝은 피부, 검은 머리, 긴 얼굴', values: { skinTone: 'light', hairColor: 'black', eyeColor: 'brown', faceShape: 'oblong' } },
+    { id: 'taiwanese', label: '대만인', keywords: ['taiwanese', '대만', '타이베이'], description: '밝은 피부, 검은 머리, 갈색 눈', values: { skinTone: 'light', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'hong-kong', label: '홍콩인', keywords: ['hong kong', '홍콩', '광동'], description: '밝은 피부, 검은 머리, 갈색 눈', values: { skinTone: 'light', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'mongolian', label: '몽골인', keywords: ['mongolian', '몽골', '유목민'], description: '탠 피부, 검은 머리, 갈색 눈, 각진 얼굴', values: { skinTone: 'tan', hairColor: 'black', eyeColor: 'brown', faceShape: 'square' } },
+
+    // ===== 동남아시아 =====
+    { id: 'thai', label: '태국인', keywords: ['thai', '태국', '방콕', '동남아'], description: '탠 피부, 검은 머리, 갈색 눈', values: { skinTone: 'tan', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'vietnamese', label: '베트남인', keywords: ['vietnamese', '베트남', '하노이', '호치민'], description: '밝은 탠 피부, 검은 머리, 갈색 눈', values: { skinTone: 'tan', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'filipino', label: '필리핀인', keywords: ['filipino', '필리핀', '마닐라', '동남아'], description: '탠 피부, 검은 머리, 갈색 눈, 둥근 얼굴', values: { skinTone: 'tan', hairColor: 'black', eyeColor: 'brown', faceShape: 'round' } },
+    { id: 'indonesian', label: '인도네시아인', keywords: ['indonesian', '인도네시아', '자카르타', '발리'], description: '탠 피부, 검은 머리, 갈색 눈', values: { skinTone: 'tan', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'malaysian', label: '말레이시아인', keywords: ['malaysian', '말레이시아', '쿠알라룸푸르'], description: '탠 피부, 검은 머리, 갈색 눈', values: { skinTone: 'tan', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'singaporean', label: '싱가포르인', keywords: ['singaporean', '싱가포르', '다문화'], description: '밝은 피부, 검은 머리, 갈색 눈', values: { skinTone: 'light', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+
+    // ===== 남아시아 =====
+    { id: 'indian', label: '인도인', keywords: ['indian', '인도', '볼리우드', '남아시아'], description: '브라운 피부, 검은 머리, 갈색 눈', values: { skinTone: 'brown', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'indian-north', label: '북인도인', keywords: ['indian', '북인도', '펀잡', '델리'], description: '미디움 피부, 검은 머리, 갈색 눈', values: { skinTone: 'medium', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'indian-south', label: '남인도인', keywords: ['indian', '남인도', '타밀', '케랄라'], description: '다크 브라운 피부, 검은 머리', values: { skinTone: 'dark', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'pakistani', label: '파키스탄인', keywords: ['pakistani', '파키스탄', '라호르', '카라치'], description: '미디움 피부, 검은 머리, 갈색 눈', values: { skinTone: 'medium', hairColor: 'black', eyeColor: 'brown', faceShape: 'oblong' } },
+    { id: 'bangladeshi', label: '방글라데시인', keywords: ['bangladeshi', '방글라데시', '다카'], description: '브라운 피부, 검은 머리, 갈색 눈', values: { skinTone: 'brown', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'sri-lankan', label: '스리랑카인', keywords: ['sri lankan', '스리랑카', '콜롬보'], description: '브라운 피부, 검은 머리, 갈색 눈, 둥근 얼굴', values: { skinTone: 'brown', hairColor: 'black', eyeColor: 'brown', faceShape: 'round' } },
+    { id: 'nepali', label: '네팔인', keywords: ['nepali', '네팔', '카트만두', '히말라야'], description: '탠 피부, 검은 머리, 갈색 눈', values: { skinTone: 'tan', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+
+    // ===== 중동/서아시아 =====
+    { id: 'arabic', label: '아랍인', keywords: ['arabic', '아랍', '중동', '두바이'], description: '미디움 피부, 검은 머리, 갈색 눈', values: { skinTone: 'medium', hairColor: 'black', eyeColor: 'brown', faceShape: 'oblong' } },
+    { id: 'persian', label: '페르시아인', keywords: ['persian', '이란', '페르시아', '테헤란'], description: '미디움 피부, 검은 머리, 헤이즐 눈', values: { skinTone: 'medium', hairColor: 'black', eyeColor: 'hazel', faceShape: 'oval' } },
+    { id: 'turkish', label: '터키인', keywords: ['turkish', '터키', '이스탄불', '앙카라'], description: '미디움 피부, 검은 머리, 갈색 눈', values: { skinTone: 'medium', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'israeli', label: '이스라엘인', keywords: ['israeli', '이스라엘', '텔아비브', '예루살렘'], description: '미디움 피부, 갈색 머리, 갈색 눈', values: { skinTone: 'medium', hairColor: 'brown', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'lebanese', label: '레바논인', keywords: ['lebanese', '레바논', '베이루트'], description: '미디움 피부, 검은 머리, 갈색 눈', values: { skinTone: 'medium', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+
+    // ===== 유럽 - 북유럽/서유럽 =====
+    { id: 'swedish', label: '스웨덴인', keywords: ['swedish', '스웨덴', '스칸디나비아', '북유럽'], description: '창백한 피부, 금발, 파란 눈', values: { skinTone: 'fair', hairColor: 'blonde', eyeColor: 'blue', faceShape: 'oblong' } },
+    { id: 'norwegian', label: '노르웨이인', keywords: ['norwegian', '노르웨이', '오슬로', '바이킹'], description: '창백한 피부, 금발, 파란 눈, 긴 얼굴', values: { skinTone: 'fair', hairColor: 'blonde', eyeColor: 'blue', faceShape: 'oblong' } },
+    { id: 'danish', label: '덴마크인', keywords: ['danish', '덴마크', '코펜하겐', '북유럽'], description: '창백한 피부, 금발, 파란 눈', values: { skinTone: 'fair', hairColor: 'blonde', eyeColor: 'blue', faceShape: 'oval' } },
+    { id: 'finnish', label: '핀란드인', keywords: ['finnish', '핀란드', '헬싱키', '북유럽'], description: '창백한 피부, 금발, 그레이 눈', values: { skinTone: 'fair', hairColor: 'blonde', eyeColor: 'gray', faceShape: 'oval' } },
+    { id: 'german', label: '독일인', keywords: ['german', '독일', '베를린', '뮌헨'], description: '밝은 피부, 갈색 머리, 파란 눈, 각진 얼굴', values: { skinTone: 'light', hairColor: 'brown', eyeColor: 'blue', faceShape: 'square' } },
+    { id: 'dutch', label: '네덜란드인', keywords: ['dutch', '네덜란드', '암스테르담'], description: '창백한 피부, 금발, 파란 눈, 긴 얼굴', values: { skinTone: 'fair', hairColor: 'blonde', eyeColor: 'blue', faceShape: 'oblong' } },
+    { id: 'british', label: '영국인', keywords: ['british', '영국', '런던', '잉글랜드'], description: '밝은 피부, 갈색 머리, 갈색 눈', values: { skinTone: 'light', hairColor: 'brown', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'french', label: '프랑스인', keywords: ['french', '프랑스', '파리', '패션'], description: '밝은 피부, 갈색 머리, 헤이즐 눈', values: { skinTone: 'light', hairColor: 'brown', eyeColor: 'hazel', faceShape: 'oval' } },
+
+    // ===== 유럽 - 남유럽 =====
+    { id: 'italian', label: '이탈리아인', keywords: ['italian', '이탈리아', '로마', '밀라노'], description: '미디움 피부, 갈색 머리, 갈색 눈', values: { skinTone: 'medium', hairColor: 'brown', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'spanish', label: '스페인인', keywords: ['spanish', '스페인', '마드리드', '바르셀로나'], description: '미디움 피부, 검은 머리, 갈색 눈', values: { skinTone: 'medium', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'portuguese', label: '포르투갈인', keywords: ['portuguese', '포르투갈', '리스본'], description: '미디움 피부, 갈색 머리, 갈색 눈', values: { skinTone: 'medium', hairColor: 'brown', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'greek', label: '그리스인', keywords: ['greek', '그리스', '아테네', '지중해'], description: '미디움 피부, 검은 머리, 갈색 눈', values: { skinTone: 'medium', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+
+    // ===== 유럽 - 동유럽 =====
+    { id: 'russian', label: '러시아인', keywords: ['russian', '러시아', '모스크바', '슬라브'], description: '창백한 피부, 금발, 파란 눈', values: { skinTone: 'fair', hairColor: 'blonde', eyeColor: 'blue', faceShape: 'oval' } },
+    { id: 'ukrainian', label: '우크라이나인', keywords: ['ukrainian', '우크라이나', '키이우', '슬라브'], description: '창백한 피부, 금발, 녹색 눈', values: { skinTone: 'fair', hairColor: 'blonde', eyeColor: 'green', faceShape: 'oval' } },
+    { id: 'polish', label: '폴란드인', keywords: ['polish', '폴란드', '바르샤바', '슬라브'], description: '밝은 피부, 갈색 머리, 파란 눈', values: { skinTone: 'light', hairColor: 'brown', eyeColor: 'blue', faceShape: 'oval' } },
+
+    // ===== 아메리카 =====
+    { id: 'american-caucasian', label: '미국 백인', keywords: ['american', '미국', '백인', 'usa'], description: '밝은 피부, 갈색 머리, 헤이즐 눈', values: { skinTone: 'light', hairColor: 'brown', eyeColor: 'hazel', faceShape: 'oval' } },
+    { id: 'african-american', label: '아프리카계 미국인', keywords: ['african-american', '미국 흑인', 'african american'], description: '브라운 피부, 검은 머리, 갈색 눈', values: { skinTone: 'brown', hairColor: 'black', eyeColor: 'brown', faceShape: 'round' } },
+    { id: 'hispanic-american', label: '히스패닉계 미국인', keywords: ['hispanic', '라틴', '멕시코계', '히스패닉'], description: '미디움 피부, 갈색 머리, 갈색 눈', values: { skinTone: 'medium', hairColor: 'brown', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'mexican', label: '멕시코인', keywords: ['mexican', '멕시코', '멕시코시티'], description: '미디움 피부, 검은 머리, 갈색 눈', values: { skinTone: 'medium', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'brazilian', label: '브라질인', keywords: ['brazilian', '브라질', '상파울루', '리우'], description: '탠 피부, 갈색 머리, 갈색 눈', values: { skinTone: 'tan', hairColor: 'brown', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'colombian', label: '콜롬비아인', keywords: ['colombian', '콜롬비아', '보고타', '남미'], description: '탠 피부, 검은 머리, 갈색 눈', values: { skinTone: 'tan', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+
+    // ===== 아프리카 =====
+    { id: 'nigerian', label: '나이지리아인', keywords: ['nigerian', '나이지리아', '라고스', '아프리카'], description: '다크 피부, 검은 머리, 갈색 눈', values: { skinTone: 'dark', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'ethiopian', label: '에티오피아인', keywords: ['ethiopian', '에티오피아', '동아프리카'], description: '브라운 피부, 검은 머리, 갈색 눈, 긴 얼굴', values: { skinTone: 'brown', hairColor: 'black', eyeColor: 'brown', faceShape: 'oblong' } },
+    { id: 'south-african', label: '남아프리카인', keywords: ['south african', '남아프리카', '요하네스버그'], description: '다크 피부, 검은 머리, 갈색 눈', values: { skinTone: 'dark', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'egyptian', label: '이집트인', keywords: ['egyptian', '이집트', '카이로', '북아프리카'], description: '미디움 피부, 검은 머리, 갈색 눈', values: { skinTone: 'medium', hairColor: 'black', eyeColor: 'brown', faceShape: 'oval' } },
+
+    // ===== 오세아니아/특수 =====
+    { id: 'australian', label: '호주인', keywords: ['australian', '호주', '시드니', '멜번'], description: '밝은 피부, 금발, 파란 눈', values: { skinTone: 'light', hairColor: 'blonde', eyeColor: 'blue', faceShape: 'oval' } },
+    { id: 'polynesian', label: '폴리네시아인', keywords: ['polynesian', '폴리네시아', '하와이', '태평양'], description: '탠 피부, 검은 머리, 갈색 눈, 둥근 얼굴', values: { skinTone: 'tan', hairColor: 'black', eyeColor: 'brown', faceShape: 'round' } },
+    { id: 'maori', label: '마오리족', keywords: ['maori', '마오리', '뉴질랜드', '원주민'], description: '탠 피부, 검은 머리, 갈색 눈, 각진 얼굴', values: { skinTone: 'tan', hairColor: 'black', eyeColor: 'brown', faceShape: 'square' } },
+
+    // ===== 혼혈/특수 =====
+    { id: 'mixed-asian-caucasian', label: '아시안-백인 혼혈', keywords: ['mixed', '혼혈', '하프', '다문화'], description: '밝은 피부, 갈색 머리, 헤이즐 눈', values: { skinTone: 'light', hairColor: 'brown', eyeColor: 'hazel', faceShape: 'oval' } },
+    { id: 'mixed-black-caucasian', label: '흑인-백인 혼혈', keywords: ['mixed', '혼혈', '다문화'], description: '미디움 피부, 갈색 머리, 갈색 눈', values: { skinTone: 'medium', hairColor: 'brown', eyeColor: 'brown', faceShape: 'oval' } },
+    { id: 'irish-redhead', label: '아일랜드 레드헤드', keywords: ['irish', '아일랜드', '레드헤드', '빨간머리'], description: '창백한 피부, 빨간 머리, 녹색 눈', values: { skinTone: 'fair', hairColor: 'red', eyeColor: 'green', faceShape: 'heart' } },
+    { id: 'albino', label: '알비노', keywords: ['albino', '알비노', '하얀', '희귀'], description: '매우 창백한 피부, 흰 머리, 회색 눈', values: { skinTone: 'fair', hairColor: 'white', eyeColor: 'gray', faceShape: 'oval' } },
 ];
+
 
 // ===== B: 스타일 프리셋 (20개) =====
 export type StyleTag = 'male' | 'female' | 'child' | 'teen' | 'adult' | 'senior' | 'athletic' | 'formal-ready';
@@ -48,26 +107,26 @@ export interface StylePreset {
 }
 
 export const STYLE_PRESETS: StylePreset[] = [
-    { id: 'young-woman', label: '20대 여성', keywords: ['20대', '여성', 'young', 'woman', '젊은'], description: '긴 머리, 보통 체형의 젊은 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: '20s', hairStyle: 'long', bodyType: 'average' } },
-    { id: 'young-man', label: '20대 남성', keywords: ['20대', '남성', 'young', 'man', '젊은'], description: '짧은 머리, 보통 체형의 젊은 남성', tags: ['male', 'adult', 'formal-ready'], values: { gender: 'male', ageGroup: '20s', hairStyle: 'short', bodyType: 'average' } },
-    { id: 'beautiful-woman', label: '아름다운 여성', keywords: ['아름다운', '미인', 'beautiful', '예쁜', '모델'], description: '웨이브 머리, 슬림한 체형의 아름다운 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: '20s', hairStyle: 'wavy', bodyType: 'slim' } },
-    { id: 'handsome-man', label: '잘생긴 남성', keywords: ['잘생긴', '미남', 'handsome', '멋있는', '훈남'], description: '짧은 머리, 건장한 체형의 잘생긴 남성', tags: ['male', 'adult', 'formal-ready'], values: { gender: 'male', ageGroup: '30s', hairStyle: 'short', bodyType: 'athletic' } },
-    { id: 'teen-girl', label: '10대 소녀', keywords: ['10대', '소녀', 'teen', 'girl', '청소년'], description: '포니테일, 슬림한 10대 소녀', tags: ['female', 'teen'], values: { gender: 'female', ageGroup: 'teen', hairStyle: 'ponytail', bodyType: 'slim' } },
-    { id: 'teen-boy', label: '10대 소년', keywords: ['10대', '소년', 'teen', 'boy', '청소년'], description: '짧은 머리, 슬림한 10대 소년', tags: ['male', 'teen'], values: { gender: 'male', ageGroup: 'teen', hairStyle: 'short', bodyType: 'slim' } },
-    { id: 'mature-woman', label: '40대 여성', keywords: ['40대', '성숙', 'mature', 'woman', '중년'], description: '중간 길이 머리, 글래머 체형의 성숙한 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: '40s', hairStyle: 'medium', bodyType: 'curvy' } },
-    { id: 'mature-man', label: '40대 남성', keywords: ['40대', '중년', 'mature', 'man', '아저씨'], description: '짧은 머리, 건장한 체형의 중년 남성', tags: ['male', 'adult', 'formal-ready'], values: { gender: 'male', ageGroup: '40s', hairStyle: 'short', bodyType: 'athletic' } },
-    { id: 'elderly-woman', label: '노년 여성', keywords: ['노인', '할머니', 'elderly', 'grandmother', '시니어'], description: '올림머리, 보통 체형의 노년 여성', tags: ['female', 'senior'], values: { gender: 'female', ageGroup: 'elderly', hairStyle: 'bun', bodyType: 'average' } },
-    { id: 'elderly-man', label: '노년 남성', keywords: ['노인', '할아버지', 'elderly', 'grandfather', '시니어'], description: '대머리, 보통 체형의 노년 남성', tags: ['male', 'senior'], values: { gender: 'male', ageGroup: 'elderly', hairStyle: 'bald', bodyType: 'average' } },
-    { id: 'child-girl', label: '어린 소녀', keywords: ['어린이', '소녀', 'child', 'girl', '아이'], description: '땋은 머리, 슬림한 어린 소녀', tags: ['female', 'child'], values: { gender: 'female', ageGroup: 'child', hairStyle: 'braids', bodyType: 'slim' } },
-    { id: 'child-boy', label: '어린 소년', keywords: ['어린이', '소년', 'child', 'boy', '아이'], description: '짧은 머리, 슬림한 어린 소년', tags: ['male', 'child'], values: { gender: 'male', ageGroup: 'child', hairStyle: 'short', bodyType: 'slim' } },
-    { id: 'athletic-woman', label: '운동선수 여성', keywords: ['운동선수', 'athletic', 'fitness', '스포츠', '근육'], description: '포니테일, 건장한 체형의 운동선수 여성', tags: ['female', 'adult', 'athletic'], values: { gender: 'female', ageGroup: '20s', hairStyle: 'ponytail', bodyType: 'athletic' } },
-    { id: 'athletic-man', label: '운동선수 남성', keywords: ['운동선수', 'athletic', 'fitness', '스포츠', '근육'], description: '짧은 머리, 건장한 체형의 운동선수 남성', tags: ['male', 'adult', 'athletic'], values: { gender: 'male', ageGroup: '20s', hairStyle: 'short', bodyType: 'athletic' } },
-    { id: 'plus-size-woman', label: '플러스 사이즈 여성', keywords: ['플러스', 'plus-size', 'curvy', '통통', '빅사이즈'], description: '긴 머리, 플러스 사이즈 체형의 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: '30s', hairStyle: 'long', bodyType: 'plus' } },
-    { id: 'curly-woman', label: '곱슬머리 여성', keywords: ['곱슬', 'curly', '웨이브', '아프로', '펌'], description: '곱슬머리, 보통 체형의 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: '20s', hairStyle: 'curly', bodyType: 'average' } },
-    { id: 'bald-man', label: '대머리 남성', keywords: ['대머리', 'bald', '삭발', '민머리', '스킨헤드'], description: '대머리, 건장한 체형의 남성', tags: ['male', 'adult', 'formal-ready'], values: { gender: 'male', ageGroup: '40s', hairStyle: 'bald', bodyType: 'athletic' } },
-    { id: 'long-hair-man', label: '장발 남성', keywords: ['장발', 'long hair', '긴머리', '히피', '록커'], description: '긴 머리, 슬림한 체형의 남성', tags: ['male', 'adult'], values: { gender: 'male', ageGroup: '20s', hairStyle: 'long', bodyType: 'slim' } },
-    { id: 'bob-woman', label: '단발 여성', keywords: ['단발', 'bob', '숏컷', '짧은머리', '커트'], description: '짧은 머리, 슬림한 체형의 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: '30s', hairStyle: 'short', bodyType: 'slim' } },
-    { id: 'worker-man', label: '60대 현장 노동자', keywords: ['노동자', 'worker', '현장', '60대', '일꾼', '건설'], description: '짧은 머리, 건장한 체형의 현장 노동자', tags: ['male', 'senior'], values: { gender: 'male', ageGroup: '50plus', hairStyle: 'short', bodyType: 'athletic' } },
+    { id: 'young-woman', label: '20대 여성', keywords: ['20대', '여성', 'young', 'woman', '젊은'], description: '긴 머리, 보통 체형의 젊은 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: 'early-20s', hairStyle: 'long-straight', bodyType: 'average' } },
+    { id: 'young-man', label: '20대 남성', keywords: ['20대', '남성', 'young', 'man', '젊은'], description: '짧은 머리, 보통 체형의 젊은 남성', tags: ['male', 'adult', 'formal-ready'], values: { gender: 'male', ageGroup: 'early-20s', hairStyle: 'short-straight', bodyType: 'average' } },
+    { id: 'beautiful-woman', label: '아름다운 여성', keywords: ['아름다운', '미인', 'beautiful', '예쁜', '모델'], description: '웨이브 머리, 슬림한 체형의 아름다운 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: 'late-20s', hairStyle: 'long-wavy', bodyType: 'slim' } },
+    { id: 'handsome-man', label: '잘생긴 남성', keywords: ['잘생긴', '미남', 'handsome', '멋있는', '훈남'], description: '짧은 머리, 건장한 체형의 잘생긴 남성', tags: ['male', 'adult', 'formal-ready'], values: { gender: 'male', ageGroup: '30s', hairStyle: 'short-straight', bodyType: 'athletic' } },
+    { id: 'teen-girl', label: '20대 초반 여성', keywords: ['10대', '소녀', 'teen', 'girl', '청소년'], description: '포니테일, 슬림한 젊은 여성', tags: ['female', 'teen'], values: { gender: 'female', ageGroup: 'early-20s', hairStyle: 'ponytail', bodyType: 'slim' } },
+    { id: 'teen-boy', label: '20대 초반 남성', keywords: ['10대', '소년', 'teen', 'boy', '청소년'], description: '짧은 머리, 슬림한 젊은 남성', tags: ['male', 'teen'], values: { gender: 'male', ageGroup: 'early-20s', hairStyle: 'short-straight', bodyType: 'slim' } },
+    { id: 'mature-woman', label: '40대 여성', keywords: ['40대', '성숙', 'mature', 'woman', '중년'], description: '중간 길이 머리, 글래머 체형의 성숙한 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: '40s-50s', hairStyle: 'medium-straight', bodyType: 'curvy' } },
+    { id: 'mature-man', label: '40대 남성', keywords: ['40대', '중년', 'mature', 'man', '아저씨'], description: '짧은 머리, 건장한 체형의 중년 남성', tags: ['male', 'adult', 'formal-ready'], values: { gender: 'male', ageGroup: '40s-50s', hairStyle: 'short-straight', bodyType: 'athletic' } },
+    { id: 'elderly-woman', label: '노년 여성', keywords: ['노인', '할머니', 'elderly', 'grandmother', '시니어'], description: '올림머리, 보통 체형의 노년 여성', tags: ['female', 'senior'], values: { gender: 'female', ageGroup: '80plus', hairStyle: 'bun', bodyType: 'average' } },
+    { id: 'elderly-man', label: '노년 남성', keywords: ['노인', '할아버지', 'elderly', 'grandfather', '시니어'], description: '대머리, 보통 체형의 노년 남성', tags: ['male', 'senior'], values: { gender: 'male', ageGroup: '80plus', hairStyle: 'bald', bodyType: 'average' } },
+    { id: 'child-girl', label: '20대 초반 소녀', keywords: ['어린이', '소녀', 'child', 'girl', '아이'], description: '땋은 머리, 슬림한 젊은 소녀', tags: ['female', 'child'], values: { gender: 'female', ageGroup: 'early-20s', hairStyle: 'braids', bodyType: 'slim' } },
+    { id: 'child-boy', label: '20대 초반 소년', keywords: ['어린이', '소년', 'child', 'boy', '아이'], description: '짧은 머리, 슬림한 젊은 소년', tags: ['male', 'child'], values: { gender: 'male', ageGroup: 'early-20s', hairStyle: 'short-straight', bodyType: 'slim' } },
+    { id: 'athletic-woman', label: '운동선수 여성', keywords: ['운동선수', 'athletic', 'fitness', '스포츠', '근육'], description: '포니테일, 건장한 체형의 운동선수 여성', tags: ['female', 'adult', 'athletic'], values: { gender: 'female', ageGroup: 'late-20s', hairStyle: 'ponytail', bodyType: 'athletic' } },
+    { id: 'athletic-man', label: '운동선수 남성', keywords: ['운동선수', 'athletic', 'fitness', '스포츠', '근육'], description: '짧은 머리, 건장한 체형의 운동선수 남성', tags: ['male', 'adult', 'athletic'], values: { gender: 'male', ageGroup: 'late-20s', hairStyle: 'short-straight', bodyType: 'athletic' } },
+    { id: 'plus-size-woman', label: '플러스 사이즈 여성', keywords: ['플러스', 'plus-size', 'curvy', '통통', '빅사이즈'], description: '긴 머리, 곡선형 체형의 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: '30s', hairStyle: 'long-straight', bodyType: 'curvy' } },
+    { id: 'curly-woman', label: '곱슬머리 여성', keywords: ['곱슬', 'curly', '웨이브', '아프로', '펌'], description: '곱슬머리, 보통 체형의 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: 'late-20s', hairStyle: 'curly', bodyType: 'average' } },
+    { id: 'bald-man', label: '대머리 남성', keywords: ['대머리', 'bald', '삭발', '민머리', '스킨헤드'], description: '대머리, 건장한 체형의 남성', tags: ['male', 'adult', 'formal-ready'], values: { gender: 'male', ageGroup: '40s-50s', hairStyle: 'bald', bodyType: 'athletic' } },
+    { id: 'long-hair-man', label: '장발 남성', keywords: ['장발', 'long hair', '긴머리', '히피', '록커'], description: '긴 머리, 슬림한 체형의 남성', tags: ['male', 'adult'], values: { gender: 'male', ageGroup: 'late-20s', hairStyle: 'long-straight', bodyType: 'slim' } },
+    { id: 'bob-woman', label: '단발 여성', keywords: ['단발', 'bob', '숏컷', '짧은머리', '커트'], description: '짧은 머리, 슬림한 체형의 여성', tags: ['female', 'adult', 'formal-ready'], values: { gender: 'female', ageGroup: '30s', hairStyle: 'short-straight', bodyType: 'slim' } },
+    { id: 'worker-man', label: '60대 현장 노동자', keywords: ['노동자', 'worker', '현장', '60대', '일꾼', '건설'], description: '짧은 머리, 건장한 체형의 현장 노동자', tags: ['male', 'senior'], values: { gender: 'male', ageGroup: '60s-70s', hairStyle: 'short-straight', bodyType: 'athletic' } },
 ];
 
 // ===== C: 패션 프리셋 (20개) =====

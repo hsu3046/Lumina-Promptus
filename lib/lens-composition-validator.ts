@@ -16,7 +16,6 @@ export interface LensConflictReport {
 interface ConflictContext {
     framing: string;           // studioComposition
     angle: string;             // cameraAngle
-    compositionRule: string;   // compositionRule
     focalMm: number;           // 렌즈 초점거리 (mm)
     category: Lens['category']; // 렌즈 카테고리
 }
@@ -119,7 +118,7 @@ const FRAMING_LENS_MATRIX: Record<FramingType, Partial<Record<LensCategory, Lens
     },
 };
 
-// ===== 추가 충돌 규칙 (앵글/구성규칙 관련) =====
+// ===== 추가 충돌 규칙 (앵글 관련) =====
 const CONFLICT_RULES: ConflictRule[] = [
     // 앵글 관련
     {
@@ -130,37 +129,12 @@ const CONFLICT_RULES: ConflictRule[] = [
         message: '콧구멍 강조: 클로즈업에 로우앵글은 턱이 거대해집니다',
     },
     {
-        id: 'symmetry-tilted',
-        level: 'critical',
-        condition: ({ compositionRule, angle }) =>
-            compositionRule === 'symmetry' &&
-            ['low_angle', 'high_angle', 'worms_eye'].includes(angle),
-        message: '대칭 파괴: 앵글이 기울면 수직선이 수렴합니다',
-    },
-    {
         id: 'drone-tele',
         level: 'warning',
         condition: ({ angle, category }) =>
             ['birds_eye', 'drone'].includes(angle) &&
             ['medium_telephoto', 'telephoto'].includes(category),
         message: '고도감 소실: 드론샷에 망원은 평면적입니다',
-    },
-    // 구성규칙 관련
-    {
-        id: 'golden-tele',
-        level: 'warning',
-        condition: ({ compositionRule, category }) =>
-            compositionRule === 'golden_ratio' && category === 'telephoto',
-        message: '피사계 심도: 황금비율 요소가 bokeh에 묻힙니다',
-    },
-    {
-        id: 'leading-bust-tele',
-        level: 'warning',
-        condition: ({ compositionRule, framing, category }) =>
-            compositionRule === 'leading_lines' &&
-            ['bust-shot', 'headshot', 'close-up'].includes(framing) &&
-            ['medium_telephoto', 'telephoto'].includes(category),
-        message: '배경 소실: 리딩라인이 bokeh로 사라집니다',
     },
 ];
 
@@ -171,7 +145,6 @@ const CONFLICT_RULES: ConflictRule[] = [
 export function getLensStatusForOption(
     framing: string,
     angle: string,
-    compositionRule: string,
     lensId: string
 ): LensConflictReport {
     const lens = getLensById(lensId);
@@ -189,7 +162,7 @@ export function getLensStatusForOption(
     }
 
     // 2. 추가 규칙 체크 (더 나쁜 레벨로 오버라이드)
-    const context: ConflictContext = { framing, angle, compositionRule, focalMm, category };
+    const context: ConflictContext = { framing, angle, focalMm, category };
 
     for (const rule of CONFLICT_RULES) {
         if (rule.condition(context)) {
@@ -220,10 +193,9 @@ export function getLensStatusForOption(
 export function getLensConflictForOption(
     framing: string,
     angle: string,
-    compositionRule: string,
     lensId: string
 ): LensConflictReport | null {
-    const status = getLensStatusForOption(framing, angle, compositionRule, lensId);
+    const status = getLensStatusForOption(framing, angle, lensId);
     if (status.level === 'ok' || status.level === 'recommend') return null;
     return status;
 }

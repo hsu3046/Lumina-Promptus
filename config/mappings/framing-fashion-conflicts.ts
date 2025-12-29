@@ -253,8 +253,8 @@ function getFramingLabel(framing: PortraitFraming): string {
         'close-up': '클로즈업',
         'bust-shot': '바스트샷',
         'waist-shot': '웨이스트샷',
-        'half-shot': '하프샷',
-        'three-quarter-shot': '3/4샷',
+        'half-shot': '미디엄샷',
+        'three-quarter-shot': '니샷',
         'full-shot': '풀샷',
         'long-shot': '롱샷',
     };

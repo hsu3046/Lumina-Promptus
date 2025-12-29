@@ -23,7 +23,6 @@ import {
     QUALITY_OPTIONS,
     COLOR_TEMP_OPTIONS,
     MOOD_OPTIONS,
-    TIME_BASE_OPTIONS,
     SPECIAL_OPTIONS,
     RECOMMENDED_COMBINATIONS,
 } from '@/config/lighting-rules';
@@ -35,13 +34,12 @@ import type {
     LightQuality,
     ColorTemperature,
     LightingMood,
-    TimeLighting,
     SpecialLighting,
     LightingConfig
 } from '@/types/lighting.types';
 
 // 충돌 상태 타입 (recommended 추가)
-type ConflictStatus = 'none' | 'warning' | 'error' | 'recommended';
+type ConflictStatus = 'none' | 'warning' | 'error' | 'recommended' | 'critical';
 
 // 아이템 충돌 상태 계산 결과
 interface ItemConflictInfo {
@@ -52,7 +50,7 @@ interface ItemConflictInfo {
 export function LightingTab() {
     const { settings, updateLighting } = useSettingsStore();
     const lighting = settings.lighting;
-    const studioComposition = settings.userInput.studioComposition;  // 구도 가져오기
+    const studioComposition = settings.userInput.studioComposition;
 
     // 현재 설정 기반 config 생성
     const currentConfig = useMemo((): LightingConfig => ({
@@ -62,7 +60,6 @@ export function LightingTab() {
         quality: lighting.quality as LightQuality | undefined,
         colorTemp: lighting.colorTemp as ColorTemperature | undefined,
         mood: lighting.mood as LightingMood | undefined,
-        timeBase: lighting.timeBase as TimeLighting | undefined,
         special: lighting.special as SpecialLighting[] | undefined,
     }), [lighting]);
 
@@ -75,7 +72,7 @@ export function LightingTab() {
         const result = LightingValidator.validate(testConfig);
 
         if (result.errors.length > 0) {
-            return { status: 'error', tooltip: result.errors[0] };
+            return { status: 'critical', tooltip: result.errors[0] };
         }
         if (result.warnings.length > 0) {
             return { status: 'warning', tooltip: result.warnings[0] };
@@ -134,7 +131,7 @@ export function LightingTab() {
 
     // 충돌/권장 아이콘 렌더러
     const ConflictIcon = ({ status }: { status: ConflictStatus }) => {
-        if (status === 'error') {
+        if (status === 'critical' || status === 'error') {
             return <CircleAlert className="h-4 w-4 text-red-500 shrink-0" />;
         }
         if (status === 'warning') {
@@ -163,72 +160,78 @@ export function LightingTab() {
                 />
             </div>
 
-            {/* 조명 패턴 (전체 너비) */}
-            <div className={`space-y-1.5 ${isDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
-                <div className="flex items-center justify-between">
-                    <Label className="text-xs text-zinc-500">조명 패턴</Label>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            const preset = PATTERN_PRESETS.rembrandt;
-                            updateLighting({
-                                pattern: 'rembrandt',
-                                key: preset.key,
-                                ratio: preset.ratio,
-                                quality: preset.quality,
-                                colorTemp: preset.colorTemp,
-                                mood: preset.mood,
-                                timeBase: 'none',
-                                special: [],
-                            });
-                        }}
-                        className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-                    >
-                        <RotateCcw className="w-3 h-3" />
-                        초기화
-                    </button>
-                </div>
-                <Select
-                    value={lighting.pattern}
-                    onValueChange={(v) => {
-                        const pattern = v as LightingSettings['pattern'];
-                        const preset = PATTERN_PRESETS[pattern];
+            {/* 초기화 버튼 */}
+            <div className={`flex justify-end ${isDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
+                <button
+                    type="button"
+                    onClick={() => {
+                        const preset = PATTERN_PRESETS.rembrandt;
                         updateLighting({
-                            pattern,
+                            pattern: 'rembrandt',
                             key: preset.key,
                             ratio: preset.ratio,
                             quality: preset.quality,
                             colorTemp: preset.colorTemp,
                             mood: preset.mood,
+                            special: [],
                         });
                     }}
+                    className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
                 >
-                    <SelectTrigger className="bg-zinc-950 border-zinc-800">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-zinc-800">
-                        {PATTERN_OPTIONS.map(opt => {
-                            const patternStatus = LightingValidator.getPatternStatusForFraming(studioComposition, opt.value);
-                            // disabled면 표시하지 않음
-                            if (patternStatus.level === 'disabled') return null;
-                            return (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                    <div className="flex items-center gap-1">
-                                        {patternStatus.level === 'recommend' && <Lightbulb className="w-3 h-3 text-blue-500" />}
-                                        {patternStatus.level === 'critical' && <CircleAlert className="w-3 h-3 text-red-500" />}
-                                        {patternStatus.level === 'warning' && <AlertTriangle className="w-3 h-3 text-amber-500" />}
-                                        <span>{opt.label} - {opt.desc}</span>
-                                    </div>
-                                </SelectItem>
-                            );
-                        })}
-                    </SelectContent>
-                </Select>
+                    <RotateCcw className="w-3 h-3" />
+                    초기화
+                </button>
             </div>
 
-            {/* 나머지 드롭다운 그리드: PC 3열 / Mobile 2열 */}
+            {/* 6개 드롭다운 그리드: PC 3열 / Mobile 2열 */}
             <div className={`grid grid-cols-2 md:grid-cols-3 gap-3 ${isDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
-                {/* Key */}
+                {/* 조명 패턴 */}
+                <div className="space-y-1.5">
+                    <Label className="text-xs text-zinc-500">조명 패턴</Label>
+                    <Select
+                        value={lighting.pattern}
+                        onValueChange={(v) => {
+                            const pattern = v as LightingSettings['pattern'];
+                            const preset = PATTERN_PRESETS[pattern];
+                            updateLighting({
+                                pattern,
+                                key: preset.key,
+                                ratio: preset.ratio,
+                                quality: preset.quality,
+                                colorTemp: preset.colorTemp,
+                                mood: preset.mood,
+                            });
+                        }}
+                    >
+                        <SelectTrigger className="bg-zinc-950 border-zinc-800 w-full">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-zinc-900 border-zinc-800">
+                            {PATTERN_OPTIONS.map(opt => {
+                                const patternStatus = LightingValidator.getPatternStatusForFraming(studioComposition, opt.value);
+                                const isCritical = patternStatus.level === 'critical';
+                                if (patternStatus.level === 'disabled') return null;
+                                return (
+                                    <SelectItem
+                                        key={opt.value}
+                                        value={opt.value}
+                                        disabled={isCritical}
+                                        className={isCritical ? "opacity-50" : ""}
+                                    >
+                                        <div className="flex items-center gap-1">
+                                            {patternStatus.level === 'recommend' && <Lightbulb className="w-3 h-3 text-blue-500" />}
+                                            {isCritical && <CircleAlert className="w-3 h-3 text-red-500" />}
+                                            {patternStatus.level === 'warning' && <AlertTriangle className="w-3 h-3 text-amber-500" />}
+                                            <span>{opt.label}</span>
+                                        </div>
+                                    </SelectItem>
+                                );
+                            })}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Key (밝기) */}
                 <div className="space-y-1.5">
                     <Label className="text-xs text-zinc-500">키 (밝기)</Label>
                     <Select
@@ -241,11 +244,17 @@ export function LightingTab() {
                         <SelectContent className="bg-zinc-900 border-zinc-800">
                             {KEY_OPTIONS.map(opt => {
                                 const conflict = getConflictStatus('key', opt.value);
+                                const isCritical = conflict.status === 'critical';
                                 return (
-                                    <SelectItem key={opt.value} value={opt.value}>
+                                    <SelectItem
+                                        key={opt.value}
+                                        value={opt.value}
+                                        disabled={isCritical}
+                                        className={isCritical ? "opacity-50" : ""}
+                                    >
                                         <span className="flex items-center gap-2">
                                             <ConflictIcon status={conflict.status} />
-                                            <span>{opt.label} - {opt.desc}</span>
+                                            <span>{opt.label}</span>
                                         </span>
                                     </SelectItem>
                                 );
@@ -254,7 +263,7 @@ export function LightingTab() {
                     </Select>
                 </div>
 
-                {/* Ratio */}
+                {/* Ratio (대비 비율) */}
                 <div className="space-y-1.5">
                     <Label className="text-xs text-zinc-500">대비 비율</Label>
                     <Select
@@ -267,11 +276,17 @@ export function LightingTab() {
                         <SelectContent className="bg-zinc-900 border-zinc-800">
                             {RATIO_OPTIONS.filter(opt => validRatios.includes(opt.value)).map(opt => {
                                 const conflict = getConflictStatus('ratio', opt.value);
+                                const isCritical = conflict.status === 'critical';
                                 return (
-                                    <SelectItem key={opt.value} value={opt.value}>
+                                    <SelectItem
+                                        key={opt.value}
+                                        value={opt.value}
+                                        disabled={isCritical}
+                                        className={isCritical ? "opacity-50" : ""}
+                                    >
                                         <span className="flex items-center gap-2">
                                             <ConflictIcon status={conflict.status} />
-                                            <span>{opt.label} - {opt.desc}</span>
+                                            <span>{opt.label}</span>
                                         </span>
                                     </SelectItem>
                                 );
@@ -280,7 +295,7 @@ export function LightingTab() {
                     </Select>
                 </div>
 
-                {/* Quality */}
+                {/* Quality (광질) */}
                 <div className="space-y-1.5">
                     <Label className="text-xs text-zinc-500">광질</Label>
                     <Select
@@ -293,11 +308,17 @@ export function LightingTab() {
                         <SelectContent className="bg-zinc-900 border-zinc-800">
                             {QUALITY_OPTIONS.map(opt => {
                                 const conflict = getConflictStatus('quality', opt.value);
+                                const isCritical = conflict.status === 'critical';
                                 return (
-                                    <SelectItem key={opt.value} value={opt.value}>
+                                    <SelectItem
+                                        key={opt.value}
+                                        value={opt.value}
+                                        disabled={isCritical}
+                                        className={isCritical ? "opacity-50" : ""}
+                                    >
                                         <span className="flex items-center gap-2">
                                             <ConflictIcon status={conflict.status} />
-                                            <span>{opt.label} - {opt.desc}</span>
+                                            <span>{opt.label}</span>
                                         </span>
                                     </SelectItem>
                                 );
@@ -306,7 +327,7 @@ export function LightingTab() {
                     </Select>
                 </div>
 
-                {/* ColorTemp */}
+                {/* ColorTemp (색온도) */}
                 <div className="space-y-1.5">
                     <Label className="text-xs text-zinc-500">색온도</Label>
                     <Select
@@ -319,11 +340,17 @@ export function LightingTab() {
                         <SelectContent className="bg-zinc-900 border-zinc-800">
                             {COLOR_TEMP_OPTIONS.map(opt => {
                                 const conflict = getConflictStatus('colorTemp', opt.value);
+                                const isCritical = conflict.status === 'critical';
                                 return (
-                                    <SelectItem key={opt.value} value={opt.value}>
+                                    <SelectItem
+                                        key={opt.value}
+                                        value={opt.value}
+                                        disabled={isCritical}
+                                        className={isCritical ? "opacity-50" : ""}
+                                    >
                                         <span className="flex items-center gap-2">
                                             <ConflictIcon status={conflict.status} />
-                                            <span>{opt.label} ({opt.desc})</span>
+                                            <span>{opt.label}</span>
                                         </span>
                                     </SelectItem>
                                 );
@@ -332,7 +359,7 @@ export function LightingTab() {
                     </Select>
                 </div>
 
-                {/* Mood */}
+                {/* Mood (분위기) */}
                 <div className="space-y-1.5">
                     <Label className="text-xs text-zinc-500">분위기</Label>
                     <Select
@@ -345,34 +372,14 @@ export function LightingTab() {
                         <SelectContent className="bg-zinc-900 border-zinc-800">
                             {MOOD_OPTIONS.map(opt => {
                                 const conflict = getConflictStatus('mood', opt.value);
+                                const isCritical = conflict.status === 'critical';
                                 return (
-                                    <SelectItem key={opt.value} value={opt.value}>
-                                        <span className="flex items-center gap-2">
-                                            <ConflictIcon status={conflict.status} />
-                                            <span>{opt.label}</span>
-                                        </span>
-                                    </SelectItem>
-                                );
-                            })}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                {/* TimeBase */}
-                <div className="space-y-1.5">
-                    <Label className="text-xs text-zinc-500">시간대 조명</Label>
-                    <Select
-                        value={lighting.timeBase || ''}
-                        onValueChange={(v) => updateLighting({ timeBase: v as LightingSettings['timeBase'] })}
-                    >
-                        <SelectTrigger className="bg-zinc-950 border-zinc-800 w-full">
-                            <SelectValue placeholder="선택" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800">
-                            {TIME_BASE_OPTIONS.map(opt => {
-                                const conflict = getConflictStatus('timeBase', opt.value);
-                                return (
-                                    <SelectItem key={opt.value} value={opt.value}>
+                                    <SelectItem
+                                        key={opt.value}
+                                        value={opt.value}
+                                        disabled={isCritical}
+                                        className={isCritical ? "opacity-50" : ""}
+                                    >
                                         <span className="flex items-center gap-2">
                                             <ConflictIcon status={conflict.status} />
                                             <span>{opt.label}</span>
@@ -416,34 +423,6 @@ export function LightingTab() {
                 </div>
             </div>
 
-            {/* 검증 결과 (shadcn Alert) */}
-            {lighting.enabled && (validation.errors.length > 0 || validation.warnings.length > 0 || validation.suggestions.length > 0) && (
-                <div className="space-y-2">
-                    {/* 에러 */}
-                    {validation.errors.map((error, i) => (
-                        <Alert key={`error-${i}`} variant="destructive" className="bg-red-950/50 border-red-800">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertDescription className="text-sm">{error}</AlertDescription>
-                        </Alert>
-                    ))}
-
-                    {/* 경고 */}
-                    {validation.warnings.map((warning, i) => (
-                        <Alert key={`warning-${i}`} className="bg-amber-950/50 border-amber-800">
-                            <AlertTriangle className="h-4 w-4 text-amber-500" />
-                            <AlertDescription className="text-sm text-amber-200">{warning}</AlertDescription>
-                        </Alert>
-                    ))}
-
-                    {/* 제안 */}
-                    {validation.suggestions.map((suggestion, i) => (
-                        <Alert key={`suggestion-${i}`} className="bg-blue-950/50 border-blue-800">
-                            <Lightbulb className="h-4 w-4 text-blue-500" />
-                            <AlertDescription className="text-sm text-blue-200">{suggestion}</AlertDescription>
-                        </Alert>
-                    ))}
-                </div>
-            )}
         </div>
     );
 }

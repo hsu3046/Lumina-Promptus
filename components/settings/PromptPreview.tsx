@@ -1,80 +1,100 @@
 'use client';
 
-import { useState } from 'react';
-import { Copy, Check, Sparkles, AlertTriangle, Loader2 } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { PromptBuilderV2 } from '@/lib/prompt-builder/PromptBuilderV2';
 import { NanoBananaProExporter } from '@/lib/exporters/NanoBananaProExporter';
-import type { PromptIR } from '@/types';
+import { ChatGPTExporter } from '@/lib/exporters/ChatGPTExporter';
+import { MidjourneyExporter } from '@/lib/exporters/MidjourneyExporter';
+import { LightingValidator } from '@/lib/lighting-validator';
+import type { LightingConfig, LightingPattern, LightingKey, LightingRatio, LightQuality, ColorTemperature, LightingMood, SpecialLighting } from '@/types/lighting.types';
 
-type AITarget = 'default' | 'nanobanana' | 'chatgpt' | 'midjourney';
+type AITarget = 'nanobanana' | 'chatgpt' | 'midjourney';
 
 const AI_TARGET_OPTIONS: { value: AITarget; label: string; desc: string }[] = [
-    { value: 'default', label: '기본', desc: 'AI 수정 없음' },
-    { value: 'nanobanana', label: '나노 바나나', desc: '차후 구현' },
-    { value: 'chatgpt', label: '챗GPT', desc: '차후 구현' },
-    { value: 'midjourney', label: '미드저니', desc: '차후 구현' },
+    { value: 'nanobanana', label: '나노 바나나', desc: 'Nano Banana Pro 최적화' },
+    { value: 'chatgpt', label: '챗GPT', desc: 'ChatGPT/DALL-E 최적화' },
+    { value: 'midjourney', label: '미드저니', desc: 'Midjourney 파라미터 포함' },
 ];
 
 export function PromptPreview() {
     const { settings } = useSettingsStore();
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [isRefining, setIsRefining] = useState(false);
-    const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
-    const [ir, setIR] = useState<PromptIR | null>(null);
     const [copied, setCopied] = useState(false);
-    const [aiTarget, setAiTarget] = useState<AITarget>('default');
+    const [aiTarget, setAiTarget] = useState<AITarget>('nanobanana');
+    const [generatedPrompt, setGeneratedPrompt] = useState<string>('');
+    const [hasConflict, setHasConflict] = useState(false);
 
-    const handleGenerate = async () => {
-        setIsGenerating(true);
-        setIsRefining(false);
+    // 실시간 프롬프트 생성 - settings 또는 aiTarget 변경 시 자동 실행
+    useEffect(() => {
+        const generatePrompt = async () => {
+            try {
+                // Step 1: IR 생성
+                const builder = new PromptBuilderV2(settings);
+                const newIR = await builder.buildIR();
 
-        try {
-            // Step 1: Draft 생성
-            const builder = new PromptBuilderV2(settings);
-            const newIR = await builder.buildIR();
-            setIR(newIR);
+                // Step 2: 충돌 체크 (라이팅 + IR)
+                let conflictDetected = false;
 
-            const exporter = new NanoBananaProExporter(newIR);
-            const draftResult = exporter.export();
-
-            // Step 2: AI 타겟에 따라 처리 (현재는 기본만 구현)
-            if (aiTarget !== 'default') {
-                setIsRefining(true);
-                try {
-                    const response = await fetch('/api/refine-prompt', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ draftPrompt: draftResult, target: aiTarget }),
-                    });
-
-                    if (response.ok) {
-                        const { refinedPrompt } = await response.json();
-                        setGeneratedPrompt(refinedPrompt);
-                    } else {
-                        setGeneratedPrompt(draftResult);
-                    }
-                } catch {
-                    console.warn('Refinement failed, using draft');
-                    setGeneratedPrompt(draftResult);
+                // IR 충돌
+                if (newIR.metadata.conflicts && newIR.metadata.conflicts.length > 0) {
+                    conflictDetected = true;
                 }
-            } else {
-                // 기본 모드: Draft 바로 사용
-                setGeneratedPrompt(draftResult);
+
+                // 라이팅 충돌
+                if (settings.lighting.enabled) {
+                    const lightingConfig: LightingConfig = {
+                        pattern: settings.lighting.pattern as LightingPattern,
+                        key: settings.lighting.key as LightingKey,
+                        ratio: settings.lighting.ratio as LightingRatio | undefined,
+                        quality: settings.lighting.quality as LightQuality | undefined,
+                        colorTemp: settings.lighting.colorTemp as ColorTemperature | undefined,
+                        mood: settings.lighting.mood as LightingMood | undefined,
+                        special: settings.lighting.special as SpecialLighting[] | undefined,
+                    };
+                    const validation = LightingValidator.validate(lightingConfig);
+                    if (validation.errors.length > 0 || validation.warnings.length > 0) {
+                        conflictDetected = true;
+                    }
+                }
+
+                setHasConflict(conflictDetected);
+
+                // Step 3: 선택된 모델에 따라 Exporter 호출
+                let result: string;
+
+                switch (aiTarget) {
+                    case 'chatgpt': {
+                        const exporter = new ChatGPTExporter(newIR, settings);
+                        result = exporter.export();
+                        break;
+                    }
+                    case 'midjourney': {
+                        const exporter = new MidjourneyExporter(newIR);
+                        result = exporter.export();
+                        break;
+                    }
+                    case 'nanobanana':
+                    default: {
+                        const exporter = new NanoBananaProExporter(newIR, settings);
+                        result = exporter.export();
+                        break;
+                    }
+                }
+
+                setGeneratedPrompt(result);
+            } catch (error) {
+                console.error('Prompt generation failed:', error);
             }
-        } catch (error) {
-            console.error('Prompt generation failed:', error);
-        } finally {
-            setIsGenerating(false);
-            setIsRefining(false);
-        }
-    };
+        };
+
+        generatePrompt();
+    }, [settings, aiTarget]);
 
     const handleCopy = async () => {
         if (!generatedPrompt) return;
@@ -83,25 +103,10 @@ export function PromptPreview() {
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const isStudioMode = settings.artDirection.lensCharacteristicType === 'studio';
-    const canGenerate = isStudioMode || settings.userInput.subjectDescription?.trim();
-
-    const buttonText = isRefining ? 'AI Refining...' : isGenerating ? '생성 중...' : '프롬프트 생성';
-
     return (
         <div className="space-y-6">
             <Card className="bg-zinc-900/50 border-zinc-800/50 sticky top-24 py-4 gap-2">
                 <CardContent className="space-y-3">
-                    {/* 생성 버튼 */}
-                    <Button
-                        onClick={handleGenerate}
-                        disabled={isGenerating || !canGenerate}
-                        className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
-                    >
-                        {(isGenerating || isRefining) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                        {buttonText}
-                    </Button>
-
                     {/* AI 타겟 선택 Radio Group */}
                     <div className="space-y-2">
                         <RadioGroup
@@ -120,46 +125,33 @@ export function PromptPreview() {
                         </RadioGroup>
                     </div>
 
-                    {/* 충돌 경고 */}
-                    {ir?.metadata.conflicts.length ? (
-                        <Alert variant="destructive" className="bg-red-950/30 border-red-900/50">
-                            <AlertTriangle className="h-4 w-4" />
-                            <AlertTitle>충돌 감지</AlertTitle>
-                            <AlertDescription>
-                                {ir.metadata.conflicts[0].message}
-                            </AlertDescription>
-                        </Alert>
-                    ) : null}
-
-                    {/* 생성된 프롬프트 */}
-                    {generatedPrompt && (
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs text-zinc-500">{generatedPrompt.length}자</span>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleCopy}
-                                    className="h-8 gap-1"
-                                >
-                                    {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                                    {copied ? '복사됨' : '복사'}
-                                </Button>
+                    {/* 생성된 프롬프트 (항상 표시) */}
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs text-zinc-500">{generatedPrompt.length}자</span>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleCopy}
+                                className="h-8 gap-1"
+                                disabled={!generatedPrompt}
+                            >
+                                {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                {copied ? '복사됨' : '복사'}
+                            </Button>
+                        </div>
+                        <ScrollArea className="h-[400px] rounded-lg border border-zinc-800 bg-zinc-950">
+                            <div className="p-4 text-sm text-zinc-300 font-mono leading-relaxed">
+                                {generatedPrompt || <span className="text-zinc-600">설정을 변경하면 프롬프트가 자동으로 생성됩니다...</span>}
                             </div>
-                            <ScrollArea className="h-[400px] rounded-lg border border-zinc-800 bg-zinc-950">
-                                <div className="p-4 text-sm text-zinc-300 font-mono leading-relaxed">
-                                    {generatedPrompt}
-                                </div>
-                            </ScrollArea>
-                        </div>
-                    )}
+                        </ScrollArea>
+                    </div>
 
-                    {/* Placeholder */}
-                    {!generatedPrompt && (
-                        <div className="p-8 border border-dashed border-zinc-800 rounded-lg text-center text-zinc-500">
-                            <Sparkles className="w-8 h-8 mx-auto mb-3 opacity-50" />
-                            <p className="text-sm">피사체를 입력하고<br />프롬프트를 생성하세요</p>
-                        </div>
+                    {/* 충돌 경고 (프롬프트 아래) */}
+                    {hasConflict && (
+                        <p className="text-xs text-red-400 text-center">
+                            ⚠️ 서로 모순되는 설정이 있어서 이미지 생성 시 AI가 제대로 표현하지 못할 가능성이 있습니다.
+                        </p>
                     )}
                 </CardContent>
             </Card>
