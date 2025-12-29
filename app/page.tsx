@@ -142,6 +142,20 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-zinc-800/50 bg-zinc-950/80 mt-8">
+        <div className="md:container md:mx-auto px-4 py-4 text-center">
+          <p className="text-xs text-zinc-500">
+            © 2025 Lumina Promptus. All rights reserved.
+          </p>
+          <p className="text-[10px] text-zinc-600 mt-1 max-w-2xl mx-auto">
+            본 서비스에서 제공하는 프롬프트는 AI 이미지 생성을 위한 참고 자료로만 제공됩니다.
+            생성된 프롬프트를 사용하여 만들어진 이미지의 결과, 품질, 저작권 및 법적 문제에 대해
+            본 서비스는 어떠한 책임도 지지 않습니다. 사용자는 본인의 책임 하에 프롬프트를 사용해야 합니다.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

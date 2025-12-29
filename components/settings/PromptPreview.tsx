@@ -112,7 +112,7 @@ export function PromptPreview() {
                         <RadioGroup
                             value={aiTarget}
                             onValueChange={(value) => setAiTarget(value as AITarget)}
-                            className="flex gap-4"
+                            className="flex justify-center gap-6"
                         >
                             {AI_TARGET_OPTIONS.map((option) => (
                                 <div key={option.value} className="flex items-center gap-2">
