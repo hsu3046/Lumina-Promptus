@@ -25,6 +25,7 @@ import {
     MOOD_OPTIONS,
     SPECIAL_OPTIONS,
     RECOMMENDED_COMBINATIONS,
+    LIGHTING_CONFLICTS,
 } from '@/config/lighting-rules';
 import type { LightingSettings } from '@/types';
 import type {
@@ -119,7 +120,31 @@ export function LightingTab() {
 
     const isDisabled = !lighting.enabled;
 
-    // Special 토글 핸들러
+    // 현재 선택된 특수 조명과 충돌하는 항목 목록 반환
+    const getConflictingSpecials = useCallback((selected: SpecialLighting[]): SpecialLighting[] => {
+        const conflicting: SpecialLighting[] = [];
+
+        for (const sel of selected) {
+            for (const conflict of LIGHTING_CONFLICTS.specialToSpecialConflicts) {
+                if (conflict.severity !== 'error') continue;  // error 레벨만 disabled
+
+                if (conflict.special1 === sel && !selected.includes(conflict.special2)) {
+                    conflicting.push(conflict.special2);
+                } else if (conflict.special2 === sel && !selected.includes(conflict.special1)) {
+                    conflicting.push(conflict.special1);
+                }
+            }
+        }
+
+        return [...new Set(conflicting)];  // 중복 제거
+    }, []);
+
+    // 현재 충돌하는 특수 조명 목록
+    const conflictingSpecials = useMemo(() => {
+        return getConflictingSpecials(lighting.special || []);
+    }, [lighting.special, getConflictingSpecials]);
+
+    // Special 토글 핸들러 (단순화)
     const handleSpecialToggle = (special: SpecialLighting, checked: boolean) => {
         const current = lighting.special || [];
         if (checked) {
@@ -399,22 +424,26 @@ export function LightingTab() {
                     {SPECIAL_OPTIONS.map(opt => {
                         const isValid = validSpecials.includes(opt.value);
                         const isChecked = lighting.special?.includes(opt.value) || false;
+                        const isConflicting = conflictingSpecials.includes(opt.value);
+                        const isMaxReached = (lighting.special?.length || 0) >= 2 && !isChecked;
+                        const isItemDisabled = !isValid || isConflicting || isMaxReached;
 
                         return (
                             <label
                                 key={opt.value}
-                                className={`flex items-center gap-2 p-2 rounded-md border transition-colors cursor-pointer
+                                className={`flex items-center gap-2 p-2 rounded-md border transition-colors
                                         ${isChecked ? 'bg-amber-600/20 border-amber-600' : 'bg-zinc-900 border-zinc-800'}
-                                        ${!isValid ? 'opacity-40 cursor-not-allowed' : 'hover:border-zinc-600'}
+                                        ${isItemDisabled ? 'opacity-40 cursor-not-allowed' : 'hover:border-zinc-600 cursor-pointer'}
                                     `}
                             >
                                 <Checkbox
                                     checked={isChecked}
-                                    disabled={!isValid}
+                                    disabled={isItemDisabled}
                                     onCheckedChange={(checked) => handleSpecialToggle(opt.value, checked as boolean)}
                                 />
                                 <span className="text-xs flex items-center gap-1">
-                                    {!isValid && <CircleAlert className="h-3 w-3 text-red-500" />}
+                                    {isConflicting && <CircleAlert className="h-3 w-3 text-amber-500" />}
+                                    {!isValid && !isConflicting && <CircleAlert className="h-3 w-3 text-red-500" />}
                                     {opt.label}
                                 </span>
                             </label>

@@ -233,15 +233,13 @@ export function CameraTab() {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Label>조리개</Label>
-                        {!lightingEnabled && (
-                            <div className="flex items-center gap-1">
-                                <Switch
-                                    checked={settings.camera.apertureAuto}
-                                    onCheckedChange={() => handleAutoToggle('aperture')}
-                                />
-                                <span className="text-xs text-zinc-500">Auto</span>
-                            </div>
-                        )}
+                        <div className="flex items-center gap-1">
+                            <Switch
+                                checked={settings.camera.apertureAuto}
+                                onCheckedChange={() => handleAutoToggle('aperture')}
+                            />
+                            <span className="text-xs text-zinc-500">Auto</span>
+                        </div>
                     </div>
                     <div className="flex items-center gap-1">
                         {(() => {

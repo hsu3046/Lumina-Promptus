@@ -220,7 +220,12 @@ export function GroupedComboboxField({
                         <span className="truncate">
                             {selectedOption?.label || placeholder}
                         </span>
-                        <ChevronsUpDown className="ml-1 h-3 w-3 shrink-0 opacity-50" />
+                        <span className="flex items-center gap-1">
+                            {selectedOption?.icon && (
+                                <selectedOption.icon className="w-3 h-3 text-zinc-400" />
+                            )}
+                            <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-50" />
+                        </span>
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-zinc-900 border-zinc-800">

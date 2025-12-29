@@ -532,6 +532,7 @@ export class PromptBuilderV2 {
         // 가로(3:2, 4:3 등) vs 세로(2:3, 3:4 등) 판단
         const [w, h] = aspectRatio.split(':').map(Number);
         const isPortrait = h > w;
+        const isSquare = h === w;
 
         // 비율별 전체 프롬프트 (세로 비율은 맞춤 프롬프트 사용)
         const ratioPrompts: Record<string, string> = {
@@ -540,11 +541,11 @@ export class PromptBuilderV2 {
             '3:4': 'A 3:4 ratio portrait',
             '9:16': 'A 9:16 smartphone portrait',
             '4:5': 'A 4:5 ratio large format portrait',
-            // 가로 (Landscape)
-            '3:2': 'A 3:2 ratio DSLR photograph',
-            '4:3': 'A 4:3 ratio photograph',
-            '16:9': 'A 16:9 cinematic widescreen photograph',
-            '5:4': 'A 5:4 ratio large format photograph',
+            // 가로 (Landscape) - landscape orientation 추가
+            '3:2': 'A 3:2 ratio DSLR photograph, landscape orientation',
+            '4:3': 'A 4:3 ratio photograph, landscape orientation',
+            '16:9': 'A 16:9 cinematic widescreen photograph, landscape orientation',
+            '5:4': 'A 5:4 ratio large format photograph, landscape orientation',
             // 정사각형
             '1:1': 'A 1:1 square format photograph',
         };
@@ -555,7 +556,10 @@ export class PromptBuilderV2 {
         }
 
         // 기본 폴백
-        const orientationText = isPortrait ? 'vertical portrait' : 'horizontal landscape';
+        if (isSquare) {
+            return `A ${aspectRatio} square format`;
+        }
+        const orientationText = isPortrait ? 'vertical portrait' : 'horizontal landscape orientation';
         return `A ${aspectRatio} ${orientationText}`;
     }
 

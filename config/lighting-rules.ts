@@ -147,8 +147,9 @@ export const LIGHTING_CONFLICTS = {
         }
     ] as SpecialConflict[],
 
-    // Special 간 충돌 (NEW)
+    // Special 간 충돌 (상충되는 기법 동시 선택 불가)
     specialToSpecialConflicts: [
+        // 반대 개념 - ERROR (동시 사용 불가)
         {
             special1: 'broad-lighting' as SpecialLighting,
             special2: 'short-lighting' as SpecialLighting,
@@ -156,11 +157,41 @@ export const LIGHTING_CONFLICTS = {
             suggestion: '하나만 선택하세요 - Broad(넓은 면) 또는 Short(좁은 면)',
             severity: 'error' as const
         },
+        // Clamshell 충돌 - ERROR (정면 조명 vs 방향성 조명)
+        {
+            special1: 'clamshell' as SpecialLighting,
+            special2: 'broad-lighting' as SpecialLighting,
+            reason: 'Clamshell은 정면 균일 조명이며, Broad lighting의 측면 방향성과 충돌합니다',
+            suggestion: 'Clamshell(뷰티 조명) 또는 Broad lighting 중 하나를 선택하세요',
+            severity: 'error' as const
+        },
+        {
+            special1: 'clamshell' as SpecialLighting,
+            special2: 'short-lighting' as SpecialLighting,
+            reason: 'Clamshell은 정면 균일 조명이며, Short lighting의 측면 방향성과 충돌합니다',
+            suggestion: 'Clamshell(뷰티 조명) 또는 Short lighting 중 하나를 선택하세요',
+            severity: 'error' as const
+        },
+        {
+            special1: 'clamshell' as SpecialLighting,
+            special2: 'chiaroscuro' as SpecialLighting,
+            reason: 'Clamshell은 부드러운 뷰티 조명이며, Chiaroscuro의 극적인 명암 대비와 충돌합니다',
+            suggestion: '부드러운 뷰티(Clamshell) 또는 극적 명암(Chiaroscuro) 중 하나를 선택하세요',
+            severity: 'error' as const
+        },
+        // 유사 기능 - WARNING (효과 중복)
         {
             special1: 'rim-light' as SpecialLighting,
             special2: 'edge-lighting' as SpecialLighting,
-            reason: 'Rim light와 Edge lighting은 유사한 기능으로 효과가 중복됩니다',
+            reason: 'Rim light와 Edge lighting은 유사한 윤곽 강조 기능으로 효과가 중복됩니다',
             suggestion: '하나만 선택하세요 - Rim(전체 윤곽) 또는 Edge(선택적 강조)',
+            severity: 'warning' as const
+        },
+        {
+            special1: 'rim-light' as SpecialLighting,
+            special2: 'hair-light' as SpecialLighting,
+            reason: 'Rim light가 이미 머리카락 윤곽을 포함하므로 Hair light는 중복될 수 있습니다',
+            suggestion: 'Rim light 단독 사용 또는 Hair light만 단독 사용 권장',
             severity: 'warning' as const
         }
     ],

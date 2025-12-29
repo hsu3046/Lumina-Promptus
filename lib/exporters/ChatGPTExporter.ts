@@ -23,44 +23,46 @@ export class ChatGPTExporter {
 
     /**
      * IR을 ChatGPT 8섹션 구조 프롬프트로 변환
-     * [Subject] → [Fashion] → [Composition] → [Expression/Pose] → [Location] → [Lighting] → [Tech Specs] → [Style]
+     * Location: → Subject: → Fashion: → Expression/Pose: → Composition: → Lighting: → Tech Specs: → Style:
      */
     export(): string {
         const sections: string[] = [];
 
-        // 1. [Subject] - 외모 (성별+나이+체형+얼굴형+눈색+피부톤+머리색+헤어스타일)
-        const subject = this.getSubjectSection();
-        if (subject) sections.push(subject);
-
-        // 2. [Fashion] - 패션 (상의+하의+신발+악세서리)
-        const fashion = this.getFashionSection();
-        if (fashion) sections.push(fashion);
-
-        // 3. [Composition] - 프레이밍, 구도, 앵글
-        const composition = this.getCompositionSection();
-        if (composition) sections.push(composition);
-
-        // 4. [Expression/Pose] - 포즈, 표정, 시선 통합
-        const expressionPose = this.getExpressionPoseSection();
-        if (expressionPose) sections.push(expressionPose);
-
-        // 5. [Location] - 배경
+        // 1. Location - 배경 (먼저!)
         const location = this.getLocationSection();
         if (location) sections.push(location);
 
-        // 6. [Lighting] - 조명 설정
+        // 2. Subject - 외모
+        const subject = this.getSubjectSection();
+        if (subject) sections.push(subject);
+
+        // 3. Fashion - 패션
+        const fashion = this.getFashionSection();
+        if (fashion) sections.push(fashion);
+
+        // 4. Expression/Pose - 포즈, 표정, 시선 통합
+        const expressionPose = this.getExpressionPoseSection();
+        if (expressionPose) sections.push(expressionPose);
+
+        // 5. Composition - 프레이밍, 구도, 앵글
+        const composition = this.getCompositionSection();
+        if (composition) sections.push(composition);
+
+        // 6. Lighting - 조명 설정
         const lighting = this.getLightingSection();
         if (lighting) sections.push(lighting);
 
-        // 7. [Tech Specs] - 카메라 바디, 렌즈
+        // 7. Tech Specs - 카메라 바디, 렌즈
         const techSpecs = this.getTechSpecsSection();
         if (techSpecs) sections.push(techSpecs);
 
-        // 8. [Style] - ISO, Shutter Speed
+        // 8. Style - ISO, Shutter Speed
         const style = this.getStyleSection();
         if (style) sections.push(style);
 
-        return sections.filter(Boolean).join(' ');
+        // 각 섹션 끝의 마침표 제거 후 '. '로 조합 (이중 마침표 방지)
+        const content = sections.filter(Boolean).map(s => s.replace(/\.+$/, '')).join('. ');
+        return `Create a DSLR editorial portrait. ${content}`;
     }
 
     /**
@@ -121,7 +123,7 @@ export class ChatGPTExporter {
         }
 
         if (sentences.length === 0) return '';
-        return `[Composition] ${sentences.join(' ')}`;
+        return `Composition: ${sentences.join(' ')}`;
     }
 
     /**
@@ -132,14 +134,14 @@ export class ChatGPTExporter {
         if (subjects.length === 0) {
             const subjectContent = this.ir.slots.subject?.content || '';
             if (!subjectContent) return '';
-            return `[Subject & Fashion] ${subjectContent}`;
+            return `Subject & Fashion: ${subjectContent}`;
         }
 
         const descriptions = subjects.map((subject, idx) => {
             return this.buildAppearanceDescription(subject, subjects.length > 1 ? idx + 1 : null);
         });
 
-        return `[Subject] ${descriptions.join(' ')}`;
+        return `Subject: ${descriptions.join(' ')}`;
     }
 
     /**
@@ -290,7 +292,7 @@ export class ChatGPTExporter {
         }).filter(Boolean);
 
         if (fashionDescriptions.length === 0) return '';
-        return `[Fashion] ${fashionDescriptions.join(' ')}`;
+        return `Fashion: ${fashionDescriptions.join(' ')}`;
     }
 
     private addArticle(text: string): string {
@@ -383,7 +385,7 @@ export class ChatGPTExporter {
         }).filter(Boolean);
 
         if (descriptions.length === 0) return '';
-        return `[Expression/Pose] ${descriptions.join(' ')}`;
+        return `Expression/Pose: ${descriptions.join(' ')}`;
     }
 
     /**
@@ -392,7 +394,7 @@ export class ChatGPTExporter {
     private getLightingSection(): string {
         const content = this.ir.slots.lighting?.content || '';
         if (!content) return '';
-        return `[Lighting] ${content}`;
+        return `Lighting: ${content}`;
     }
 
     /**
@@ -414,7 +416,7 @@ export class ChatGPTExporter {
         };
 
         const background = backgroundMap[backgroundType] || 'studio backdrop';
-        return `[Location] ${background}`;
+        return `Location: ${background}`;
     }
 
     /**
@@ -428,7 +430,7 @@ export class ChatGPTExporter {
             const cameraBody = this.ir.slots.camera_body?.content || '';
             const lensContent = this.ir.slots.lens?.content || '';
             if (cameraBody || lensContent) {
-                return `[Tech Specs] ${[cameraBody, lensContent].filter(Boolean).join(', ')}`;
+                return `Tech Specs: ${[cameraBody, lensContent].filter(Boolean).join(', ')}`;
             }
             return '';
         }
@@ -465,7 +467,7 @@ export class ChatGPTExporter {
         }
 
         if (sentences.length === 0) return '';
-        return `[Tech Specs] ${sentences.join(' ')}`;
+        return `Tech Specs: ${sentences.join(' ')}`;
     }
 
     /**
@@ -505,7 +507,7 @@ export class ChatGPTExporter {
         }
 
         if (parts.length === 0) return '';
-        return `[Style] ${parts.join('. ')}.`;
+        return `Style: ${parts.join('. ')}.`;
     }
 
     getMetadata(): { totalTokens: number; model: string; } {

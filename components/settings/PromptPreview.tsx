@@ -75,7 +75,7 @@ export function PromptPreview() {
                         break;
                     }
                     case 'midjourney': {
-                        const exporter = new MidjourneyExporter(newIR);
+                        const exporter = new MidjourneyExporter(newIR, settings);
                         result = exporter.export();
                         break;
                     }
