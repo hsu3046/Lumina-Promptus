@@ -5,7 +5,7 @@ import { useSettingsStore } from '@/store/useSettingsStore';
 
 const CHARACTERISTIC_TYPES = [
     { value: 'studio', label: '스튜디오', disabled: false },
-    { value: 'landscape', label: '풍경', disabled: true },
+    { value: 'landscape', label: '풍경', disabled: false },
     { value: 'street', label: '스냅', disabled: true },
     { value: 'architecture', label: '건축물', disabled: true },
     { value: 'product', label: '제품', disabled: true },

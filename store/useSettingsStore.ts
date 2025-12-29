@@ -11,6 +11,7 @@ import type {
     UserSettings,
     StudioSubject,
 } from '@/types';
+import type { LandscapeSettings } from '@/types/landscape.types';
 
 // 기본값 정의 (스튜디오 기본: Nikon D850 + AF-S 85mm)
 const defaultCameraSettings: CameraSettings = {
@@ -105,22 +106,43 @@ const defaultUserInputSettings: UserInputSettings = {
     studioSubjects: [createDefaultStudioSubject()],
 };
 
-export const defaultSettings: UserSettings = {
+// Landscape 기본값
+const defaultLandscapeSettings: LandscapeSettings = {
+    location: {
+        name: '',
+        coordinates: { lat: 37.5512, lng: 126.9882 }, // 서울 남산타워 기본
+        elevation: 0,
+    },
+    camera: {
+        heading: 0,
+        pitch: 0,
+    },
+    lensId: 'nikon_af_s_24mm_f14g_ed',
+    environment: {
+        time: 'golden-hour',
+        weather: 'clear',
+        season: 'autumn',
+    },
+};
+
+export const defaultSettings: UserSettings & { landscape: LandscapeSettings } = {
     camera: defaultCameraSettings,
     lighting: defaultLightingSettings,
     colorGrading: defaultColorGradingSettings,
     artDirection: defaultArtDirectionSettings,
     userInput: defaultUserInputSettings,
+    landscape: defaultLandscapeSettings,
 };
 
 // Store 인터페이스
 interface SettingsStore {
-    settings: UserSettings;
+    settings: UserSettings & { landscape: LandscapeSettings };
     updateCamera: (camera: Partial<CameraSettings>) => void;
     updateLighting: (lighting: Partial<LightingSettings>) => void;
     updateColorGrading: (colorGrading: Partial<ColorGradingSettings>) => void;
     updateArtDirection: (artDirection: Partial<ArtDirectionSettings>) => void;
     updateUserInput: (userInput: Partial<UserInputSettings>) => void;
+    updateLandscape: (landscape: Partial<LandscapeSettings>) => void;
     resetToDefaults: () => void;
 }
 
@@ -164,6 +186,14 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
             settings: {
                 ...state.settings,
                 userInput: { ...state.settings.userInput, ...userInput },
+            },
+        })),
+
+    updateLandscape: (landscape) =>
+        set((state) => ({
+            settings: {
+                ...state.settings,
+                landscape: { ...state.settings.landscape, ...landscape },
             },
         })),
 

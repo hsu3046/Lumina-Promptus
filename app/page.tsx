@@ -15,7 +15,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { CharacteristicTypeSelector, PromptPreview } from '@/components/settings';
-import { CameraTab, LightingTab, SubjectTab } from '@/components/settings/tabs';
+import { CameraTab, LightingTab, SubjectTab, LandscapeTab } from '@/components/settings/tabs';
 
 export default function Home() {
   const { settings, updateCamera, updateLighting } = useSettingsStore();
@@ -102,38 +102,44 @@ export default function Home() {
             {/* 렌즈 특성 타입 선택 */}
             <CharacteristicTypeSelector onTypeChange={handleCharacteristicTypeChange} />
 
-            {/* 메인 탭 */}
-            <Tabs defaultValue="style" className="w-full">
-              <TabsList className="w-full grid grid-cols-3">
-                <TabsTrigger value="style" className="gap-2 data-[state=active]:!text-amber-500">
-                  <HugeiconsIcon icon={User02Icon} size={16} />
-                  피사체 설정
-                </TabsTrigger>
-                <TabsTrigger value="lighting" className="gap-2 data-[state=active]:!text-amber-500">
-                  <HugeiconsIcon icon={Sun03Icon} size={16} />
-                  라이팅 설정
-                </TabsTrigger>
-                <TabsTrigger value="camera" className="gap-2 data-[state=active]:!text-amber-500">
-                  <HugeiconsIcon icon={Camera02Icon} size={16} />
-                  카메라 설정
-                </TabsTrigger>
-              </TabsList>
+            {/* 모드별 설정 패널 */}
+            {settings.artDirection.lensCharacteristicType === 'landscape' ? (
+              /* 풍경 모드 */
+              <LandscapeTab />
+            ) : (
+              /* 스튜디오 모드 */
+              <Tabs defaultValue="style" className="w-full">
+                <TabsList className="w-full grid grid-cols-3">
+                  <TabsTrigger value="style" className="gap-2 data-[state=active]:!text-amber-500">
+                    <HugeiconsIcon icon={User02Icon} size={16} />
+                    피사체 설정
+                  </TabsTrigger>
+                  <TabsTrigger value="lighting" className="gap-2 data-[state=active]:!text-amber-500">
+                    <HugeiconsIcon icon={Sun03Icon} size={16} />
+                    라이팅 설정
+                  </TabsTrigger>
+                  <TabsTrigger value="camera" className="gap-2 data-[state=active]:!text-amber-500">
+                    <HugeiconsIcon icon={Camera02Icon} size={16} />
+                    카메라 설정
+                  </TabsTrigger>
+                </TabsList>
 
-              {/* 피사체 탭 */}
-              <TabsContent value="style" className="mt-6">
-                <SubjectTab />
-              </TabsContent>
+                {/* 피사체 탭 */}
+                <TabsContent value="style" className="mt-6">
+                  <SubjectTab />
+                </TabsContent>
 
-              {/* 라이팅 탭 */}
-              <TabsContent value="lighting" className="mt-6">
-                <LightingTab />
-              </TabsContent>
+                {/* 라이팅 탭 */}
+                <TabsContent value="lighting" className="mt-6">
+                  <LightingTab />
+                </TabsContent>
 
-              {/* 카메라 탭 */}
-              <TabsContent value="camera" className="mt-6">
-                <CameraTab />
-              </TabsContent>
-            </Tabs>
+                {/* 카메라 탭 */}
+                <TabsContent value="camera" className="mt-6">
+                  <CameraTab />
+                </TabsContent>
+              </Tabs>
+            )}
           </div>
 
           {/* 프롬프트 미리보기 (데스크탑: 오른쪽 1/3, 모바일: 하단) */}

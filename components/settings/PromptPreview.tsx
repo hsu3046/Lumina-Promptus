@@ -13,6 +13,8 @@ import { NanoBananaProExporter } from '@/lib/exporters/NanoBananaProExporter';
 import { ChatGPTExporter } from '@/lib/exporters/ChatGPTExporter';
 import { MidjourneyExporter } from '@/lib/exporters/MidjourneyExporter';
 import { LightingValidator } from '@/lib/lighting-validator';
+import { generate14ReferenceImages } from '@/lib/landscape/reference-image-generator';
+import { buildLandscapePromptConfig, generateLandscapePrompt, generateSimpleLandscapePrompt } from '@/lib/landscape/prompt-generator';
 import type { LightingConfig, LightingPattern, LightingKey, LightingRatio, LightQuality, ColorTemperature, LightingMood, SpecialLighting } from '@/types/lighting.types';
 
 type AITarget = 'nanobanana' | 'chatgpt' | 'midjourney';
@@ -34,6 +36,40 @@ export function PromptPreview() {
     useEffect(() => {
         const generatePrompt = async () => {
             try {
+                // 풍경 모드인 경우 별도 처리
+                if (settings.artDirection.lensCharacteristicType === 'landscape') {
+                    const landscape = settings.landscape;
+                    const location: [number, number] = [
+                        landscape.location.coordinates.lat,
+                        landscape.location.coordinates.lng,
+                    ];
+
+                    // 참조 이미지 URL 생성
+                    const referenceImages = generate14ReferenceImages(
+                        location,
+                        landscape.camera.heading,
+                        landscape.camera.pitch
+                    );
+
+                    // 프롬프트 설정 빌드
+                    const config = buildLandscapePromptConfig(landscape, referenceImages);
+
+                    // AI 타겟에 따른 프롬프트 생성
+                    let result: string;
+                    if (aiTarget === 'midjourney') {
+                        // Midjourney: 간결한 키워드 형식
+                        result = generateSimpleLandscapePrompt(config) + ' --ar 16:9 --style raw --s 0';
+                    } else {
+                        // ChatGPT/NanoBanana: 상세 프롬프트
+                        result = generateLandscapePrompt(config);
+                    }
+
+                    setHasConflict(false);
+                    setGeneratedPrompt(result);
+                    return;
+                }
+
+                // 스튜디오 모드 기존 로직
                 // Step 1: IR 생성
                 const builder = new PromptBuilderV2(settings);
                 const newIR = await builder.buildIR();
@@ -105,8 +141,12 @@ export function PromptPreview() {
 
     return (
         <div className="space-y-6">
-            <Card className="bg-zinc-900/50 border-zinc-800/50 sticky top-24 py-4 gap-2">
-                <CardContent className="space-y-3">
+            <Card className="bg-zinc-900/50 border-zinc-800/50 sticky top-24 py-0 gap-2 overflow-hidden">
+                {/* 프롬프트 타이틀 */}
+                <div className="bg-amber-500 px-4 py-2">
+                    <h2 className="text-white text-sm font-semibold text-center">프롬프트</h2>
+                </div>
+                <CardContent className="pt-4 space-y-3">
                     {/* AI 타겟 선택 Radio Group */}
                     <div className="space-y-2">
                         <RadioGroup
