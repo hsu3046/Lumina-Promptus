@@ -8,6 +8,8 @@ export interface Hybrid14Config {
     userHeading: number;  // 사용자가 선택한 주요 방향
     userPitch: number;
     elevation: number;
+    detectedTerrainHeight?: number;  // 자동 감지된 지형 높이
+    heightOffset?: number;            // 사용자 설정 카메라 오프셋
 }
 
 export interface CaptureSlot {
@@ -20,11 +22,20 @@ export interface CaptureSlot {
     description: string;
 }
 
+// 폴백용 최소 안전 고도 (지형 높이 미감지 시)
+const FALLBACK_TERRAIN_HEIGHT = 100; // meters
+
 /**
  * Hybrid 14 슬롯 구성 생성
  */
 export function generateHybrid14Slots(config: Hybrid14Config): CaptureSlot[] {
-    const { userHeading, userPitch, elevation } = config;
+    const { userHeading, userPitch, detectedTerrainHeight, heightOffset } = config;
+
+    // 3D 캡처용 카메라 고도 계산
+    // 감지된 지형 높이가 있으면 사용, 없으면 폴백값 사용
+    const baseHeight = detectedTerrainHeight ?? FALLBACK_TERRAIN_HEIGHT;
+    const cameraOffset = heightOffset ?? 2; // 기본 눈높이 2m
+    const safeAltitude = baseHeight + cameraOffset;
 
     const slots: CaptureSlot[] = [];
 
@@ -55,7 +66,7 @@ export function generateHybrid14Slots(config: Hybrid14Config): CaptureSlot[] {
     slots.push({
         slot: 3,
         type: '3d_target',
-        altitude: elevation + 1.7,  // 눈높이
+        altitude: safeAltitude + 1.7,  // 안전 고도 + 눈높이
         heading: userHeading,
         pitch: userPitch,
         fov: 84,  // 24mm FOV
@@ -65,7 +76,7 @@ export function generateHybrid14Slots(config: Hybrid14Config): CaptureSlot[] {
     slots.push({
         slot: 4,
         type: '3d_target',
-        altitude: elevation + 1.7,
+        altitude: safeAltitude + 1.7,
         heading: userHeading,
         pitch: userPitch - 15,  // 약간 위로
         fov: 84,
@@ -75,7 +86,7 @@ export function generateHybrid14Slots(config: Hybrid14Config): CaptureSlot[] {
     slots.push({
         slot: 5,
         type: '3d_target',
-        altitude: elevation + 1.7,
+        altitude: safeAltitude + 1.7,
         heading: normalizeHeading(userHeading - 30),  // 좌측
         pitch: userPitch,
         fov: 84,
@@ -85,7 +96,7 @@ export function generateHybrid14Slots(config: Hybrid14Config): CaptureSlot[] {
     slots.push({
         slot: 6,
         type: '3d_target',
-        altitude: elevation + 1.7,
+        altitude: safeAltitude + 1.7,
         heading: normalizeHeading(userHeading + 30),  // 우측
         pitch: userPitch,
         fov: 84,
@@ -152,6 +163,7 @@ export function createInitialProgress(): CaptureProgress {
 
 /**
  * Street View Static API URL 생성
+ * @param panoId - 파노라마 ID (있으면 location 대신 사용하여 정확한 파노라마 지정)
  */
 export function generateStreetViewUrl(
     lat: number,
@@ -159,11 +171,24 @@ export function generateStreetViewUrl(
     heading: number,
     pitch: number = 0,
     fov: number = 90,
-    size: string = '640x640'
+    size: string = '640x640',
+    panoId?: string
 ): string {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey) return '';
 
+    // Pano ID가 있으면 정확한 파노라마 지정 (미리보기와 동일한 이미지 보장)
+    if (panoId) {
+        return `https://maps.googleapis.com/maps/api/streetview?` +
+            `size=${size}` +
+            `&pano=${panoId}` +
+            `&heading=${heading}` +
+            `&pitch=${pitch}` +
+            `&fov=${fov}` +
+            `&key=${apiKey}`;
+    }
+
+    // Fallback: location 기반 (panoId 없을 때)
     return `https://maps.googleapis.com/maps/api/streetview?` +
         `size=${size}` +
         `&location=${lat},${lng}` +

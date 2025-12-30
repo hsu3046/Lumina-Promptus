@@ -125,7 +125,7 @@ export class TilesCaptureService {
     /**
      * 타일 로딩 완료 대기
      */
-    private async waitForTilesLoaded(timeoutMs = 10000): Promise<boolean> {
+    private async waitForTilesLoaded(timeoutMs = 15000): Promise<boolean> {
         if (!this.tileset || !this.viewer) return false;
 
         const startTime = Date.now();

@@ -25,8 +25,8 @@ export function StreetViewPreview() {
 
     const containerRef = useRef<HTMLDivElement>(null);
     const panoramaRef = useRef<google.maps.StreetViewPanorama | null>(null);
-    const isInitializedRef = useRef(false);
     const lastCoordsRef = useRef({ lat: 0, lng: 0 });
+    const apiCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const [isLoading, setIsLoading] = useState(true);
     const [isApiLoaded, setIsApiLoaded] = useState(false);
@@ -34,6 +34,14 @@ export function StreetViewPreview() {
 
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     const hasApiKey = apiKey && apiKey !== 'YOUR_GOOGLE_MAPS_API_KEY_HERE';
+
+    // interval 정리 헬퍼 함수
+    const clearApiCheckInterval = useCallback(() => {
+        if (apiCheckIntervalRef.current) {
+            clearInterval(apiCheckIntervalRef.current);
+            apiCheckIntervalRef.current = null;
+        }
+    }, []);
 
     // Google Maps API 동적 로드 (싱글톤 패턴)
     const loadGoogleMapsApi = useCallback(() => {
@@ -44,23 +52,12 @@ export function StreetViewPreview() {
             return;
         }
 
-        // 이미 로드 중인 경우 - 콜백 등록 후 대기
-        if (window.googleMapsApiLoaded === false) {
-            const checkInterval = setInterval(() => {
+        // 이미 로드 중이거나 스크립트가 존재하는 경우 - 대기
+        if (window.googleMapsApiLoaded === false || document.querySelector('script[src*="maps.googleapis.com"]')) {
+            clearApiCheckInterval();
+            apiCheckIntervalRef.current = setInterval(() => {
                 if (window.google?.maps) {
-                    clearInterval(checkInterval);
-                    setIsApiLoaded(true);
-                    window.googleMapsApiLoaded = true;
-                }
-            }, 100);
-            return;
-        }
-
-        // 스크립트가 존재하는 경우 - 로드 대기
-        if (document.querySelector('script[src*="maps.googleapis.com"]')) {
-            const checkInterval = setInterval(() => {
-                if (window.google?.maps) {
-                    clearInterval(checkInterval);
+                    clearApiCheckInterval();
                     setIsApiLoaded(true);
                     window.googleMapsApiLoaded = true;
                 }
@@ -72,6 +69,7 @@ export function StreetViewPreview() {
         window.googleMapsApiLoaded = false;
 
         window.initStreetViewCallback = () => {
+            clearApiCheckInterval();
             setIsApiLoaded(true);
             window.googleMapsApiLoaded = true;
         };
@@ -85,25 +83,43 @@ export function StreetViewPreview() {
             setIsLoading(false);
         };
         document.head.appendChild(script);
-    }, [apiKey]);
+    }, [apiKey, clearApiCheckInterval]);
 
-    // API 로드 (1회만)
+    // API 로드 + 컴포넌트 언마운트 시 interval 정리
     useEffect(() => {
         if (hasApiKey && !isApiLoaded) {
             loadGoogleMapsApi();
         }
-    }, [hasApiKey, loadGoogleMapsApi, isApiLoaded]);
 
-    // StreetViewPanorama 초기화 (1회만)
+        // Cleanup: interval 정리
+        return () => {
+            clearApiCheckInterval();
+        };
+    }, [hasApiKey, loadGoogleMapsApi, isApiLoaded, clearApiCheckInterval]);
+
+    // StreetViewPanorama 초기화 및 정리
     useEffect(() => {
-        if (!isApiLoaded || !containerRef.current || !window.google?.maps || isInitializedRef.current) return;
+        if (!isApiLoaded || !containerRef.current || !window.google?.maps) return;
 
         const { lat, lng } = landscape.location.coordinates;
         const { heading, pitch } = landscape.camera;
 
-        // 초기화 플래그 설정
-        isInitializedRef.current = true;
+        // 기존 panorama 정리 (재초기화 지원)
+        if (panoramaRef.current) {
+            try {
+                // 이벤트 리스너 제거
+                window.google.maps.event.clearInstanceListeners(panoramaRef.current);
+                // DOM에서 제거 (WebGL 컨텍스트 해제)
+                panoramaRef.current.setVisible(false);
+            } catch (e) {
+                console.warn('[StreetViewPreview] Cleanup warning:', e);
+            }
+            panoramaRef.current = null;
+        }
+
         lastCoordsRef.current = { lat, lng };
+        setIsLoading(true);
+        setError(null);
 
         try {
             const panorama = new window.google.maps.StreetViewPanorama(
@@ -112,15 +128,18 @@ export function StreetViewPreview() {
                     position: { lat, lng },
                     pov: { heading, pitch },
                     zoom: 1,
+                    controlSize: 32,
                     addressControl: false,
-                    showRoadLabels: false,
+                    showRoadLabels: true,
                     zoomControl: true,
                     panControl: true,
                     linksControl: true,
-                    fullscreenControl: false,
+                    clickToGo: true,
+                    fullscreenControl: true,
                     motionTracking: false,
                     motionTrackingControl: false,
-                }
+                    keyboardShortcuts: false,
+                } as google.maps.StreetViewPanoramaOptions
             );
 
             // 위치 변경 이벤트 - Store 업데이트
@@ -130,7 +149,6 @@ export function StreetViewPreview() {
                     const newLat = position.lat();
                     const newLng = position.lng();
 
-                    // 중복 업데이트 방지
                     if (
                         Math.abs(newLat - lastCoordsRef.current.lat) > 0.00001 ||
                         Math.abs(newLng - lastCoordsRef.current.lng) > 0.00001
@@ -168,6 +186,20 @@ export function StreetViewPreview() {
                 }
             });
 
+            // Pano ID 변경 이벤트 - 캡처 시 동기화용
+            panorama.addListener('pano_changed', () => {
+                const panoId = panorama.getPano();
+                if (panoId && panoId !== landscape.currentPanoId) {
+                    updateLandscape({ currentPanoId: panoId });
+                }
+            });
+
+            // 초기 Pano ID 저장
+            const initialPanoId = panorama.getPano();
+            if (initialPanoId) {
+                updateLandscape({ currentPanoId: initialPanoId });
+            }
+
             panoramaRef.current = panorama;
             setIsLoading(false);
             setError(null);
@@ -177,7 +209,20 @@ export function StreetViewPreview() {
             setError('Street View를 로드할 수 없습니다.');
             setIsLoading(false);
         }
-    }, [isApiLoaded]); // 의존성을 isApiLoaded만으로 제한 - 1회만 실행
+
+        // Cleanup 함수 - 컴포넌트 언마운트 또는 재초기화 시 실행
+        return () => {
+            if (panoramaRef.current) {
+                try {
+                    window.google?.maps?.event.clearInstanceListeners(panoramaRef.current);
+                    panoramaRef.current.setVisible(false);
+                } catch (e) {
+                    console.warn('[StreetViewPreview] Unmount cleanup warning:', e);
+                }
+                panoramaRef.current = null;
+            }
+        };
+    }, [isApiLoaded]); // isApiLoaded 변경 시에만 재실행
 
     // 외부에서 좌표 변경 시 파노라마 위치 업데이트
     useEffect(() => {
@@ -228,7 +273,17 @@ export function StreetViewPreview() {
             </div>
 
             {/* 인터랙티브 파노라마 */}
-            <div className="relative rounded-lg overflow-hidden border border-zinc-700 bg-zinc-900">
+            <div
+                className="relative rounded-lg overflow-hidden border border-zinc-700 bg-zinc-900"
+                style={{ ['--hide-keyboard' as string]: 'none' }}
+            >
+                {/* 키보드 쇼트컷 버튼 숨기기 CSS */}
+                <style>{`
+                    .gm-iv-container .gm-keyboard-shortcuts,
+                    .gm-iv-container a[href*="keyboard-shortcuts"] {
+                        display: none !important;
+                    }
+                `}</style>
                 {(isLoading || !isApiLoaded) && (
                     <div className="absolute inset-0 flex items-center justify-center bg-zinc-900 z-10">
                         <Loader2 className="w-6 h-6 animate-spin text-amber-400" />
@@ -253,9 +308,9 @@ export function StreetViewPreview() {
             {/* 메타 정보 */}
             <div className="flex justify-between text-[10px] text-zinc-500">
                 <span>
-                    {landscape.location.coordinates.lat.toFixed(4)}, {landscape.location.coordinates.lng.toFixed(4)}
+                    위도: {landscape.location.coordinates.lat.toFixed(4)}, 경도: {landscape.location.coordinates.lng.toFixed(4)}
                 </span>
-                <span>{compassLabel} • {landscape.camera.heading}° • Pitch {landscape.camera.pitch}°</span>
+                <span>방향: {landscape.camera.heading}° ({compassLabel}) • 기울기: {landscape.camera.pitch}°</span>
             </div>
 
             {!hasApiKey && (

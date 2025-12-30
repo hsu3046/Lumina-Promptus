@@ -64,6 +64,8 @@ export function ReferenceImageCapturer() {
             userHeading: camera?.heading ?? 0,
             userPitch: camera?.pitch ?? 0,
             elevation: location?.elevation ?? 0,
+            detectedTerrainHeight: camera?.detectedTerrainHeight,
+            heightOffset: camera?.heightOffset ?? 2,
         };
 
         const slots = generateHybrid14Slots(config);
@@ -135,7 +137,9 @@ export function ReferenceImageCapturer() {
                     lat, lng,
                     slot.heading,
                     slot.pitch,
-                    slot.fov
+                    slot.fov,
+                    '640x640',
+                    settings.landscape.currentPanoId
                 );
 
                 if (url) {
@@ -201,6 +205,8 @@ export function ReferenceImageCapturer() {
             userHeading: camera?.heading ?? 0,
             userPitch: camera?.pitch ?? 0,
             elevation: location?.elevation ?? 0,
+            detectedTerrainHeight: camera?.detectedTerrainHeight,
+            heightOffset: camera?.heightOffset ?? 2,
         };
 
         const slots = generateHybrid14Slots(config);

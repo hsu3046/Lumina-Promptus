@@ -116,6 +116,7 @@ const defaultLandscapeSettings: LandscapeSettings = {
     camera: {
         heading: 0,
         pitch: 0,
+        heightOffset: 2, // 기본 눈높이 (지형 위 2m)
     },
     lensId: 'nikon_af_s_24mm_f14g_ed',
     environment: {

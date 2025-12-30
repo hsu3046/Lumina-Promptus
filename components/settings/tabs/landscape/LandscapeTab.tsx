@@ -7,7 +7,7 @@ import { Camera02Icon, Sun03Icon } from '@hugeicons/core-free-icons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Slider } from '@/components/ui/slider';
+
 import { ComboboxField } from '@/components/ui/combobox-field';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { CameraTab } from '@/components/settings/tabs/camera/CameraTab';
@@ -54,18 +54,7 @@ export function LandscapeTab() {
         } as Partial<LandscapeSettings>);
     };
 
-    // 각도 업데이트
-    const handleHeadingChange = (value: number[]) => {
-        updateLandscape({
-            camera: { ...landscape.camera, heading: value[0] },
-        } as Partial<LandscapeSettings>);
-    };
 
-    const handlePitchChange = (value: number[]) => {
-        updateLandscape({
-            camera: { ...landscape.camera, pitch: value[0] },
-        } as Partial<LandscapeSettings>);
-    };
 
     // 환경 업데이트
     const handleTimeChange = (value: string) => {
@@ -111,37 +100,23 @@ export function LandscapeTab() {
                 <section className="space-y-3">
                     <div className="flex items-center gap-2 text-amber-400">
                         <MapPin className="w-4 h-4" />
-                        <h3 className="text-sm font-medium">위치</h3>
+                        <h3 className="text-sm font-medium">위치 검색</h3>
                     </div>
                     <LocationSearch />
                 </section>
 
                 <hr className="border-zinc-700/50" />
 
-                {/* 미리보기 섹션 - 탭으로 분리하여 WebGL 충돌 방지 */}
-                <section className="space-y-3">
-                    <Tabs defaultValue="streetview" className="w-full">
-                        <TabsList className="w-full grid grid-cols-2 h-8">
-                            <TabsTrigger
-                                value="streetview"
-                                className="text-xs gap-1 data-[state=active]:!text-amber-500"
-                            >
-                                📷 Street View
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="3dtiles"
-                                className="text-xs gap-1 data-[state=active]:!text-amber-500"
-                            >
-                                🏢 3D 공간
-                            </TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="streetview" className="mt-3">
-                            <StreetViewPreview />
-                        </TabsContent>
-                        <TabsContent value="3dtiles" className="mt-3">
-                            <TilesPreview width={400} height={280} />
-                        </TabsContent>
-                    </Tabs>
+                {/* Street View 미리보기 */}
+                <section>
+                    <StreetViewPreview />
+                </section>
+
+                <hr className="border-zinc-700/50" />
+
+                {/* 3D 공간 미리보기 */}
+                <section>
+                    <TilesPreview />
                 </section>
 
                 <hr className="border-zinc-700/50" />
@@ -172,37 +147,14 @@ export function LandscapeTab() {
                             />
                         </div>
 
-                        {/* 방향 (Heading) */}
-                        <div>
-                            <div className="flex justify-between items-center mb-2">
-                                <Label className="text-[10px] text-zinc-500">방향 (Heading)</Label>
-                                <span className="text-xs text-amber-400">{landscape.camera.heading}° • {compassLabel}</span>
-                            </div>
-                            <Slider
-                                value={[landscape.camera.heading]}
-                                onValueChange={handleHeadingChange}
-                                min={0}
-                                max={360}
-                                step={1}
-                                className="w-full"
-                            />
+                        {/* 현재 방향/기울기 표시 (읽기 전용) */}
+                        <div className="flex gap-4 text-[10px] text-zinc-500">
+                            <span>방향: <span className="text-amber-400">{landscape.camera.heading}° • {compassLabel}</span></span>
+                            <span>기울기: <span className="text-amber-400">{landscape.camera.pitch}°</span></span>
                         </div>
-
-                        {/* 기울기 (Pitch) */}
-                        <div>
-                            <div className="flex justify-between items-center mb-2">
-                                <Label className="text-[10px] text-zinc-500">기울기 (Pitch)</Label>
-                                <span className="text-xs text-amber-400">{landscape.camera.pitch}°</span>
-                            </div>
-                            <Slider
-                                value={[landscape.camera.pitch]}
-                                onValueChange={handlePitchChange}
-                                min={-90}
-                                max={90}
-                                step={1}
-                                className="w-full"
-                            />
-                        </div>
+                        <p className="text-[10px] text-zinc-600 italic">
+                            💡 Street View에서 마우스 드래그로 조절 가능
+                        </p>
                     </div>
                 </section>
 

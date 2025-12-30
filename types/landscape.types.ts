@@ -17,6 +17,8 @@ export interface LandscapeLocation {
 export interface LandscapeCameraAngle {
     heading: number;                 // 0-360° (나침반 방향)
     pitch: number;                   // -90 ~ 90° (상하 각도)
+    heightOffset: number;            // 3D 캡처용 카메라 높이 오프셋 (미터)
+    detectedTerrainHeight?: number;  // 자동 감지된 지형 높이 (미터)
 }
 
 // ===== 렌즈 타입 (풍경 촬영용 주요 렌즈) =====
@@ -81,7 +83,8 @@ export interface LandscapeReferenceImage {
 export interface LandscapeSettings {
     location: LandscapeLocation;
     camera: LandscapeCameraAngle;
-    lensId: string;              // 기존 lenses.ts의 렌즈 ID
+    currentPanoId?: string;          // Current Street View panorama ID (for capture sync)
+    lensId: string;                  // 기존 lenses.ts의 렌즈 ID
     environment: LandscapeEnvironment;
     landmarks?: LandscapeLandmark[];
 }

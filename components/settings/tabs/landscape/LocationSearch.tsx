@@ -232,7 +232,7 @@ export function LocationSearch() {
             {/* 현재 좌표 표시 */}
             <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
                 <Navigation className="w-3 h-3" />
-                현재 위치: {currentLocation}
+                위도: {lat.toFixed(4)}, 경도: {lng.toFixed(4)}
             </p>
 
             {/* 드롭다운 메뉴 */}
