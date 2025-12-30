@@ -123,6 +123,7 @@ const defaultLandscapeSettings: LandscapeSettings = {
         time: 'golden-hour',
         weather: 'clear',
         season: 'autumn',
+        atmosphere: 'clear',
     },
     landmarks: [],
 };

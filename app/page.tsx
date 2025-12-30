@@ -1,6 +1,7 @@
 'use client';
 
-import { Sparkles, HelpCircle } from 'lucide-react';
+import { useRef } from 'react';
+import { Sparkles, HelpCircle, ChevronDown } from 'lucide-react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { User02Icon, Sun03Icon, Camera02Icon } from '@hugeicons/core-free-icons';
 import { Button } from '@/components/ui/button';
@@ -12,13 +13,54 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { CharacteristicTypeSelector, PromptPreview } from '@/components/settings';
 import { CameraTab, LightingTab, SubjectTab, LandscapeTab } from '@/components/settings/tabs';
 
+// 모드 정의
+const MODES = [
+  { value: 'studio', label: '스튜디오', icon: '📸', disabled: false },
+  { value: 'landscape', label: '풍경', icon: '🏞️', disabled: false },
+  { value: 'snap', label: '스냅', icon: '📷', disabled: true },
+] as const;
+
 export default function Home() {
-  const { settings, updateCamera, updateLighting } = useSettingsStore();
+  const { settings, updateCamera, updateLighting, updateArtDirection } = useSettingsStore();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // 현재 모드
+  const currentMode = settings.artDirection.lensCharacteristicType === 'landscape' ? 'landscape' : 'studio';
+  const currentModeInfo = MODES.find(m => m.value === currentMode) || MODES[0];
+
+  // 모드 변경 핸들러
+  const handleModeChange = (mode: string) => {
+    if (mode === 'landscape') {
+      updateArtDirection({ lensCharacteristicType: 'landscape' });
+    } else if (mode === 'studio') {
+      updateArtDirection({ lensCharacteristicType: 'studio' });
+      updateCamera({
+        bodyId: 'nikon_d850',
+        lensId: 'nikon_af_s_85mm_f14g',
+        aperture: 'f/8',
+        shutterSpeed: '1/125',
+        shutterSpeedAuto: true,
+        apertureAuto: false,
+        isoAuto: false,
+        iso: 100,
+      });
+      updateLighting({
+        enabled: true,
+        key: 'mid-key',
+      });
+    }
+  };
 
   // 렌즈 특성 타입 변경 핸들러 - 타입별 기본 카메라 설정 적용
   const handleCharacteristicTypeChange = () => {
@@ -48,15 +90,42 @@ export default function Home() {
       {/* Header */}
       <header className="border-b border-zinc-800/50 bg-zinc-950/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="md:container md:mx-auto px-2 sm:px-4 md:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-playfair)' }}>LUMINA PROMPTUS</h1>
-              <p className="text-xs text-zinc-500">프로페셔널 AI 사진 시뮬레이터</p>
-            </div>
-          </div>
+          {/* 로고 + 모드 드롭다운 */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-left">
+                  <div className="flex items-center gap-1">
+                    <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-playfair)' }}>
+                      LUMINA PROMPTUS
+                    </h1>
+                  </div>
+                  <p className="text-xs font-semibold text-amber-400 flex items-center gap-1">
+                    {currentModeInfo.label} 모드
+                    <ChevronDown className="w-3 h-3" />
+                  </p>
+                </div>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48 bg-zinc-900 border-zinc-800">
+              {MODES.map((mode) => (
+                <DropdownMenuItem
+                  key={mode.value}
+                  onClick={() => !mode.disabled && handleModeChange(mode.value)}
+                  disabled={mode.disabled}
+                  className={`${currentMode === mode.value ? 'bg-amber-500/20 text-amber-400 font-semibold' : ''} ${mode.disabled ? 'opacity-50' : 'cursor-pointer'}`}
+                >
+                  <span>{mode.label}</span>
+                  {mode.disabled && <span className="text-[10px] text-zinc-500 ml-auto">준비중</span>}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* 도움말 */}
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-1 text-zinc-400 hover:text-amber-400">
@@ -86,7 +155,7 @@ export default function Home() {
                 </section>
                 <section>
                   <h3 className="font-medium text-white mb-1">✨ 프롬프트 생성</h3>
-                  <p>설정을 완료한 후 "프롬프트 생성" 버튼을 클릭하면 AI 이미지 생성용 프롬프트가 만들어집니다.</p>
+                  <p>설정을 완료한 후 &quot;프롬프트 생성&quot; 버튼을 클릭하면 AI 이미지 생성용 프롬프트가 만들어집니다.</p>
                 </section>
               </div>
             </DialogContent>
@@ -98,9 +167,7 @@ export default function Home() {
       <main className="md:container md:mx-auto px-2 sm:px-4 md:px-6 py-6 md:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* 설정 패널 (데스크탑: 왼쪽 2/3, 모바일: 전체) */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* 렌즈 특성 타입 선택 */}
-            <CharacteristicTypeSelector onTypeChange={handleCharacteristicTypeChange} />
+          <div className="lg:col-span-2 space-y-6" ref={scrollContainerRef}>
 
             {/* 모드별 설정 패널 */}
             {settings.artDirection.lensCharacteristicType === 'landscape' ? (
@@ -109,16 +176,26 @@ export default function Home() {
             ) : (
               /* 스튜디오 모드 */
               <Tabs defaultValue="style" className="w-full">
-                <TabsList className="w-full grid grid-cols-3">
-                  <TabsTrigger value="style" className="gap-2 data-[state=active]:!text-amber-500">
+                {/* Underline 스타일 탭 */}
+                <TabsList className="w-full border-b border-zinc-800 p-0 h-auto">
+                  <TabsTrigger
+                    value="style"
+                    className="flex-1 gap-2 py-1.5 border-b-2 border-transparent data-[state=active]:border-amber-500 data-[state=active]:text-amber-500 text-zinc-400 hover:text-zinc-200"
+                  >
                     <HugeiconsIcon icon={User02Icon} size={16} />
                     피사체 설정
                   </TabsTrigger>
-                  <TabsTrigger value="lighting" className="gap-2 data-[state=active]:!text-amber-500">
+                  <TabsTrigger
+                    value="lighting"
+                    className="flex-1 gap-2 py-1.5 border-b-2 border-transparent data-[state=active]:border-amber-500 data-[state=active]:text-amber-500 text-zinc-400 hover:text-zinc-200"
+                  >
                     <HugeiconsIcon icon={Sun03Icon} size={16} />
                     라이팅 설정
                   </TabsTrigger>
-                  <TabsTrigger value="camera" className="gap-2 data-[state=active]:!text-amber-500">
+                  <TabsTrigger
+                    value="camera"
+                    className="flex-1 gap-2 py-1.5 border-b-2 border-transparent data-[state=active]:border-amber-500 data-[state=active]:text-amber-500 text-zinc-400 hover:text-zinc-200"
+                  >
                     <HugeiconsIcon icon={Camera02Icon} size={16} />
                     카메라 설정
                   </TabsTrigger>

@@ -170,6 +170,7 @@ export function LightingTab() {
 
     return (
         <div className="space-y-4">
+
             {/* 라이팅 ON/OFF */}
             <div className="flex items-center justify-between gap-4 rounded-lg border border-zinc-800 p-4">
                 <div className="space-y-0.5">

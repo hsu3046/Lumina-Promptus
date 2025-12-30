@@ -27,6 +27,7 @@ export interface ComboboxOption {
     label: string;
     color?: string;  // 색상 원 표시용
     icon?: LucideIcon;  // 아이콘 표시용
+    suffix?: string;  // 오른쪽에 표시할 텍스트 (예: "현재정보")
 }
 
 // ComboboxField Props
@@ -147,14 +148,19 @@ export function ComboboxField({
                                             />
                                             {conflict && <ConflictIcon level={conflict} />}
                                             <span className="flex-1 ml-1">{opt.label}</span>
+                                            {opt.suffix && (
+                                                <span className="text-[9px] text-amber-500/80 ml-auto shrink-0">
+                                                    📍 {opt.suffix}
+                                                </span>
+                                            )}
                                             {opt.color && (
                                                 <span
-                                                    className="w-3 h-3 rounded-full border border-zinc-600 shrink-0 ml-auto"
+                                                    className="w-3 h-3 rounded-full border border-zinc-600 shrink-0 ml-2"
                                                     style={{ backgroundColor: opt.color }}
                                                 />
                                             )}
                                             {opt.icon && (
-                                                <opt.icon className="w-3 h-3 text-zinc-400 shrink-0 ml-auto" />
+                                                <opt.icon className="w-3 h-3 text-zinc-400 shrink-0 ml-2" />
                                             )}
                                         </CommandItem>
                                     );

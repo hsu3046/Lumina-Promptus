@@ -1,69 +1,64 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Search, MapPin, Navigation, Loader2 } from 'lucide-react';
+import { Search, MapPin, Navigation, Loader2, Trees, Landmark, Palette, Camera, Church, Building, Mountain, Waves } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useSettingsStore } from '@/store/useSettingsStore';
 
-interface Prediction {
+interface SearchResult {
     placeId: string;
-    mainText: string;
-    secondaryText: string;
+    name: string;
+    lat: number;
+    lng: number;
+    types: string[];
+    summary: string | null;
+    address: string | null;
 }
 
 // 좌표 감지 정규식: 48.8584, 2.2945 형식
 const COORDINATE_REGEX = /^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/;
 
-// 간단한 세션 토큰 생성
-function generateSessionToken(): string {
-    return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-}
-
 export function LocationSearch() {
     const { settings, updateLandscape } = useSettingsStore();
     const [query, setQuery] = useState('');
-    const [predictions, setPredictions] = useState<Prediction[]>([]);
+    const [results, setResults] = useState<SearchResult[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [coordinateMatch, setCoordinateMatch] = useState<{ lat: number; lng: number } | null>(null);
+    const [sortBy, setSortBy] = useState<'RELEVANCE' | 'POPULARITY'>('RELEVANCE');
+    const [selectedIndex, setSelectedIndex] = useState(-1); // 키보드 선택 인덱스
 
-    // 세션 토큰 (비용 최적화)
-    const sessionTokenRef = useRef<string>(generateSessionToken());
     const debounceRef = useRef<NodeJS.Timeout | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
 
-    // 새 세션 시작 (검색 완료 후)
-    const resetSessionToken = useCallback(() => {
-        sessionTokenRef.current = generateSessionToken();
-        console.log('[LocationSearch] New session token:', sessionTokenRef.current);
-    }, []);
-
-    // 좌표 적용 함수 (LandscapeLocation 타입에 맞게 coordinates 사용)
-    const applyCoordinate = useCallback((lat: number, lng: number) => {
-        console.log('[LocationSearch] Applying coordinate:', lat, lng);
+    // 장소 적용 함수 (types, summary, address 포함)
+    const applyPlace = useCallback((place: { lat: number; lng: number; name?: string; types?: string[]; summary?: string | null; address?: string | null }) => {
+        console.log('[LocationSearch] Applying place:', place.name || 'coordinates');
         updateLandscape({
             location: {
                 ...settings.landscape.location,
-                coordinates: {
-                    lat,
-                    lng,
-                },
+                name: place.name || `${place.lat.toFixed(4)}, ${place.lng.toFixed(4)}`,
+                coordinates: { lat: place.lat, lng: place.lng },
+                types: place.types || [],
+                summary: place.summary || null,
+                address: place.address || null,
             },
         });
-        setQuery(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+        setQuery(place.name || `${place.lat.toFixed(6)}, ${place.lng.toFixed(6)}`);
         setIsOpen(false);
         setCoordinateMatch(null);
-        setPredictions([]);
+        setResults([]);
+        setSelectedIndex(-1);
     }, [settings.landscape.location, updateLandscape]);
 
-    // 1단계: 정규식으로 좌표 감지
+    // 좌표 감지
     const detectCoordinate = useCallback((input: string): { lat: number; lng: number } | null => {
         const match = input.match(COORDINATE_REGEX);
         if (match) {
             const lat = parseFloat(match[1]);
             const lng = parseFloat(match[2]);
-            // 유효한 범위 체크 (위도: -90~90, 경도: -180~180)
             if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
                 return { lat, lng };
             }
@@ -71,140 +66,156 @@ export function LocationSearch() {
         return null;
     }, []);
 
-    // 2단계: Places Autocomplete 호출 (세션 토큰 포함)
-    const fetchAutocomplete = useCallback(async (searchQuery: string) => {
+    // Text Search API 호출 (사진 명소 필터링)
+    const fetchTextSearch = useCallback(async (searchQuery: string) => {
         if (!searchQuery.trim() || searchQuery.length < 2) {
-            setPredictions([]);
+            setResults([]);
             setIsOpen(false);
             return;
         }
 
         setIsLoading(true);
         try {
-            const params = new URLSearchParams({
-                query: searchQuery,
-                sessionToken: sessionTokenRef.current,
+            console.log('[LocationSearch] Text Search for:', searchQuery);
+
+            const response = await fetch('/api/places/textsearch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: searchQuery, rankPreference: sortBy }),
             });
 
-            console.log('[LocationSearch] Fetching autocomplete for:', searchQuery);
-            const response = await fetch(`/api/places/autocomplete?${params}`);
             const data = await response.json();
 
-            if (data.predictions && data.predictions.length > 0) {
-                setPredictions(data.predictions);
+            if (data.places && data.places.length > 0) {
+                setResults(data.places);
                 setIsOpen(true);
-                console.log('[LocationSearch] Predictions received:', data.predictions.length);
+                setSelectedIndex(-1);
+                console.log('[LocationSearch] Results:', data.places.length);
             } else {
-                setPredictions([]);
+                setResults([]);
                 setIsOpen(false);
-                console.log('[LocationSearch] No predictions found');
+                console.log('[LocationSearch] No results found');
             }
         } catch (error) {
-            console.error('[LocationSearch] Autocomplete error:', error);
-            setPredictions([]);
+            console.error('[LocationSearch] Search error:', error);
+            setResults([]);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [sortBy]);
 
     // 입력 처리 (디바운싱 + 좌표 우선 감지)
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setQuery(value);
+        setSelectedIndex(-1);
 
-        // 기존 디바운스 취소
         if (debounceRef.current) {
             clearTimeout(debounceRef.current);
         }
 
         if (!value.trim()) {
-            setPredictions([]);
+            setResults([]);
             setIsOpen(false);
             setCoordinateMatch(null);
             return;
         }
 
-        // 1단계: 좌표 감지 (즉시, API 호출 없음)
+        // 좌표 감지 (즉시, API 호출 없음)
         const coord = detectCoordinate(value);
         if (coord) {
             setCoordinateMatch(coord);
-            setPredictions([]);
+            setResults([]);
             setIsOpen(true);
-            console.log('[LocationSearch] Coordinate detected:', coord);
             return;
         } else {
             setCoordinateMatch(null);
         }
 
-        // 2단계: Places Autocomplete (디바운싱)
+        // Text Search (디바운싱)
         debounceRef.current = setTimeout(() => {
-            fetchAutocomplete(value);
-        }, 300);
-    }, [detectCoordinate, fetchAutocomplete]);
+            fetchTextSearch(value);
+        }, 400);
+    }, [detectCoordinate, fetchTextSearch]);
 
-    // Enter 키 처리 (좌표일 경우 즉시 적용)
+    // 전체 아이템 수 (좌표 + 검색 결과)
+    const totalItems = (coordinateMatch ? 1 : 0) + results.length;
+
+    // 키보드 네비게이션
     const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && coordinateMatch) {
-            e.preventDefault();
-            applyCoordinate(coordinateMatch.lat, coordinateMatch.lng);
-        } else if (e.key === 'Escape') {
-            setIsOpen(false);
-        }
-    }, [coordinateMatch, applyCoordinate]);
-
-    // 3단계: 장소 선택 시 Place Details 호출 (필드 마스킹 적용)
-    const handlePlaceSelect = useCallback(async (prediction: Prediction) => {
-        console.log('[LocationSearch] Place selected:', prediction.mainText);
-        setIsLoading(true);
-        setIsOpen(false);
-
-        try {
-            const params = new URLSearchParams({
-                placeId: prediction.placeId,
-                sessionToken: sessionTokenRef.current,
-            });
-
-            const response = await fetch(`/api/places/details?${params}`);
-            const data = await response.json();
-
-            if (data.location) {
-                updateLandscape({
-                    location: {
-                        ...settings.landscape.location,
-                        coordinates: {
-                            lat: data.location.lat,
-                            lng: data.location.lng,
-                        },
-                    },
-                });
-                setQuery(data.formattedAddress || prediction.mainText);
-                console.log('[LocationSearch] Location updated:', data.location);
+        if (!isOpen || totalItems === 0) {
+            if (e.key === 'Enter' && query.trim()) {
+                e.preventDefault();
+                fetchTextSearch(query);
             }
-        } catch (error) {
-            console.error('[LocationSearch] Place details error:', error);
-        } finally {
-            setIsLoading(false);
-            // 세션 완료 후 새 토큰 생성
-            resetSessionToken();
-            setPredictions([]);
+            return;
         }
-    }, [settings.landscape.location, updateLandscape, resetSessionToken]);
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setSelectedIndex(prev => Math.min(prev + 1, totalItems - 1));
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setSelectedIndex(prev => Math.max(prev - 1, -1));
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (selectedIndex === -1) {
+                    // 선택된 항목 없으면 첫 번째 선택
+                    if (coordinateMatch) {
+                        applyPlace({ lat: coordinateMatch.lat, lng: coordinateMatch.lng });
+                    } else if (results.length > 0) {
+                        applyPlace(results[0]);
+                    }
+                } else if (coordinateMatch && selectedIndex === 0) {
+                    applyPlace({ lat: coordinateMatch.lat, lng: coordinateMatch.lng });
+                } else {
+                    const resultIndex = coordinateMatch ? selectedIndex - 1 : selectedIndex;
+                    if (results[resultIndex]) {
+                        applyPlace(results[resultIndex]);
+                    }
+                }
+                break;
+            case 'Escape':
+                setIsOpen(false);
+                setSelectedIndex(-1);
+                break;
+        }
+    }, [isOpen, totalItems, selectedIndex, coordinateMatch, results, query, fetchTextSearch, applyPlace]);
+
+    // 선택된 항목 스크롤
+    useEffect(() => {
+        if (selectedIndex >= 0 && listRef.current) {
+            const items = listRef.current.querySelectorAll('[data-item]');
+            const selectedItem = items[selectedIndex] as HTMLElement;
+            if (selectedItem) {
+                selectedItem.scrollIntoView({ block: 'nearest' });
+            }
+        }
+    }, [selectedIndex]);
+
+    // 장소 선택
+    const handlePlaceSelect = useCallback((place: SearchResult) => {
+        console.log('[LocationSearch] Place selected:', place.name);
+        applyPlace(place);
+    }, [applyPlace]);
 
     // 외부 클릭 시 드롭다운 닫기
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
                 setIsOpen(false);
+                setSelectedIndex(-1);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // 현재 위치 표시 (null safety, coordinates 구조 사용)
     const lat = settings.landscape?.location?.coordinates?.lat ?? 0;
     const lng = settings.landscape?.location?.coordinates?.lng ?? 0;
-    const currentLocation = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
     return (
         <div ref={containerRef} className="relative">
@@ -213,12 +224,12 @@ export function LocationSearch() {
                 <Input
                     ref={inputRef}
                     type="text"
-                    placeholder="장소명 또는 좌표 입력 (예: 48.8584, 2.2945)"
+                    placeholder="사진 명소 검색 또는 좌표 입력"
                     value={query}
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
                     onFocus={() => {
-                        if (predictions.length > 0 || coordinateMatch) {
+                        if (results.length > 0 || coordinateMatch) {
                             setIsOpen(true);
                         }
                     }}
@@ -229,21 +240,48 @@ export function LocationSearch() {
                 )}
             </div>
 
-            {/* 현재 좌표 표시 */}
-            <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
-                <Navigation className="w-3 h-3" />
-                위도: {lat.toFixed(4)}, 경도: {lng.toFixed(4)}
-            </p>
+            {/* 정렬 옵션 + 좌표 표시 */}
+            <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center gap-3">
+                    <span className="text-[10px] text-zinc-500">정렬:</span>
+                    <label className="flex items-center gap-1 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="sortBy"
+                            checked={sortBy === 'RELEVANCE'}
+                            onChange={() => setSortBy('RELEVANCE')}
+                            className="w-3 h-3 accent-amber-500"
+                        />
+                        <span className="text-[10px] text-zinc-400">관련순</span>
+                    </label>
+                    <label className="flex items-center gap-1 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="sortBy"
+                            checked={sortBy === 'POPULARITY'}
+                            onChange={() => setSortBy('POPULARITY')}
+                            className="w-3 h-3 accent-amber-500"
+                        />
+                        <span className="text-[10px] text-zinc-400">인기순</span>
+                    </label>
+                </div>
+                <span className="text-[10px] text-zinc-600 flex items-center gap-1">
+                    <Navigation className="w-3 h-3" />
+                    {lat.toFixed(4)}, {lng.toFixed(4)}
+                </span>
+            </div>
 
             {/* 드롭다운 메뉴 */}
-            {isOpen && (coordinateMatch || predictions.length > 0) && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
-                    {/* 좌표 매칭 결과 (API 호출 없이) */}
+            {isOpen && (coordinateMatch || results.length > 0) && (
+                <div ref={listRef} className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
+                    {/* 좌표 매칭 결과 */}
                     {coordinateMatch && (
                         <button
                             type="button"
-                            onClick={() => applyCoordinate(coordinateMatch.lat, coordinateMatch.lng)}
-                            className="w-full px-3 py-2 text-left hover:bg-accent/50 transition-colors flex items-center gap-2 border-b border-border"
+                            data-item
+                            onClick={() => applyPlace({ lat: coordinateMatch.lat, lng: coordinateMatch.lng })}
+                            className={`w-full px-3 py-2 text-left transition-colors flex items-center gap-2 border-b border-border ${selectedIndex === 0 ? 'bg-accent' : 'hover:bg-accent/50'
+                                }`}
                         >
                             <Navigation className="w-4 h-4 text-amber-500 shrink-0" />
                             <div>
@@ -257,25 +295,69 @@ export function LocationSearch() {
                         </button>
                     )}
 
-                    {/* Places Autocomplete 결과 */}
-                    {predictions.map((prediction) => (
-                        <button
-                            key={prediction.placeId}
-                            type="button"
-                            onClick={() => handlePlaceSelect(prediction)}
-                            className="w-full px-3 py-2 text-left hover:bg-accent/50 transition-colors flex items-center gap-2"
-                        >
-                            <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
-                            <div className="min-w-0">
-                                <p className="text-sm font-medium truncate">
-                                    {prediction.mainText}
-                                </p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                    {prediction.secondaryText}
-                                </p>
-                            </div>
-                        </button>
-                    ))}
+                    {/* Text Search 결과 */}
+                    {results.map((place, index) => {
+                        const itemIndex = coordinateMatch ? index + 1 : index;
+
+                        // Google Places API 타입에 따른 Lucide 아이콘
+                        const getTypeIcon = (types: string[]) => {
+                            // 자연/공원
+                            if (types.some(t => ['park', 'national_park', 'state_park', 'garden', 'botanical_garden', 'dog_park', 'hiking_area', 'wildlife_park', 'wildlife_refuge'].includes(t))) {
+                                return <Trees className="w-4 h-4 text-green-500" />;
+                            }
+                            // 해변
+                            if (types.includes('beach')) {
+                                return <Waves className="w-4 h-4 text-cyan-500" />;
+                            }
+                            // 산/자연 지형
+                            if (types.some(t => ['natural_feature', 'mountain', 'campground'].includes(t))) {
+                                return <Mountain className="w-4 h-4 text-emerald-500" />;
+                            }
+                            // 문화재/기념비
+                            if (types.some(t => ['monument', 'cultural_landmark', 'historical_landmark', 'historical_place', 'sculpture'].includes(t))) {
+                                return <Landmark className="w-4 h-4 text-amber-500" />;
+                            }
+                            // 박물관/미술관
+                            if (types.some(t => ['museum', 'art_gallery', 'art_studio'].includes(t))) {
+                                return <Palette className="w-4 h-4 text-purple-500" />;
+                            }
+                            // 종교 시설
+                            if (types.some(t => ['church', 'mosque', 'hindu_temple', 'synagogue', 'place_of_worship'].includes(t))) {
+                                return <Church className="w-4 h-4 text-indigo-500" />;
+                            }
+                            // 관광 명소
+                            if (types.includes('tourist_attraction')) {
+                                return <Camera className="w-4 h-4 text-rose-500" />;
+                            }
+                            // 건물/시설
+                            if (types.some(t => ['building', 'stadium', 'auditorium', 'observation_deck', 'aquarium', 'zoo'].includes(t))) {
+                                return <Building className="w-4 h-4 text-zinc-500" />;
+                            }
+                            // 기본
+                            return <MapPin className="w-4 h-4 text-zinc-400" />;
+                        };
+
+                        return (
+                            <button
+                                key={place.placeId}
+                                type="button"
+                                data-item
+                                onClick={() => handlePlaceSelect(place)}
+                                className={`w-full px-3 py-2 text-left transition-colors flex items-center gap-2 ${selectedIndex === itemIndex ? 'bg-accent' : 'hover:bg-accent/50'
+                                    }`}
+                            >
+                                <span className="shrink-0">{getTypeIcon(place.types)}</span>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-medium truncate">
+                                        {place.name}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground truncate">
+                                        {place.address || `${place.lat.toFixed(4)}, ${place.lng.toFixed(4)}`}
+                                    </p>
+                                </div>
+                            </button>
+                        );
+                    })}
                 </div>
             )}
         </div>

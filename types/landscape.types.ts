@@ -10,6 +10,9 @@ export interface LandscapeLocation {
         lng: number;                   // 경도
     };
     elevation: number;               // 고도 (미터)
+    types?: string[];                // 장소 유형 (tourist_attraction, park 등)
+    summary?: string | null;         // 장소 설명 (editorialSummary)
+    address?: string | null;         // 주소 (formattedAddress)
 }
 
 // ===== 카메라 각도 설정 =====
@@ -19,6 +22,9 @@ export interface LandscapeCameraAngle {
     pitch: number;                   // -90 ~ 90° (상하 각도)
     heightOffset: number;            // 3D 캡처용 카메라 높이 오프셋 (미터)
     detectedTerrainHeight?: number;  // 자동 감지된 지형 높이 (미터)
+    distance?: number;               // 촬영 거리 (미터) 1-1000
+    height?: number;                 // 촬영 높이 (미터) 0-500
+    horizontalOffset?: number;       // 촬영 방향 오프셋 -50 ~ 50 (좌-중앙-우)
 }
 
 // ===== 렌즈 타입 (풍경 촬영용 주요 렌즈) =====
@@ -52,10 +58,18 @@ export type LandscapeSeason =
     | 'autumn'   // 가을
     | 'winter';  // 겨울
 
+export type LandscapeAtmosphere =
+    | 'mist'     // 은은한 박무
+    | 'haze'     // 시네마틱 연무
+    | 'clear'    // 투명한 공기
+    | 'grain'    // 아날로그 입자감
+    | 'rays';    // 웅장한 빛내림
+
 export interface LandscapeEnvironment {
     time: LandscapeTimeOfDay;
     weather: LandscapeWeather;
     season: LandscapeSeason;
+    atmosphere: LandscapeAtmosphere;
 }
 
 // ===== 랜드마크 정보 =====
@@ -65,6 +79,10 @@ export interface LandscapeLandmark {
     distance: number;            // 미터 단위
     direction: number;           // 0-360° 방향
     layer: 'foreground' | 'middleground' | 'background';
+    types?: string[];            // Google Places 타입
+    relativeDirection?: 'left' | 'center' | 'right';  // 카메라 기준 좌/우
+    enabled?: boolean;           // 활성화 여부 (체크박스)
+    hasEditorialSummary?: boolean;  // AI 추천 (✨ 표시)
 }
 
 // ===== 참조 이미지 =====
