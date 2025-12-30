@@ -4,15 +4,20 @@
 // ===== 위치 정보 =====
 
 export interface LandscapeLocation {
-    name: string;                    // 장소명 (예: "서울 남산타워")
+    name: string;                    // 장소명 (한국어, 예: "서울 남산타워")
+    nameEn?: string;                 // 영어 장소명 (프롬프트용, 예: "N Seoul Tower")
     coordinates: {
         lat: number;                   // 위도
         lng: number;                   // 경도
     };
     elevation: number;               // 고도 (미터)
     types?: string[];                // 장소 유형 (tourist_attraction, park 등)
-    summary?: string | null;         // 장소 설명 (editorialSummary)
     address?: string | null;         // 주소 (formattedAddress)
+    // Knowledge Graph 정보
+    knowledgeScore?: number;         // 인지도 점수 (0-10000+)
+    knowledgeDescription?: string;   // 짧은 설명 (예: "Tower in Tokyo, Japan")
+    knowledgeContext?: string;       // 상세 설명 (Wikipedia)
+    knowledgeImageUrl?: string;      // 대표 이미지 URL
 }
 
 // ===== 카메라 각도 설정 =====
@@ -40,17 +45,29 @@ export type LandscapeLensType =
 // ===== 환경 설정 =====
 
 export type LandscapeTimeOfDay =
+    | 'dawn'          // 새벽 (일출 전 어스름)
     | 'sunrise'       // 일출
     | 'golden-hour'   // 골든아워 (일출/일몰 전후)
+    | 'morning'       // 오전
     | 'midday'        // 한낮
+    | 'afternoon'     // 오후
+    | 'sunset'        // 일몰
     | 'blue-hour'     // 블루아워 (일출 전/일몰 후)
+    | 'dusk'          // 황혼
     | 'night';        // 밤
 
 export type LandscapeWeather =
-    | 'clear'          // 맑은 하늘
-    | 'partly-cloudy'  // 부분적으로 흐림
-    | 'overcast'       // 흐림
-    | 'light-rain';    // 가벼운 비
+    | 'clear'          // 맑음 (WMO 0)
+    | 'mostly-clear'   // 대체로 맑음 (WMO 1)
+    | 'partly-cloudy'  // 약간 흐림 (WMO 2)
+    | 'overcast'       // 흐림 (WMO 3)
+    | 'fog'            // 안개 (WMO 45, 48)
+    | 'drizzle'        // 이슬비 (WMO 51-55)
+    | 'rain'           // 비 (WMO 61-63, 80-81)
+    | 'heavy-rain'     // 폭우 (WMO 65, 82)
+    | 'snow'           // 눈 (WMO 71-73, 85)
+    | 'heavy-snow'     // 폭설 (WMO 75, 86)
+    | 'thunderstorm';  // 뇌우 (WMO 95-99)
 
 export type LandscapeSeason =
     | 'spring'   // 봄
@@ -75,14 +92,15 @@ export interface LandscapeEnvironment {
 // ===== 랜드마크 정보 =====
 
 export interface LandscapeLandmark {
-    name: string;
+    name: string;                // 한국어 이름 (UI용)
+    nameEn?: string;             // 영어 이름 (프롬프트용)
+    placeId?: string;            // Google Place ID (영어 이름 fetch용)
     distance: number;            // 미터 단위
     direction: number;           // 0-360° 방향
     layer: 'foreground' | 'middleground' | 'background';
     types?: string[];            // Google Places 타입
     relativeDirection?: 'left' | 'center' | 'right';  // 카메라 기준 좌/우
     enabled?: boolean;           // 활성화 여부 (체크박스)
-    hasEditorialSummary?: boolean;  // AI 추천 (✨ 표시)
 }
 
 // ===== 참조 이미지 =====

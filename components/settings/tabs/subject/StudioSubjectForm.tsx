@@ -371,7 +371,7 @@ export function StudioSubjectForm() {
             </ComboboxRow>
 
             {/* 섹션 구분선 */}
-            <hr className="border-zinc-700/50 my-4" />
+            <hr className="lp-divider my-4" />
 
             {/* 인원수 (중앙) + 랜덤 버튼 (우측) */}
             <div className="relative flex items-center justify-center mb-3">

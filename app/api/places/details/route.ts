@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const placeId = searchParams.get('placeId') || searchParams.get('place_id');
     const sessionToken = searchParams.get('sessionToken');
+    const lang = searchParams.get('lang') || 'ko'; // 기본값: 한국어
 
     if (!placeId) {
         return NextResponse.json({ error: 'placeId required' }, { status: 400 });
@@ -21,18 +22,23 @@ export async function GET(request: NextRequest) {
 
     try {
         // Places API (New) endpoint
-        // Session Token을 쿼리 파라미터로 전달하면 Autocomplete 세션과 묶임
         let url = `https://places.googleapis.com/v1/places/${placeId}`;
 
         // Session Token이 있으면 URL에 추가 (Autocomplete 세션과 묶어서 비용 절감)
+        const params = new URLSearchParams();
         if (sessionToken) {
-            url += `?sessionToken=${encodeURIComponent(sessionToken)}`;
+            params.append('sessionToken', sessionToken);
+        }
+        params.append('languageCode', lang);
+
+        if (params.toString()) {
+            url += `?${params.toString()}`;
         }
 
         console.log('[API] Place Details request:', {
             placeId,
+            lang,
             hasSessionToken: !!sessionToken,
-            sessionTokenPreview: sessionToken?.substring(0, 8) + '...'
         });
 
         const response = await fetch(url, {
@@ -41,7 +47,7 @@ export async function GET(request: NextRequest) {
                 'Content-Type': 'application/json',
                 'X-Goog-Api-Key': apiKey,
                 // 필드 마스킹: 필요한 필드만 요청 (비용 최적화 핵심!)
-                // location + formattedAddress만 요청 = 최소 비용
+                // location + displayName + formattedAddress = Basic 가격
                 'X-Goog-FieldMask': 'location,displayName,formattedAddress',
             },
         });
@@ -50,6 +56,7 @@ export async function GET(request: NextRequest) {
         console.log('[API] Place Details response:', response.status, {
             hasLocation: !!data.location,
             hasAddress: !!data.formattedAddress,
+            lang,
         });
 
         // 에러 상세 로깅

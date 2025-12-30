@@ -11,7 +11,6 @@ interface SearchResult {
     lat: number;
     lng: number;
     types: string[];
-    summary: string | null;
     address: string | null;
 }
 
@@ -25,7 +24,6 @@ export function LocationSearch() {
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [coordinateMatch, setCoordinateMatch] = useState<{ lat: number; lng: number } | null>(null);
-    const [sortBy, setSortBy] = useState<'RELEVANCE' | 'POPULARITY'>('RELEVANCE');
     const [selectedIndex, setSelectedIndex] = useState(-1); // 키보드 선택 인덱스
 
     const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -33,24 +31,86 @@ export function LocationSearch() {
     const containerRef = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
 
-    // 장소 적용 함수 (types, summary, address 포함)
-    const applyPlace = useCallback((place: { lat: number; lng: number; name?: string; types?: string[]; summary?: string | null; address?: string | null }) => {
+    // 장소 적용 함수 (types, address 포함, 영어 이름 + Knowledge Graph)
+    const applyPlace = useCallback(async (place: { lat: number; lng: number; name?: string; placeId?: string; types?: string[]; address?: string | null }) => {
         console.log('[LocationSearch] Applying place:', place.name || 'coordinates');
-        updateLandscape({
-            location: {
-                ...settings.landscape.location,
-                name: place.name || `${place.lat.toFixed(4)}, ${place.lng.toFixed(4)}`,
-                coordinates: { lat: place.lat, lng: place.lng },
-                types: place.types || [],
-                summary: place.summary || null,
-                address: place.address || null,
-            },
-        });
+
+        // UI 상태 먼저 정리
         setQuery(place.name || `${place.lat.toFixed(6)}, ${place.lng.toFixed(6)}`);
         setIsOpen(false);
         setCoordinateMatch(null);
         setResults([]);
         setSelectedIndex(-1);
+
+        // placeId가 있으면 Knowledge Graph까지 가져온 후 한 번에 업데이트
+        if (place.placeId && place.name) {
+            try {
+                // 1. 영어 이름/주소 가져오기
+                const detailsRes = await fetch(`/api/places/details?placeId=${place.placeId}&lang=en`);
+                const detailsData = await detailsRes.json();
+
+                // 2. 영어 이름으로 Knowledge Graph 검색
+                const searchName = detailsData.name || place.name;
+                console.log('[LocationSearch] Querying Knowledge Graph with:', searchName);
+
+                const knowledgeRes = await fetch(`/api/knowledge-graph?query=${encodeURIComponent(searchName)}`);
+                const knowledgeData = await knowledgeRes.json();
+
+                console.log('[LocationSearch] Knowledge Graph score:', knowledgeData.score);
+
+                // 모든 정보를 한 번에 업데이트 (깜빡임 방지)
+                updateLandscape({
+                    location: {
+                        ...settings.landscape.location,
+                        name: place.name || `${place.lat.toFixed(4)}, ${place.lng.toFixed(4)}`,
+                        nameEn: detailsData.name || undefined,
+                        coordinates: { lat: place.lat, lng: place.lng },
+                        types: place.types || [],
+                        address: detailsData.formattedAddress || place.address || null,
+                        // Knowledge Graph 정보 (명시적 초기화 - 이전 데이터 잔여 방지)
+                        knowledgeScore: knowledgeData.score || 0,
+                        knowledgeDescription: knowledgeData.description || undefined,
+                        knowledgeContext: knowledgeData.detailedDescription || undefined,
+                        knowledgeImageUrl: knowledgeData.imageUrl || undefined,
+                    },
+                    landmarks: [],  // 이전 장소의 랜드마크 삭제
+                });
+            } catch (error) {
+                console.error('[LocationSearch] Failed to fetch additional data:', error);
+                // 에러 시 기본 정보만 업데이트 (이전 Knowledge 데이터 정리)
+                updateLandscape({
+                    location: {
+                        ...settings.landscape.location,
+                        name: place.name || `${place.lat.toFixed(4)}, ${place.lng.toFixed(4)}`,
+                        coordinates: { lat: place.lat, lng: place.lng },
+                        types: place.types || [],
+                        address: place.address || null,
+                        knowledgeScore: 0,
+                        knowledgeDescription: undefined,
+                        knowledgeContext: undefined,
+                        knowledgeImageUrl: undefined,
+                    },
+                    landmarks: [],
+                });
+            }
+        } else {
+            // placeId 없는 경우 (좌표 직접 입력 등) - 이전 Knowledge 데이터 정리
+            updateLandscape({
+                location: {
+                    ...settings.landscape.location,
+                    name: place.name || `${place.lat.toFixed(4)}, ${place.lng.toFixed(4)}`,
+                    nameEn: undefined,
+                    coordinates: { lat: place.lat, lng: place.lng },
+                    types: place.types || [],
+                    address: place.address || null,
+                    knowledgeScore: 0,
+                    knowledgeDescription: undefined,
+                    knowledgeContext: undefined,
+                    knowledgeImageUrl: undefined,
+                },
+                landmarks: [],
+            });
+        }
     }, [settings.landscape.location, updateLandscape]);
 
     // 좌표 감지
@@ -81,7 +141,7 @@ export function LocationSearch() {
             const response = await fetch('/api/places/textsearch', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: searchQuery, rankPreference: sortBy }),
+                body: JSON.stringify({ query: searchQuery }),
             });
 
             const data = await response.json();
@@ -102,7 +162,7 @@ export function LocationSearch() {
         } finally {
             setIsLoading(false);
         }
-    }, [sortBy]);
+    }, []);
 
     // 입력 처리 (디바운싱 + 좌표 우선 감지)
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -240,31 +300,8 @@ export function LocationSearch() {
                 )}
             </div>
 
-            {/* 정렬 옵션 + 좌표 표시 */}
-            <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-3">
-                    <span className="text-[10px] text-zinc-500">정렬:</span>
-                    <label className="flex items-center gap-1 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="sortBy"
-                            checked={sortBy === 'RELEVANCE'}
-                            onChange={() => setSortBy('RELEVANCE')}
-                            className="w-3 h-3 accent-amber-500"
-                        />
-                        <span className="text-[10px] text-zinc-400">관련순</span>
-                    </label>
-                    <label className="flex items-center gap-1 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="sortBy"
-                            checked={sortBy === 'POPULARITY'}
-                            onChange={() => setSortBy('POPULARITY')}
-                            className="w-3 h-3 accent-amber-500"
-                        />
-                        <span className="text-[10px] text-zinc-400">인기순</span>
-                    </label>
-                </div>
+            {/* 좌표 표시 */}
+            <div className="flex items-center justify-end mt-2">
                 <span className="text-[10px] text-zinc-600 flex items-center gap-1">
                     <Navigation className="w-3 h-3" />
                     {lat.toFixed(4)}, {lng.toFixed(4)}

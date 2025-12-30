@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -140,14 +140,25 @@ export function PromptPreview() {
     };
 
     return (
-        <div className="space-y-6">
-            <Card className="bg-zinc-900/50 border-zinc-800/50 sticky top-24 py-0 gap-2 overflow-hidden">
+        <div>
+            <Card className="bg-zinc-900/50 border-zinc-800/50 py-0 gap-0 overflow-hidden">
                 {/* 프롬프트 타이틀 */}
-                <div className="bg-amber-500 px-4 py-2">
+                <div className="bg-amber-500 px-4 py-2 flex items-center justify-center relative">
                     <h2 className="text-white text-sm font-semibold text-center">프롬프트</h2>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCopy}
+                        className="h-6 gap-1 text-white hover:bg-amber-600 absolute right-2 text-xs px-2"
+                        disabled={!generatedPrompt}
+                    >
+                        {copied ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                        {copied ? '복사됨' : '복사'}
+                    </Button>
                 </div>
+
                 <CardContent className="pt-4 space-y-3">
-                    {/* AI 타겟 선택 Radio Group */}
+                    {/* AI 타겟 선택 Radio Group (항상 표시) */}
                     <div className="space-y-2">
                         <RadioGroup
                             value={aiTarget}
@@ -165,29 +176,17 @@ export function PromptPreview() {
                         </RadioGroup>
                     </div>
 
-                    {/* 생성된 프롬프트 (항상 표시) */}
+                    {/* 프롬프트 전체 표시 (접기 기능 제거) */}
                     <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs text-zinc-500">{generatedPrompt.length}자</span>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleCopy}
-                                className="h-8 gap-1"
-                                disabled={!generatedPrompt}
-                            >
-                                {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                                {copied ? '복사됨' : '복사'}
-                            </Button>
-                        </div>
-                        <ScrollArea className="h-[400px] rounded-lg border border-zinc-800 bg-zinc-950">
-                            <div className="p-4 text-sm text-zinc-300 font-mono leading-relaxed">
+                        <span className="text-xs text-zinc-500">{generatedPrompt.length}자</span>
+                        <ScrollArea className="h-[350px] rounded-lg border border-zinc-800 bg-zinc-950">
+                            <div className="p-4 text-sm text-zinc-300 font-mono leading-relaxed whitespace-pre-wrap">
                                 {generatedPrompt || <span className="text-zinc-600">설정을 변경하면 프롬프트가 자동으로 생성됩니다...</span>}
                             </div>
                         </ScrollArea>
                     </div>
 
-                    {/* 충돌 경고 (프롬프트 아래) */}
+                    {/* 충돌 경고 */}
                     {hasConflict && (
                         <p className="text-xs text-red-400 text-center">
                             ⚠️ 서로 모순되는 설정이 있어서 이미지 생성 시 AI가 제대로 표현하지 못할 가능성이 있습니다.
@@ -198,3 +197,4 @@ export function PromptPreview() {
         </div>
     );
 }
+

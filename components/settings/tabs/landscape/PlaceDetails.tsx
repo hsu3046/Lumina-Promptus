@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { Camera, Info, Tag } from 'lucide-react';
+import { Camera, Tag } from 'lucide-react';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { getSolarTimes, type SolarInfo } from '@/lib/landscape/solar-calculator';
 import type { LandscapeWeather, LandscapeSeason, LandscapeTimeOfDay } from '@/types/landscape.types';
@@ -52,20 +52,20 @@ const getTypeLabel = (type: string): string => {
 // API 날씨 라벨 → store 타입 매핑
 const WEATHER_LABEL_TO_TYPE: Record<string, LandscapeWeather> = {
     '맑음': 'clear',
-    '대체로 맑음': 'clear',
+    '대체로 맑음': 'mostly-clear',
     '약간 흐림': 'partly-cloudy',
     '흐림': 'overcast',
-    '안개': 'overcast',
-    '이슬비': 'light-rain',
-    '비': 'light-rain',
-    '폭우': 'light-rain',
-    '진눈깨비': 'light-rain',
-    '눈': 'clear', // 눈은 별도 타입이 없어서 clear로
-    '폭설': 'clear',
-    '싸락눈': 'clear',
-    '소나기': 'light-rain',
-    '뇌우': 'light-rain',
-    '우박': 'light-rain',
+    '안개': 'fog',
+    '이슬비': 'drizzle',
+    '비': 'rain',
+    '폭우': 'heavy-rain',
+    '진눈깨비': 'snow',
+    '눈': 'snow',
+    '폭설': 'heavy-snow',
+    '싸락눈': 'snow',
+    '소나기': 'rain',
+    '뇌우': 'thunderstorm',
+    '우박': 'thunderstorm',
 };
 
 const SEASON_LABEL_TO_TYPE: Record<string, LandscapeSeason> = {
@@ -88,9 +88,16 @@ const PHASE_TO_TIME: Record<string, LandscapeTimeOfDay> = {
 // 날씨/계절 라벨 (표시용)
 const WEATHER_LABELS: Record<LandscapeWeather, { label: string; icon: string }> = {
     'clear': { label: '맑음', icon: '☀️' },
+    'mostly-clear': { label: '대체로 맑음', icon: '🌤️' },
     'partly-cloudy': { label: '약간 흐림', icon: '⛅' },
     'overcast': { label: '흐림', icon: '☁️' },
-    'light-rain': { label: '비', icon: '🌧️' },
+    'fog': { label: '안개', icon: '🌫️' },
+    'drizzle': { label: '이슬비', icon: '🌧️' },
+    'rain': { label: '비', icon: '🌧️' },
+    'heavy-rain': { label: '폭우', icon: '⛈️' },
+    'snow': { label: '눈', icon: '❄️' },
+    'heavy-snow': { label: '폭설', icon: '🌨️' },
+    'thunderstorm': { label: '뇌우', icon: '⛈️' },
 };
 
 const SEASON_LABELS: Record<LandscapeSeason, { label: string; icon: string }> = {
@@ -101,10 +108,15 @@ const SEASON_LABELS: Record<LandscapeSeason, { label: string; icon: string }> = 
 };
 
 const TIME_LABELS: Record<LandscapeTimeOfDay, { label: string; icon: string }> = {
+    'dawn': { label: '새벽', icon: '🌃' },
     'sunrise': { label: '일출', icon: '🌅' },
     'golden-hour': { label: '골든아워', icon: '🌅' },
+    'morning': { label: '오전', icon: '🌞' },
     'midday': { label: '주간', icon: '☀️' },
+    'afternoon': { label: '오후', icon: '🌤️' },
+    'sunset': { label: '일몰', icon: '🌇' },
     'blue-hour': { label: '블루아워', icon: '🌆' },
+    'dusk': { label: '황혼', icon: '🌆' },
     'night': { label: '야간', icon: '🌙' },
 };
 
@@ -206,17 +218,9 @@ export function PlaceDetails() {
                 </div>
             )}
 
-            {/* 설명 */}
-            {location.summary && (
-                <div className="flex items-start gap-2 text-xs text-zinc-400">
-                    <Info className="w-3 h-3 shrink-0 mt-0.5" />
-                    <p className="line-clamp-2">{location.summary}</p>
-                </div>
-            )}
-
             {/* 환경 정보 (2열: 왼쪽=날씨정보, 오른쪽=태양정보) */}
             <>
-                <hr className="border-zinc-700/50" />
+                <hr className="lp-divider" />
                 <div className="flex justify-between items-start text-[10px]">
                     {/* 왼쪽: 날씨 / 계절 / 기온 / 현재시간대 */}
                     <div className="flex items-center gap-2 flex-wrap">

@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
         const requestBody = {
             maxResultCount: 20,
             rankPreference: 'POPULARITY',
-            languageCode: 'ko',
+            languageCode: 'en',  // 영어로 직접 받아서 Details API 호출 절약
             locationRestriction: {
                 circle: {
                     center: { latitude: lat, longitude: lng },
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
             headers: {
                 'Content-Type': 'application/json',
                 'X-Goog-Api-Key': apiKey,
-                'X-Goog-FieldMask': 'places.id,places.displayName,places.location,places.types,places.formattedAddress,places.editorialSummary',
+                'X-Goog-FieldMask': 'places.id,places.displayName,places.location,places.types,places.formattedAddress',
             },
             body: JSON.stringify(requestBody),
         });
@@ -164,7 +164,6 @@ export async function POST(request: NextRequest) {
             location?: { latitude: number; longitude: number };
             types?: string[];
             formattedAddress?: string;
-            editorialSummary?: { text: string };
         }) => {
             const placeLat = place.location?.latitude ?? 0;
             const placeLng = place.location?.longitude ?? 0;
@@ -193,7 +192,6 @@ export async function POST(request: NextRequest) {
                 address: place.formattedAddress || null,
                 layer,
                 priority: getPriorityScore(types),
-                hasEditorialSummary: !!place.editorialSummary?.text,
             };
         });
 

@@ -1,5 +1,5 @@
 // lib/landscape/prompt-generator.ts
-// 풍경 사진 프롬프트 생성기
+// 풍경 사진 프롬프트 생성기 - 4섹션 구조 (Nano Banana 포맷)
 
 import type {
     LandscapeSettings,
@@ -13,17 +13,9 @@ import {
     getLightingDescription,
     getWeatherDescription,
     getSeasonDescription,
+    getAtmosphereDescription,
     getCompassLabel,
 } from '@/config/mappings/landscape-environment';
-import {
-    calculateSunPosition,
-    calculateShadowInfo,
-    generateLightingPrompt,
-} from '@/lib/landscape/sun-calculator';
-import {
-    analyzeOcclusion,
-    generateCompactSpatialPrompt,
-} from '@/lib/landscape/occlusion-analyzer';
 
 /**
  * 렌즈 ID에서 초점거리 추출 (예: 'nikon_af_s_24mm_f14g_ed' -> '24mm')
@@ -36,8 +28,18 @@ function extractFocalLength(lensId: string): LandscapeLensType {
             return focal as LandscapeLensType;
         }
     }
-    // 기본값
     return '50mm';
+}
+
+/**
+ * 카메라 높이 설명 생성
+ */
+function getHeightDescription(height: number): string {
+    if (height <= 2) return 'ground level';
+    if (height <= 10) return 'elevated position';
+    if (height <= 50) return 'high vantage point';
+    if (height <= 150) return 'rooftop/tower level';
+    return 'aerial/drone altitude';
 }
 
 /**
@@ -45,7 +47,7 @@ function extractFocalLength(lensId: string): LandscapeLensType {
  */
 export function buildLandscapePromptConfig(
     settings: LandscapeSettings,
-    referenceImages: LandscapeReferenceImage[]
+    referenceImages: LandscapeReferenceImage[] = []
 ): LandscapePromptConfig {
     const lensType = extractFocalLength(settings.lensId);
     const lensSpec = LANDSCAPE_LENS_SPECS[lensType];
@@ -67,148 +69,208 @@ export function buildLandscapePromptConfig(
     };
 }
 
-/**
- * 랜드마크 설명 생성 (전경/중경/배경 분류 - layer 속성 사용)
- */
-function generateLandmarkDescription(
-    landmarks: LandscapeLandmark[],
-    heading: number,
-    fov: number
-): string {
-    // layer 속성 기반 분류
-    const foreground = landmarks.filter(lm => lm.layer === 'foreground');
-    const middleground = landmarks.filter(lm => lm.layer === 'middleground');
-    const background = landmarks.filter(lm => lm.layer === 'background');
+// ===== 주소에서 도시/국가 추출 =====
+function extractLocationContext(address: string | null | undefined): string {
+    if (!address) return '';
 
-    const fgNames = foreground.map(lm => lm.name).filter(Boolean).join(', ') || 'Natural terrain';
-    const mgNames = middleground.map(lm => lm.name).filter(Boolean).join(', ') || 'Urban landscape';
-    const bgNames = background.map(lm => lm.name).filter(Boolean).join(', ') || 'Distant horizon';
-
-    return [
-        `Foreground (0-50m): ${fgNames}`,
-        `Middleground (50-500m): ${mgNames}`,
-        `Background (500m+): ${bgNames}`,
-    ].join('\n');
+    // 영어 주소에서 마지막 2-3개 요소 추출 (City, Country)
+    const parts = address.split(',').map(p => p.trim());
+    if (parts.length >= 2) {
+        // 마지막 2개 요소 (도시, 국가) 또는 마지막 3개
+        const relevantParts = parts.slice(-3).filter(p => !/^\d/.test(p)); // 우편번호 제외
+        return relevantParts.join(', ');
+    }
+    return address;
 }
 
-/**
- * 풍경 사진 프롬프트 생성
- */
-export function generateLandscapePrompt(config: LandscapePromptConfig): string {
-    const { location, camera, environment, landmarks, referenceImages } = config;
+// ===== 섹션 1: 피사체 설명 =====
+function generateSubjectSection(config: LandscapePromptConfig): string {
+    const { location } = config;
 
+    // 영어 이름 우선, 없으면 한국어 이름 사용
+    const displayName = location.nameEn || location.name || 'Unknown Location';
+    const locationContext = extractLocationContext(location.address);
+
+    // "Tokyo Tower in Minato City, Tokyo, Japan" 형식
+    const fullName = locationContext
+        ? `${displayName} in ${locationContext}`
+        : displayName;
+
+    const lines = [
+        'INSTRUCTION: Use the subject name and coordinates below to search for accurate',
+        'real-world information about this landmark. Verify architectural details,',
+        'surrounding geography, and typical visual appearance from this location.',
+        '',
+        `[SUBJECT]`,
+        `Name: ${fullName}`,
+        `Coordinates: ${location.coordinates.lat.toFixed(4)}°N, ${location.coordinates.lng.toFixed(4)}°E`,
+    ];
+
+    return lines.join('\n');
+}
+
+// ===== 섹션 2: 구도/공간 배치 =====
+function generateCompositionSection(
+    config: LandscapePromptConfig,
+    settings: LandscapeSettings
+): string {
+    const { camera } = config;
     const lensSpec = LANDSCAPE_LENS_SPECS[camera.lens];
-    const lightingDesc = getLightingDescription(environment.time);
-    const weatherDesc = getWeatherDescription(environment.weather);
-    const seasonDesc = getSeasonDescription(environment.season);
-    const compassLabel = getCompassLabel(camera.heading);
+    const compassDir = getCompassLabel(settings.camera.heading);
 
-    // 카메라 설정
-    const cameraSetup = `
-Camera: Nikon D850
-Lens: ${camera.lens} ${lensSpec.type}
-Aperture: ${camera.aperture}
-ISO: ${camera.iso}
-Direction: ${compassLabel} (${camera.heading}°)
-Tilt: ${camera.pitch > 0 ? 'upward' : camera.pitch < 0 ? 'downward' : 'level'} ${Math.abs(camera.pitch)}°
-Field of View: ${camera.fov}°
-  `.trim();
+    const height = settings.camera.height || 0;
+    const heightDesc = getHeightDescription(height);
 
-    // 참조 이미지 가이드
-    const refCount = referenceImages.length;
-    const centerCount = referenceImages.filter(r => r.type === 'center').length;
-    const surroundCount = referenceImages.filter(r => r.type === 'surrounding').length;
-    const satCount = referenceImages.filter(r => r.type === 'satellite').length;
+    // 활성화된 랜드마크만 필터링
+    const enabledLandmarks = config.landmarks.filter(lm => lm.enabled !== false);
 
-    const referenceInstructions = `
-Reference Images Guide (${refCount} total):
-- Images 1-${centerCount}: Primary view from exact user-selected angle
-  → Maintain precise composition, spatial relationships, and depth
-- Images ${centerCount + 1}-${centerCount + surroundCount}: 360° surrounding context (N, NE, E, SE, S, SW, W, NW)
-  → Understand landmark positions and spatial layout
-- Image ${refCount}: Satellite overhead view
-  → Ensure geographic accuracy of terrain, rivers, roads
+    const layers: Record<string, LandscapeLandmark[]> = {
+        foreground: enabledLandmarks.filter(lm => lm.layer === 'foreground'),
+        middleground: enabledLandmarks.filter(lm => lm.layer === 'middleground'),
+        background: enabledLandmarks.filter(lm => lm.layer === 'background'),
+    };
 
-Critical: Use references to preserve reality, NOT to copy exactly.
-Enhance lighting and atmosphere while maintaining spatial truth.
-  `.trim();
+    // 자연스러운 방향 설명
+    const directionPhrase = (dir: string | undefined): string => {
+        switch (dir) {
+            case 'left': return 'on the left side of the frame';
+            case 'right': return 'on the right side of the frame';
+            default: return 'in the center of the frame';
+        }
+    };
 
-    // 환경 설정
-    const environmentalContext = `
-Time: ${environment.time} ${lightingDesc}
-Weather: ${environment.weather} ${weatherDesc}
-Season: ${environment.season} ${seasonDesc}
-Location: ${location.name || 'Unnamed location'} at ${location.elevation}m elevation
-Coordinates: ${location.coordinates.lat.toFixed(4)}, ${location.coordinates.lng.toFixed(4)}
-    `.trim();
+    // 레이어별 서술
+    const layerDescriptions = {
+        foreground: 'In the immediate foreground',
+        middleground: 'In the middle distance',
+        background: 'In the distant background',
+    };
 
-    // 태양/그림자 물리 계산 (현재 시간 기준)
-    const lightingPhysics = generateLightingPrompt(
-        location.coordinates.lat,
-        location.coordinates.lng,
-        new Date(),
-        50 // 기본 건물 높이 50m
-    );
+    // 서술형 문장 생성
+    const lines = [
+        `[COMPOSITION]`,
+        `Camera positioned at ${heightDesc}, facing ${compassDir}, using ${camera.lens} ${lensSpec.type} lens.`,
+        '',
+        'Spatial Arrangement:',
+    ];
 
-    // 랜드마크 및 Occlusion 분석
-    let visibleLandmarks: string;
-    let spatialContext: string = '';
+    // 피사체 이름 가져오기
+    const subjectName = config.location.nameEn || config.location.name || 'the subject';
 
-    if (landmarks.length > 0) {
-        // Occlusion 분석 수행
-        const occlusionAnalysis = analyzeOcclusion(landmarks, camera.heading, camera.fov);
-        visibleLandmarks = generateLandmarkDescription(landmarks, camera.heading, camera.fov);
-        spatialContext = generateCompactSpatialPrompt(occlusionAnalysis);
-    } else {
-        visibleLandmarks = 'Foreground: Natural terrain\nMiddleground: Urban landscape\nBackground: Distant horizon';
+    // 각 레이어별 자연어 서술
+    for (const [layer, landmarks] of Object.entries(layers)) {
+        if (landmarks.length > 0) {
+            const layerIntro = layerDescriptions[layer as keyof typeof layerDescriptions];
+
+            // 방향별로 그룹화
+            const byDirection: Record<string, string[]> = { left: [], center: [], right: [] };
+            for (const lm of landmarks) {
+                const displayName = lm.nameEn || lm.name;
+                const dir = lm.relativeDirection || 'center';
+                byDirection[dir].push(displayName);
+            }
+
+            // 방향별 서술 생성
+            const descriptions: string[] = [];
+            if (byDirection.left.length > 0) {
+                descriptions.push(`${byDirection.left.join(' and ')} ${byDirection.left.length > 1 ? 'are' : 'is'} visible to the left of ${subjectName}`);
+            }
+            if (byDirection.center.length > 0) {
+                descriptions.push(`${byDirection.center.join(' and ')} ${byDirection.center.length > 1 ? 'are' : 'is'} directly behind ${subjectName}`);
+            }
+            if (byDirection.right.length > 0) {
+                descriptions.push(`${byDirection.right.join(' and ')} ${byDirection.right.length > 1 ? 'are' : 'is'} visible to the right of ${subjectName}`);
+            }
+
+            if (descriptions.length > 0) {
+                lines.push(`${layerIntro}, ${descriptions.join(', and ')}.`);
+            }
+        }
     }
 
-    // 최종 프롬프트
-    return `
-Create a professional landscape photograph based on ${refCount} reference images.
+    // 랜드마크가 없는 경우
+    if (enabledLandmarks.length === 0) {
+        lines.push(`The scene shows ${subjectName} with natural surroundings extending into the distance.`);
+    }
 
-${cameraSetup}
+    return lines.join('\n');
+}
 
-${referenceInstructions}
+// ===== 섹션 3: 환경/분위기 =====
+function generateEnvironmentSection(config: LandscapePromptConfig): string {
+    const { environment } = config;
 
-${environmentalContext}
+    const lines = [
+        `[ENVIRONMENT]`,
+        `Weather: ${getWeatherDescription(environment.weather)}`,
+        `Season: ${getSeasonDescription(environment.season)}`,
+        `Time: ${getLightingDescription(environment.time)}`,
+        `Atmosphere: ${getAtmosphereDescription(environment.atmosphere)}`,
+    ];
 
-Visible Elements:
-${visibleLandmarks}
+    return lines.join('\n');
+}
 
-${spatialContext ? `Spatial Depth Analysis:
-${spatialContext}
-` : ''}
-Lighting Physics:
-${lightingPhysics}
+// ===== 섹션 4: 카메라 스펙 =====
+function generateCameraSection(config: LandscapePromptConfig): string {
+    const { camera } = config;
 
-Photography Style:
-- Professional landscape photography
-- National Geographic quality
-- Photorealistic detail
-- Natural color grading with ${environment.time} enhancement
-- Sharp focus throughout (${lensSpec.dof})
-- Atmospheric perspective with subtle haze
-- Balanced exposure: detailed shadows and highlights
+    const lines = [
+        `[CAMERA]`,
+        `Body: Nikon D850`,
+        `Lens: AF-S NIKKOR ${camera.lens}`,
+        `Aperture: ${camera.aperture}`,
+        `ISO: ${camera.iso}`,
+        '',
+        'Technical Style:',
+        '- Professional landscape photography',
+        '- National Geographic quality',
+        '- Photorealistic detail with natural color grading',
+        '- Sharp focus throughout frame',
+        '- Balanced exposure: detailed shadows and highlights',
+    ];
 
-Technical Requirements:
-- 4K resolution (3840×2160)
-- Professional RAW processing aesthetic
-- ${lensSpec.characteristic}
-- Minimal post-processing feel
-- Authentic ${camera.lens} perspective
-
-CRITICAL: This must look like a real photograph taken by a professional 
-photographer at this exact location. Maintain geographic accuracy while 
-enhancing natural beauty.
-  `.trim();
+    return lines.join('\n');
 }
 
 /**
- * 간단한 풍경 프롬프트 생성 (Midjourney/Nano Banana용)
+ * 풍경 사진 프롬프트 생성 (4섹션 구조)
+ */
+export function generateLandscapePrompt(
+    config: LandscapePromptConfig,
+    settings?: LandscapeSettings
+): string {
+    // settings가 없으면 config에서 기본값 생성
+    const effectiveSettings: LandscapeSettings = settings || {
+        location: config.location,
+        camera: {
+            heading: config.camera.heading,
+            pitch: config.camera.pitch,
+            heightOffset: 0,
+            distance: 100,
+            height: 0,
+            horizontalOffset: 0,
+        },
+        lensId: config.camera.lens,
+        environment: config.environment,
+        landmarks: config.landmarks,
+    };
+
+    const sections = [
+        generateSubjectSection(config),
+        generateCompositionSection(config, effectiveSettings),
+        generateEnvironmentSection(config),
+        generateCameraSection(config),
+    ];
+
+    return sections.join('\n\n');
+}
+
+/**
+ * 간단한 풍경 프롬프트 생성 (Midjourney/DALL-E용 한 줄 형식)
  */
 export function generateSimpleLandscapePrompt(config: LandscapePromptConfig): string {
-    const { location, camera, environment } = config;
+    const { location, camera, environment, landmarks } = config;
     const lensSpec = LANDSCAPE_LENS_SPECS[camera.lens];
     const compassLabel = getCompassLabel(camera.heading);
 
@@ -220,21 +282,27 @@ export function generateSimpleLandscapePrompt(config: LandscapePromptConfig): st
     }
 
     // 환경
-    keywords.push(environment.time.replace('-', ' '));
-    keywords.push(environment.weather.replace('-', ' ') + ' sky');
-    keywords.push(environment.season);
+    keywords.push(getLightingDescription(environment.time));
+    keywords.push(getWeatherDescription(environment.weather));
+    keywords.push(getSeasonDescription(environment.season));
+    keywords.push(getAtmosphereDescription(environment.atmosphere));
+
+    // 활성화된 랜드마크
+    const enabledLandmarks = landmarks.filter(lm => lm.enabled !== false);
+    if (enabledLandmarks.length > 0) {
+        const landmarkNames = enabledLandmarks.slice(0, 3).map(lm => lm.name).join(', ');
+        keywords.push(`featuring ${landmarkNames}`);
+    }
 
     // 카메라
-    keywords.push(`shot on Nikon D850`);
+    keywords.push(`shot from ${compassLabel}`);
     keywords.push(`${camera.lens} ${lensSpec.type} lens`);
     keywords.push(camera.aperture);
-    keywords.push(`${compassLabel} view`);
 
     // 스타일
     keywords.push('professional landscape photography');
     keywords.push('National Geographic quality');
     keywords.push('photorealistic');
-    keywords.push(lensSpec.dof);
 
     return keywords.filter(Boolean).join(', ');
 }

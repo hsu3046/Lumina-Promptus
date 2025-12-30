@@ -134,3 +134,70 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;  /* Chrome, Safari and Opera */
 }
+
+/* ===== Lumina Promptus Design Tokens ===== */
+
+/* 색상 토큰 */
+:root {
+  /* 강조색 계열 */
+  --lp-accent: theme('colors.amber.500');
+  --lp-accent-light: theme('colors.amber.400');
+  --lp-accent-soft: theme('colors.amber.500/20');
+  
+  /* 텍스트 계열 */
+  --lp-text: theme('colors.zinc.200');
+  --lp-text-secondary: theme('colors.zinc.400');
+  --lp-text-muted: theme('colors.zinc.500');
+  --lp-text-disabled: theme('colors.zinc.600');
+  
+  /* 배경/테두리 */
+  --lp-surface: theme('colors.zinc.800/50');
+  --lp-border: theme('colors.zinc.800');
+  --lp-border-light: theme('colors.zinc.700/50');
+}
+
+/* 유틸리티 클래스 */
+@layer components {
+  /* 섹션 헤더 스타일 */
+  .lp-section-header {
+    @apply flex items-center gap-2 text-amber-500;
+  }
+  .lp-section-title {
+    @apply text-sm font-medium;
+  }
+  
+  /* 필드 라벨 스타일 */
+  .lp-label {
+    @apply text-xs text-zinc-400;
+  }
+  .lp-label-sm {
+    @apply text-[10px] text-zinc-500;
+  }
+  
+  /* 값 표시 스타일 */
+  .lp-value {
+    @apply text-xs text-amber-500;
+  }
+  .lp-value-muted {
+    @apply text-xs text-zinc-400;
+  }
+  
+  /* 카드/섹션 컨테이너 */
+  .lp-card {
+    @apply p-3 bg-zinc-800/50 rounded-lg border border-zinc-800;
+  }
+  .lp-card-accent {
+    @apply p-3 bg-zinc-800/50 rounded-lg border border-amber-500/30;
+  }
+  
+  /* 탭 트리거 (언더라인 스타일) */
+  .lp-tab-trigger {
+    @apply flex-1 gap-2 py-1.5 border-b-2 border-transparent text-zinc-400 hover:text-zinc-200;
+    @apply data-[state=active]:border-amber-500 data-[state=active]:text-amber-500;
+  }
+  
+  /* 구분선 */
+  .lp-divider {
+    @apply border-zinc-700/50;
+  }
+}

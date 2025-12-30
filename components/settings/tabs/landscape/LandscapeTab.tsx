@@ -1,12 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { MapPin, Compass, Sun, Mountain } from 'lucide-react';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { Camera02Icon, Sun03Icon } from '@hugeicons/core-free-icons';
+import { useMemo } from 'react';
+import { MapPin, Sun, Camera, Compass, AlertTriangle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
+import { SectionHeader } from '@/components/ui/section-header';
 
 import { ComboboxField } from '@/components/ui/combobox-field';
 import { useSettingsStore } from '@/store/useSettingsStore';
@@ -20,6 +20,7 @@ import {
     LANDSCAPE_SEASON_OPTIONS,
 } from '@/config/mappings/landscape-environment';
 import type { LandscapeSettings } from '@/types/landscape.types';
+import { validateEnvironment } from '@/lib/landscape/environment-validator';
 
 // 시간/날씨/계절 옵션 변환
 const TIME_OPTIONS = LANDSCAPE_TIME_OPTIONS.map(t => ({
@@ -50,6 +51,34 @@ const ATMOSPHERE_OPTIONS = LANDSCAPE_ATMOSPHERE_OPTIONS.map(a => ({
     value: a.value,
     label: a.label,
 }));
+
+// 환경 충돌 경고 컴포넌트
+function EnvironmentConflictWarning({ season, weather }: { season: string; weather: string }) {
+    const conflicts = useMemo(() => {
+        return validateEnvironment(
+            season as LandscapeSettings['environment']['season'],
+            weather as LandscapeSettings['environment']['weather']
+        );
+    }, [season, weather]);
+
+    if (conflicts.length === 0) return null;
+
+    return (
+        <div className="mt-4 p-3 bg-amber-900/30 border border-amber-500/50 rounded-lg">
+            <div className="flex items-center gap-2 text-amber-400 text-xs">
+                <AlertTriangle className="w-4 h-4" />
+                <span className="font-medium">설정 조합 주의</span>
+            </div>
+            <ul className="mt-1 space-y-1">
+                {conflicts.map((conflict, i) => (
+                    <li key={i} className="text-xs text-amber-300/80 ml-6">
+                        • {conflict.message}
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+}
 
 export function LandscapeTab() {
     const { settings, updateLandscape } = useSettingsStore();
@@ -94,25 +123,16 @@ export function LandscapeTab() {
         <Tabs defaultValue="location" className="w-full">
             {/* Underline 스타일 탭 */}
             <TabsList className="w-full border-b border-zinc-800 p-0 h-auto">
-                <TabsTrigger
-                    value="location"
-                    className="flex-1 gap-2 py-1.5 border-b-2 border-transparent data-[state=active]:border-amber-500 data-[state=active]:text-amber-500 text-zinc-400 hover:text-zinc-200"
-                >
+                <TabsTrigger value="location" className="lp-tab-trigger">
                     <MapPin className="w-4 h-4" />
                     장소 설정
                 </TabsTrigger>
-                <TabsTrigger
-                    value="environment"
-                    className="flex-1 gap-2 py-1.5 border-b-2 border-transparent data-[state=active]:border-amber-500 data-[state=active]:text-amber-500 text-zinc-400 hover:text-zinc-200"
-                >
-                    <HugeiconsIcon icon={Sun03Icon} size={16} />
+                <TabsTrigger value="environment" className="lp-tab-trigger">
+                    <Sun className="w-4 h-4" />
                     환경 설정
                 </TabsTrigger>
-                <TabsTrigger
-                    value="camera"
-                    className="flex-1 gap-2 py-1.5 border-b-2 border-transparent data-[state=active]:border-amber-500 data-[state=active]:text-amber-500 text-zinc-400 hover:text-zinc-200"
-                >
-                    <HugeiconsIcon icon={Camera02Icon} size={16} />
+                <TabsTrigger value="camera" className="lp-tab-trigger">
+                    <Camera className="w-4 h-4" />
                     카메라 설정
                 </TabsTrigger>
             </TabsList>
@@ -121,10 +141,7 @@ export function LandscapeTab() {
             <TabsContent value="location" className="mt-6 space-y-6">
                 {/* 위치 검색 섹션 */}
                 <section className="space-y-3">
-                    <div className="flex items-center gap-2 text-amber-400">
-                        <MapPin className="w-4 h-4" />
-                        <h3 className="text-sm font-medium">풍경 검색</h3>
-                    </div>
+                    <SectionHeader icon={MapPin} title="풍경 검색" />
                     <LocationSearch />
                 </section>
 
@@ -132,19 +149,16 @@ export function LandscapeTab() {
                 {landscape.location.name && (
                     <section className="p-4 bg-zinc-800/50 rounded-lg space-y-4 border-2 border-amber-500/70">
                         <PlaceDetails />
-                        <hr className="border-zinc-700/50" />
+                        <hr className="lp-divider" />
                         <LandmarkInput />
                     </section>
                 )}
 
-                <hr className="border-zinc-700/50" />
+                <hr className="lp-divider" />
 
                 {/* 위치 설정 섹션 */}
                 <section className="space-y-5">
-                    <div className="flex items-center gap-2 text-amber-400">
-                        <Compass className="w-4 h-4" />
-                        <h3 className="text-sm font-medium">촬영 위치</h3>
-                    </div>
+                    <SectionHeader icon={Compass} title="촬영 위치" />
 
                     {/* 촬영 거리 */}
                     <div className="space-y-2">
@@ -271,6 +285,9 @@ export function LandscapeTab() {
                         />
                     </section>
                 </div>
+
+                {/* 환경 설정 충돌 경고 */}
+                <EnvironmentConflictWarning season={landscape.environment.season} weather={landscape.environment.weather} />
             </TabsContent>
 
             {/* 카메라 설정 탭 - 스튜디오와 동일 */}

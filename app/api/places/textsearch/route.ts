@@ -1,6 +1,6 @@
 // app/api/places/textsearch/route.ts
 // Google Places Text Search API - 장소 검색
-// Pro 가격: types, editorialSummary 포함
+// Basic 가격: displayName, location, types, formattedAddress만 요청
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -21,12 +21,13 @@ export async function POST(request: NextRequest) {
         // Text Search API (New) 호출
         const url = 'https://places.googleapis.com/v1/places:searchText';
 
-        // 정렬 기준 적용
+        // Text Search API (New)는 RELEVANCE만 지원 (POPULARITY는 Nearby Search 전용)
+        // 정렬 기준 적용 - Text Search는 항상 RELEVANCE 사용
         const requestBody = {
             textQuery: query,
             languageCode: 'ko',
             maxResultCount: 10,
-            rankPreference: rankPreference, // RELEVANCE 또는 POPULARITY
+            // rankPreference: 'RELEVANCE', // Text Search는 RELEVANCE만 지원
         };
 
         console.log('[API] Text Search request:', { query });
@@ -36,8 +37,8 @@ export async function POST(request: NextRequest) {
             headers: {
                 'Content-Type': 'application/json',
                 'X-Goog-Api-Key': apiKey,
-                // Pro 가격: types, editorialSummary, formattedAddress 포함
-                'X-Goog-FieldMask': 'places.id,places.displayName,places.location,places.types,places.editorialSummary,places.formattedAddress',
+                // Basic 가격: editorialSummary 제거하여 비용 절감
+                'X-Goog-FieldMask': 'places.id,places.displayName,places.location,places.types,places.formattedAddress',
             },
             body: JSON.stringify(requestBody),
         });
@@ -51,13 +52,12 @@ export async function POST(request: NextRequest) {
 
         console.log('[API] Text Search response:', response.status, 'places:', data.places?.length || 0);
 
-        // 응답 변환 (types, editorialSummary, address 포함)
+        // 선택된 장소에 대해 영어 이름 가져오기 (별도 요청에서 처리)
         const places = (data.places || []).map((place: {
             id: string;
             displayName?: { text: string; languageCode?: string };
             location?: { latitude: number; longitude: number };
             types?: string[];
-            editorialSummary?: { text: string; languageCode?: string };
             formattedAddress?: string;
         }) => ({
             placeId: place.id,
@@ -65,7 +65,6 @@ export async function POST(request: NextRequest) {
             lat: place.location?.latitude ?? 0,
             lng: place.location?.longitude ?? 0,
             types: place.types || [],
-            summary: place.editorialSummary?.text || null,
             address: place.formattedAddress || null,
         }));
 
