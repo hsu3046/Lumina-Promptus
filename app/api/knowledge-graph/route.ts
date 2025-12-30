@@ -39,7 +39,6 @@ export async function GET(request: NextRequest) {
         url.searchParams.set('limit', '1');
         url.searchParams.set('languages', 'en');
 
-        console.log('[Knowledge Graph] Searching for:', query);
 
         const response = await fetch(url.toString());
 
@@ -54,7 +53,6 @@ export async function GET(request: NextRequest) {
         const data = await response.json();
 
         if (!data.itemListElement || data.itemListElement.length === 0) {
-            console.log('[Knowledge Graph] No results for:', query);
             return NextResponse.json({
                 found: false,
                 score: 0,
@@ -65,7 +63,6 @@ export async function GET(request: NextRequest) {
         const result = item.result;
         const score = item.resultScore || 0;
 
-        console.log('[Knowledge Graph] Found:', result.name, 'Score:', score);
 
         const response_data: KnowledgeGraphResult = {
             found: true,

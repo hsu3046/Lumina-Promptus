@@ -43,6 +43,17 @@ function getHeightDescription(height: number): string {
 }
 
 /**
+ * 카메라 거리 설명 생성
+ */
+function getDistanceDescription(distance: number): string {
+    if (distance <= 50) return 'close-up view';
+    if (distance <= 200) return 'medium distance';
+    if (distance <= 500) return 'distant view';
+    if (distance <= 1000) return 'far panoramic view';
+    return 'extreme distance panorama';
+}
+
+/**
  * 풍경 사진용 프롬프트 설정 생성
  */
 export function buildLandscapePromptConfig(
@@ -69,15 +80,20 @@ export function buildLandscapePromptConfig(
     };
 }
 
-// ===== 주소에서 도시/국가 추출 =====
+// ===== 주소에서 도시/국가 추출 (우편번호 제거) =====
 function extractLocationContext(address: string | null | undefined): string {
     if (!address) return '';
 
     // 영어 주소에서 마지막 2-3개 요소 추출 (City, Country)
     const parts = address.split(',').map(p => p.trim());
     if (parts.length >= 2) {
-        // 마지막 2개 요소 (도시, 국가) 또는 마지막 3개
-        const relevantParts = parts.slice(-3).filter(p => !/^\d/.test(p)); // 우편번호 제외
+        // 마지막 3개 요소 중 우편번호 패턴 제거
+        const relevantParts = parts.slice(-3).filter(p => {
+            // 숫자로 시작하거나 우편번호 패턴 (예: 105-0011, 12345) 포함 시 제외
+            if (/^\d/.test(p)) return false;
+            if (/\d{3,}/.test(p)) return false;  // 3자리 이상 숫자 포함 시 제외
+            return true;
+        });
         return relevantParts.join(', ');
     }
     return address;
@@ -97,9 +113,9 @@ function generateSubjectSection(config: LandscapePromptConfig): string {
         : displayName;
 
     const lines = [
-        'INSTRUCTION: Use the subject name and coordinates below to search for accurate',
-        'real-world information about this landmark. Verify architectural details,',
-        'surrounding geography, and typical visual appearance from this location.',
+        '[INSTRUCTION]',
+        'Use the subject name and coordinates to search for accurate real-world information about this landmark.',
+        'Create a photorealistic National Geographic-quality landscape photograph with natural color grading, sharp focus throughout, and balanced exposure.',
         '',
         `[SUBJECT]`,
         `Name: ${fullName}`,
@@ -120,6 +136,9 @@ function generateCompositionSection(
 
     const height = settings.camera.height || 0;
     const heightDesc = getHeightDescription(height);
+
+    const distance = settings.camera.distance || 100;
+    const distanceDesc = getDistanceDescription(distance);
 
     // 활성화된 랜드마크만 필터링
     const enabledLandmarks = config.landmarks.filter(lm => lm.enabled !== false);
@@ -149,49 +168,49 @@ function generateCompositionSection(
     // 서술형 문장 생성
     const lines = [
         `[COMPOSITION]`,
-        `Camera positioned at ${heightDesc}, facing ${compassDir}, using ${camera.lens} ${lensSpec.type} lens.`,
-        '',
-        'Spatial Arrangement:',
+        `Camera positioned at ${heightDesc}, facing ${compassDir}, ${distanceDesc}, using ${camera.lens} ${lensSpec.type} lens.`,
     ];
 
     // 피사체 이름 가져오기
     const subjectName = config.location.nameEn || config.location.name || 'the subject';
 
-    // 각 레이어별 자연어 서술
-    for (const [layer, landmarks] of Object.entries(layers)) {
-        if (landmarks.length > 0) {
-            const layerIntro = layerDescriptions[layer as keyof typeof layerDescriptions];
+    // 랜드마크가 있는 경우에만 Spatial Arrangement 추가
+    if (enabledLandmarks.length > 0) {
+        lines.push('');
+        lines.push('Spatial Arrangement:');
 
-            // 방향별로 그룹화
-            const byDirection: Record<string, string[]> = { left: [], center: [], right: [] };
-            for (const lm of landmarks) {
-                const displayName = lm.nameEn || lm.name;
-                const dir = lm.relativeDirection || 'center';
-                byDirection[dir].push(displayName);
-            }
+        // 각 레이어별 자연어 서술
+        for (const [layer, landmarks] of Object.entries(layers)) {
+            if (landmarks.length > 0) {
+                const layerIntro = layerDescriptions[layer as keyof typeof layerDescriptions];
 
-            // 방향별 서술 생성
-            const descriptions: string[] = [];
-            if (byDirection.left.length > 0) {
-                descriptions.push(`${byDirection.left.join(' and ')} ${byDirection.left.length > 1 ? 'are' : 'is'} visible to the left of ${subjectName}`);
-            }
-            if (byDirection.center.length > 0) {
-                descriptions.push(`${byDirection.center.join(' and ')} ${byDirection.center.length > 1 ? 'are' : 'is'} directly behind ${subjectName}`);
-            }
-            if (byDirection.right.length > 0) {
-                descriptions.push(`${byDirection.right.join(' and ')} ${byDirection.right.length > 1 ? 'are' : 'is'} visible to the right of ${subjectName}`);
-            }
+                // 방향별로 그룹화
+                const byDirection: Record<string, string[]> = { left: [], center: [], right: [] };
+                for (const lm of landmarks) {
+                    const displayName = lm.nameEn || lm.name;
+                    const dir = lm.relativeDirection || 'center';
+                    byDirection[dir].push(displayName);
+                }
 
-            if (descriptions.length > 0) {
-                lines.push(`${layerIntro}, ${descriptions.join(', and ')}.`);
+                // 방향별 서술 생성
+                const descriptions: string[] = [];
+                if (byDirection.left.length > 0) {
+                    descriptions.push(`${byDirection.left.join(' and ')} ${byDirection.left.length > 1 ? 'are' : 'is'} visible to the left of ${subjectName}`);
+                }
+                if (byDirection.center.length > 0) {
+                    descriptions.push(`${byDirection.center.join(' and ')} ${byDirection.center.length > 1 ? 'are' : 'is'} directly behind ${subjectName}`);
+                }
+                if (byDirection.right.length > 0) {
+                    descriptions.push(`${byDirection.right.join(' and ')} ${byDirection.right.length > 1 ? 'are' : 'is'} visible to the right of ${subjectName}`);
+                }
+
+                if (descriptions.length > 0) {
+                    lines.push(`${layerIntro}, ${descriptions.join(', and ')}.`);
+                }
             }
         }
     }
-
-    // 랜드마크가 없는 경우
-    if (enabledLandmarks.length === 0) {
-        lines.push(`The scene shows ${subjectName} with natural surroundings extending into the distance.`);
-    }
+    // 랜드마크가 없는 유명 장소의 경우: Spatial Arrangement 없이 카메라 정보만 표시
 
     return lines.join('\n');
 }
@@ -221,13 +240,6 @@ function generateCameraSection(config: LandscapePromptConfig): string {
         `Lens: AF-S NIKKOR ${camera.lens}`,
         `Aperture: ${camera.aperture}`,
         `ISO: ${camera.iso}`,
-        '',
-        'Technical Style:',
-        '- Professional landscape photography',
-        '- National Geographic quality',
-        '- Photorealistic detail with natural color grading',
-        '- Sharp focus throughout frame',
-        '- Balanced exposure: detailed shadows and highlights',
     ];
 
     return lines.join('\n');

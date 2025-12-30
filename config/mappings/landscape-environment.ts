@@ -134,7 +134,7 @@ export function getLightingDescription(time: LandscapeTimeOfDay): string {
         'sunset': 'red and orange sky, dramatic backlighting',
         'blue-hour': 'cool blue tones, soft diffused light, minimal shadows',
         'dusk': 'last twilight, purple and pink hues, fading light',
-        'night': 'city lights, artificial illumination, long exposure feel',
+        'night': 'nighttime darkness, moonlight or ambient glow, long exposure feel, stars visible in clear conditions',
     };
     return descriptions[time] || descriptions['midday'];
 }
@@ -147,7 +147,7 @@ export function getWeatherDescription(weather: LandscapeWeather): string {
         'overcast': 'soft diffused light, muted colors, even illumination',
         'fog': 'mysterious fog, silhouettes, low visibility, ethereal',
         'drizzle': 'light drizzle, wet surfaces, soft atmosphere',
-        'rain': 'wet surfaces, enhanced reflections, atmospheric mood',
+        'rain': 'falling rain, wet surfaces, enhanced reflections, atmospheric mood',
         'heavy-rain': 'heavy rainfall, dramatic streaks, moody atmosphere',
         'snow': 'white snow, quiet atmosphere, soft lighting',
         'heavy-snow': 'heavy snowfall, winter wonderland, pristine',

@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
             // rankPreference: 'RELEVANCE', // Text Search는 RELEVANCE만 지원
         };
 
-        console.log('[API] Text Search request:', { query });
 
         const response = await fetch(url, {
             method: 'POST',
@@ -50,7 +49,6 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: data.error?.message || 'Search failed' }, { status: response.status });
         }
 
-        console.log('[API] Text Search response:', response.status, 'places:', data.places?.length || 0);
 
         // 선택된 장소에 대해 영어 이름 가져오기 (별도 요청에서 처리)
         const places = (data.places || []).map((place: {

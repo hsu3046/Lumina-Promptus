@@ -33,7 +33,6 @@ export function LocationSearch() {
 
     // 장소 적용 함수 (types, address 포함, 영어 이름 + Knowledge Graph)
     const applyPlace = useCallback(async (place: { lat: number; lng: number; name?: string; placeId?: string; types?: string[]; address?: string | null }) => {
-        console.log('[LocationSearch] Applying place:', place.name || 'coordinates');
 
         // UI 상태 먼저 정리
         setQuery(place.name || `${place.lat.toFixed(6)}, ${place.lng.toFixed(6)}`);
@@ -51,12 +50,10 @@ export function LocationSearch() {
 
                 // 2. 영어 이름으로 Knowledge Graph 검색
                 const searchName = detailsData.name || place.name;
-                console.log('[LocationSearch] Querying Knowledge Graph with:', searchName);
 
                 const knowledgeRes = await fetch(`/api/knowledge-graph?query=${encodeURIComponent(searchName)}`);
                 const knowledgeData = await knowledgeRes.json();
 
-                console.log('[LocationSearch] Knowledge Graph score:', knowledgeData.score);
 
                 // 모든 정보를 한 번에 업데이트 (깜빡임 방지)
                 updateLandscape({
@@ -136,7 +133,6 @@ export function LocationSearch() {
 
         setIsLoading(true);
         try {
-            console.log('[LocationSearch] Text Search for:', searchQuery);
 
             const response = await fetch('/api/places/textsearch', {
                 method: 'POST',
@@ -150,11 +146,9 @@ export function LocationSearch() {
                 setResults(data.places);
                 setIsOpen(true);
                 setSelectedIndex(-1);
-                console.log('[LocationSearch] Results:', data.places.length);
             } else {
                 setResults([]);
                 setIsOpen(false);
-                console.log('[LocationSearch] No results found');
             }
         } catch (error) {
             console.error('[LocationSearch] Search error:', error);
@@ -258,7 +252,6 @@ export function LocationSearch() {
 
     // 장소 선택
     const handlePlaceSelect = useCallback((place: SearchResult) => {
-        console.log('[LocationSearch] Place selected:', place.name);
         applyPlace(place);
     }, [applyPlace]);
 
@@ -294,19 +287,27 @@ export function LocationSearch() {
                         }
                     }}
                     className="pl-10 pr-10 bg-secondary/50 border-secondary"
+                    style={{
+                        fontSize: '16px',
+                        transform: 'scale(0.85)',
+                        transformOrigin: 'left center',
+                        width: '118%',  // scale 보정
+                    }}
                 />
                 {isLoading && (
                     <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
                 )}
             </div>
 
-            {/* 좌표 표시 */}
-            <div className="flex items-center justify-end mt-2">
-                <span className="text-[10px] text-zinc-600 flex items-center gap-1">
-                    <Navigation className="w-3 h-3" />
-                    {lat.toFixed(4)}, {lng.toFixed(4)}
-                </span>
-            </div>
+            {/* 좌표 표시 - 장소 검색 후에만 표시 */}
+            {settings.landscape.location.name && (
+                <div className="flex items-center justify-end mt-2">
+                    <span className="text-[10px] text-zinc-600 flex items-center gap-1">
+                        <Navigation className="w-3 h-3" />
+                        {lat.toFixed(4)}, {lng.toFixed(4)}
+                    </span>
+                </div>
+            )}
 
             {/* 드롭다운 메뉴 */}
             {isOpen && (coordinateMatch || results.length > 0) && (

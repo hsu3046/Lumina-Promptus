@@ -13,7 +13,6 @@ import { NanoBananaProExporter } from '@/lib/exporters/NanoBananaProExporter';
 import { ChatGPTExporter } from '@/lib/exporters/ChatGPTExporter';
 import { MidjourneyExporter } from '@/lib/exporters/MidjourneyExporter';
 import { LightingValidator } from '@/lib/lighting-validator';
-import { generate14ReferenceImages } from '@/lib/landscape/reference-image-generator';
 import { buildLandscapePromptConfig, generateLandscapePrompt, generateSimpleLandscapePrompt } from '@/lib/landscape/prompt-generator';
 import type { LightingConfig, LightingPattern, LightingKey, LightingRatio, LightQuality, ColorTemperature, LightingMood, SpecialLighting } from '@/types/lighting.types';
 
@@ -39,20 +38,9 @@ export function PromptPreview() {
                 // 풍경 모드인 경우 별도 처리
                 if (settings.artDirection.lensCharacteristicType === 'landscape') {
                     const landscape = settings.landscape;
-                    const location: [number, number] = [
-                        landscape.location.coordinates.lat,
-                        landscape.location.coordinates.lng,
-                    ];
-
-                    // 참조 이미지 URL 생성
-                    const referenceImages = generate14ReferenceImages(
-                        location,
-                        landscape.camera.heading,
-                        landscape.camera.pitch
-                    );
 
                     // 프롬프트 설정 빌드
-                    const config = buildLandscapePromptConfig(landscape, referenceImages);
+                    const config = buildLandscapePromptConfig(landscape);
 
                     // AI 타겟에 따른 프롬프트 생성
                     let result: string;

@@ -35,12 +35,6 @@ export async function GET(request: NextRequest) {
             url += `?${params.toString()}`;
         }
 
-        console.log('[API] Place Details request:', {
-            placeId,
-            lang,
-            hasSessionToken: !!sessionToken,
-        });
-
         const response = await fetch(url, {
             method: 'GET',
             headers: {
@@ -53,15 +47,9 @@ export async function GET(request: NextRequest) {
         });
 
         const data = await response.json();
-        console.log('[API] Place Details response:', response.status, {
-            hasLocation: !!data.location,
-            hasAddress: !!data.formattedAddress,
-            lang,
-        });
 
         // 에러 상세 로깅
         if (!response.ok || data.error) {
-            console.log('[API] Place Details error:', JSON.stringify(data, null, 2));
             return NextResponse.json({ error: data.error?.message || 'Place not found' }, { status: response.status });
         }
 

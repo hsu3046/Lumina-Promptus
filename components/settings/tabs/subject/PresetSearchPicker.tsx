@@ -86,7 +86,12 @@ export function PresetSearchPicker<T extends PresetOption>({
                     <input
                         ref={inputRef}
                         type="text"
-                        className="flex-1 bg-transparent text-xs text-zinc-200 font-bold placeholder:text-zinc-500 placeholder:font-normal border-none outline-none px-2"
+                        className="flex-1 bg-transparent text-zinc-200 font-bold placeholder:text-zinc-500 placeholder:font-normal border-none outline-none px-2 origin-left"
+                        style={{
+                            fontSize: '16px',
+                            transform: 'scale(0.75)',  // 16px * 0.75 = 12px 시각적 크기
+                            transformOrigin: 'left center',
+                        }}
                         placeholder={placeholder}
                         value={displayValue}
                         onChange={(e) => {

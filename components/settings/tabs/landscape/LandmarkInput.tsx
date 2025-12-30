@@ -123,18 +123,15 @@ export function LandmarkInput() {
 
     // 주변 검색 API 호출 (높이 기반 반경)
     const searchNearby = React.useCallback(async (height: number) => {
-        console.log(`[LandmarkInput] ⚠️ searchNearby CALLED! height=${height}, isWellKnownPlace=${isWellKnownPlace}, score=${knowledgeScore}`);
 
         if (!hasCoordinates || !currentPlaceName) return;
 
         // 유명 장소면 Nearby Search 스킵 (AI가 알아서 잘 그림)
         if (isWellKnownPlace) {
-            console.log(`[LandmarkInput] Skipping Nearby Search for famous place (score: ${knowledgeScore})`);
             updateLandscape({ landmarks: [] } as Partial<LandscapeSettings>);
             return;
         }
 
-        console.log(`[LandmarkInput] 🚀 ACTUALLY CALLING nearbysearch API!`);
 
         const config = HEIGHT_CONFIG[height] ?? HEIGHT_CONFIG[0];
         setIsSearching(true);
@@ -198,7 +195,6 @@ export function LandmarkInput() {
         // 유명 장소 체크
         const isFamous = (knowledgeScore ?? 0) >= 500;
         if (isFamous) {
-            console.log(`[LandmarkInput] Famous place detected (score: ${knowledgeScore}), skipping Nearby Search`);
             // 랜드마크 초기화 (캐시는 건드리지 않음 - 무한루프 방지)
             if (landmarksLen > 0) {
                 updateLandscape({ landmarks: [] } as Partial<LandscapeSettings>);

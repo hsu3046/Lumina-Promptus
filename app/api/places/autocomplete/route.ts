@@ -39,12 +39,6 @@ export async function GET(request: NextRequest) {
             requestBody.sessionToken = sessionToken;
         }
 
-        console.log('[API] Autocomplete request:', {
-            query,
-            hasSessionToken: !!sessionToken,
-            sessionTokenPreview: sessionToken?.substring(0, 8) + '...'
-        });
-
         const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -55,11 +49,10 @@ export async function GET(request: NextRequest) {
         });
 
         const data = await response.json();
-        console.log('[API] Autocomplete response:', response.status, 'suggestions:', data.suggestions?.length || 0);
 
-        // 에러 상세 로깅
+        // 에러 처리
         if (!response.ok || data.error) {
-            console.log('[API] Autocomplete error:', JSON.stringify(data, null, 2));
+            return NextResponse.json({ error: data.error?.message || 'Autocomplete failed' }, { status: response.status });
         }
 
         // 응답 변환 (camelCase)

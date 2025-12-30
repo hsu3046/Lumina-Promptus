@@ -137,7 +137,6 @@ export async function POST(request: NextRequest) {
             },
         };
 
-        console.log('[API] Nearby Search request:', { lat, lng, radius });
 
         const response = await fetch(url, {
             method: 'POST',
@@ -210,7 +209,6 @@ export async function POST(request: NextRequest) {
             return a.distance - b.distance;
         });
 
-        console.log('[API] Nearby Search results:', filteredPlaces.length, '/', places.length);
 
         return NextResponse.json({ places: filteredPlaces });
     } catch (error) {
