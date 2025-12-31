@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronLeft, ChevronRight, Shuffle, Grid2x2, RectangleHorizontal, RectangleVertical, Square } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { ArrowLeft01Icon, ArrowRight01Icon, ShuffleIcon, GridIcon, AspectRatioIcon, Square01Icon } from '@hugeicons/core-free-icons';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { ComboboxField, GroupedComboboxField, type ConflictLevel } from '@/components/ui/combobox-field';
@@ -9,17 +10,24 @@ import { useSettingsStore } from '@/store/useSettingsStore';
 import { PersonForm } from './PersonForm';
 import {
     FRAMING_OPTIONS,
-    FRAMING_ANGLE_CONFLICTS,
     FRAMING_BODY_POSE_CONFLICTS,
     FRAMING_HAND_POSE_CONFLICTS,
-    type FramingAngleConflictLevel
 } from '@/config/mappings/portrait-composition';
+import { getAngleConflict } from '@/lib/rules/legacy-adapter';
 import {
     APPEARANCE_PRESETS,
     STYLE_PRESETS,
     FASHION_PRESETS,
     POSE_PRESETS,
 } from '@/config/presets/subject-presets';
+import {
+    TOP_WEAR_OPTIONS,
+    BOTTOM_WEAR_OPTIONS,
+    FOOTWEAR_OPTIONS,
+    ACCESSORY1_OPTIONS,
+    ACCESSORY2_OPTIONS,
+    type GenderTag,
+} from '@/config/mappings/fashion-options';
 import {
     selectConflictAwarePose,
     getFashionVisibility,
@@ -38,7 +46,7 @@ const DEFAULT_SUBJECT: StudioSubject = {
     ageGroup: 'early-20s',
     hairStyle: 'long-straight',
     bodyType: 'average',
-    topWear: '',
+    topWear: 'white-tshirt',
     bottomWear: '',
     footwear: '',
     accessory: '',
@@ -65,7 +73,7 @@ const BACKGROUND_OPTIONS = [
     { value: 'seamless_beige', label: '베이지', color: '#D4B896' },
     { value: 'seamless_blue', label: '크로마키 - 블루', color: '#0066FF' },
     { value: 'seamless_green', label: '크로마키 - 그린', color: '#00FF00' },
-    { value: 'textured', label: '텍스처', icon: Grid2x2 },
+    { value: 'textured', label: '텍스처' },
 ] as const;
 
 // 구도 옵션 (익스트림 클로즈업, 롱샷 제외)
@@ -90,20 +98,20 @@ const ASPECT_RATIO_GROUPS = [
     {
         label: '',
         options: [
-            { value: '3:2', label: '3:2', icon: RectangleHorizontal },
-            { value: '4:3', label: '4:3', icon: RectangleHorizontal },
-            { value: '16:9', label: '16:9', icon: RectangleHorizontal },
-            { value: '5:4', label: '5:4', icon: RectangleHorizontal },
-            { value: '1:1', label: '1:1', icon: Square },
+            { value: '3:2', label: '3:2' },
+            { value: '4:3', label: '4:3' },
+            { value: '16:9', label: '16:9' },
+            { value: '5:4', label: '5:4' },
+            { value: '1:1', label: '1:1' },
         ],
     },
     {
         label: '',
         options: [
-            { value: '2:3', label: '2:3', icon: RectangleVertical },
-            { value: '3:4', label: '3:4', icon: RectangleVertical },
-            { value: '9:16', label: '9:16', icon: RectangleVertical },
-            { value: '4:5', label: '4:5', icon: RectangleVertical },
+            { value: '2:3', label: '2:3' },
+            { value: '3:4', label: '3:4' },
+            { value: '9:16', label: '9:16' },
+            { value: '4:5', label: '4:5' },
         ],
     },
 ] as const;
@@ -116,7 +124,9 @@ const RANDOM_OPTIONS = {
     faceShape: ['oval', 'round', 'square', 'heart'] as const,
     gender: ['male', 'female'] as const,
     ageGroup: ['early-20s', 'late-20s', '30s', '40s-50s', '60s-70s'] as const,
-    hairStyle: ['short', 'medium', 'long', 'curly', 'bald'] as const,
+    // 성별별 헤어스타일
+    hairStyleMale: ['short-straight', 'short-wavy', 'medium-straight', 'curly', 'bald'] as const,
+    hairStyleFemale: ['long-straight', 'long-wavy', 'medium-straight', 'medium-wavy', 'short-straight', 'curly', 'ponytail', 'bun', 'braids'] as const,
     bodyType: ['slim', 'average', 'athletic', 'muscular', 'curvy'] as const,
     bodyPose: ['straight', 'contrapposto', 's-curve', 'three-quarter-turn', 'sitting', 'reclining'] as const,
     handPose: ['natural-relaxed', 'editorial-hands', 'pocket-hands', 'crossed-arms', 'framing-face', 'hair-touch'] as const,
@@ -157,7 +167,7 @@ function CarouselPicker<T extends string | number>({ label, options, value, onCh
                     onClick={handlePrev}
                     className="h-6 w-6 text-zinc-500 hover:text-white hover:bg-transparent p-0"
                 >
-                    <ChevronLeft className="h-4 w-4" />
+                    <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
                 </Button>
                 <span className="min-w-[3.5rem] text-center text-sm font-medium text-amber-400 truncate">
                     {currentLabel}
@@ -168,7 +178,7 @@ function CarouselPicker<T extends string | number>({ label, options, value, onCh
                     onClick={handleNext}
                     className="h-6 w-6 text-zinc-500 hover:text-white hover:bg-transparent p-0"
                 >
-                    <ChevronRight className="h-4 w-4" />
+                    <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
                 </Button>
             </div>
         </div>
@@ -195,25 +205,54 @@ export function StudioSubjectForm() {
         ? ALL_COMPOSITION_OPTIONS.filter(opt => opt.value !== 'extreme-close-up')
         : ALL_COMPOSITION_OPTIONS;
 
-    // 구도 기반 앵글 충돌 정보
-    const getAngleConflictLevel = (angleValue: string): FramingAngleConflictLevel => {
-        const framingMatrix = FRAMING_ANGLE_CONFLICTS[studioComposition as keyof typeof FRAMING_ANGLE_CONFLICTS];
-        return framingMatrix?.[angleValue] ?? 'ok';
+    // 구도 기반 앵글 충돌 정보 (새 conflict 시스템 사용)
+    const getAngleConflictLevel = (angleValue: string): ConflictLevel => {
+        return getAngleConflict(studioComposition, angleValue);
     };
 
     const handleCountChange = (count: 1 | 2 | 3) => {
+        const currentCount = studioSubjects.length;
         let newSubjects = [...studioSubjects];
+
+        // 인원 추가 시 랜덤 적용 (성별/구도 고려)
         while (newSubjects.length < count) {
-            newSubjects.push({ ...DEFAULT_SUBJECT });
+            const gender = 'female' as const; // 기본 성별
+            const fashionVisibility = getFashionVisibility(studioComposition as PortraitFraming);
+
+            // 성별에 맞는 옵션 필터링
+            const filterByGender = <T extends { value: string; gender: GenderTag }>(options: readonly T[]) => {
+                return options.filter(o => o.value !== '' && (o.gender === gender || o.gender === 'unisex'));
+            };
+
+            const topOptions = filterByGender(TOP_WEAR_OPTIONS);
+            const bottomOptions = filterByGender(BOTTOM_WEAR_OPTIONS);
+            const footwearOptions = filterByGender(FOOTWEAR_OPTIONS);
+
+            const randomSubject: StudioSubject = {
+                ...DEFAULT_SUBJECT,
+                // 랜덤 얼굴형
+                faceShape: pickRandom(RANDOM_OPTIONS.faceShape),
+                // 랜덤 헤어스타일 (여성용)
+                hairStyle: pickRandom(RANDOM_OPTIONS.hairStyleFemale),
+                // 랜덤 패션 (구도 고려)
+                topWear: pickRandom(topOptions)?.value || 'white-tshirt',
+                bottomWear: fashionVisibility.bottomWear ? (pickRandom(bottomOptions)?.value || '') : '',
+                footwear: fashionVisibility.footwear ? (pickRandom(footwearOptions)?.value || '') : '',
+                accessory: '',
+                accessory2: '',
+            };
+
+            newSubjects.push(randomSubject);
         }
+
         newSubjects = newSubjects.slice(0, count);
         const newComposition = count >= 2 && studioComposition === 'extreme-close-up'
             ? 'close-up'
             : studioComposition;
         updateUserInput({ studioSubjectCount: count, studioSubjects: newSubjects, studioComposition: newComposition as UserInputSettings['studioComposition'] });
 
-        const newMatrix = FRAMING_ANGLE_CONFLICTS[newComposition as keyof typeof FRAMING_ANGLE_CONFLICTS];
-        if (newMatrix && newMatrix[cameraAngle] === 'disabled') {
+        // 새 구도에서 현재 앵글이 disabled라면 아이레벨로 리셋
+        if (getAngleConflict(newComposition, cameraAngle) === 'disabled') {
             updateArtDirection({ cameraAngle: 'eye_level' });
         }
     };
@@ -224,7 +263,7 @@ export function StudioSubjectForm() {
         updateUserInput({ studioSubjects: newSubjects });
     };
 
-    // 랜덤 인물 생성 (프리셋 기반 + 충돌 회피)
+    // 랜덤 인물 생성 (개별 아이템 기반 + 성별 필터링)
     const handleRandomize = () => {
         const newSubjects: StudioSubject[] = [];
 
@@ -235,31 +274,31 @@ export function StudioSubjectForm() {
         // 구도에 따른 패션 가시성 체크
         const fashionVisibility = getFashionVisibility(currentFraming);
 
+        // 성별별 옵션 필터 함수
+        const filterByGender = <T extends { value: string; gender: GenderTag }>(options: readonly T[], gender: 'male' | 'female') => {
+            return options.filter(opt => opt.value !== '' && (opt.gender === 'unisex' || opt.gender === gender));
+        };
+
         for (let i = 0; i < studioSubjectCount; i++) {
             // A: 외모는 제한 없이 랜덤
             const randomAppearance = pickRandom(APPEARANCE_PRESETS);
 
-            // B: 스타일 먼저 선택
+            // B: 스타일 먼저 선택 (성별 결정)
             const randomStyle = pickRandom(STYLE_PRESETS);
+            const gender = randomStyle.values.gender as 'male' | 'female';
 
-            // C: 스타일 태그와 호환되는 패션만 필터링
-            const compatibleFashions = FASHION_PRESETS.filter(fashion => {
-                // 성별 체크: unisex는 모두 호환, 그 외는 매칭
-                const genderMatch = fashion.tags.includes('unisex') ||
-                    (randomStyle.tags.includes('male') && fashion.tags.includes('male')) ||
-                    (randomStyle.tags.includes('female') && fashion.tags.includes('female'));
+            // C: 개별 패션 아이템 랜덤 선택 (성별 필터링 적용)
+            const compatibleTops = filterByGender(TOP_WEAR_OPTIONS, gender);
+            const compatibleBottoms = filterByGender(BOTTOM_WEAR_OPTIONS, gender);
+            const compatibleFootwear = filterByGender(FOOTWEAR_OPTIONS, gender);
+            const compatibleAccessory1 = filterByGender(ACCESSORY1_OPTIONS, gender);
+            const compatibleAccessory2 = filterByGender(ACCESSORY2_OPTIONS, gender);
 
-                // 연령대 체크: 최소 하나가 매칭되면 통과
-                const ageMatch = randomStyle.tags.some(tag =>
-                    ['child', 'teen', 'adult', 'senior'].includes(tag) && fashion.tags.includes(tag as 'child' | 'teen' | 'adult' | 'senior')
-                );
-
-                return genderMatch && ageMatch;
-            });
-
-            const randomFashion = compatibleFashions.length > 0
-                ? pickRandom(compatibleFashions)
-                : FASHION_PRESETS[0];
+            const randomTop = compatibleTops.length > 0 ? pickRandom(compatibleTops) : null;
+            const randomBottom = compatibleBottoms.length > 0 ? pickRandom(compatibleBottoms) : null;
+            const randomFootwear = compatibleFootwear.length > 0 ? pickRandom(compatibleFootwear) : null;
+            const randomAccessory1 = compatibleAccessory1.length > 0 ? pickRandom(compatibleAccessory1) : null;
+            const randomAccessory2 = compatibleAccessory2.length > 0 ? pickRandom(compatibleAccessory2) : null;
 
             // D: 구도/앵글에 호환되는 포즈 순차 선택 (충돌 회피)
             const { bodyPose, handPose, expression, gaze } = selectConflictAwarePose({
@@ -267,27 +306,34 @@ export function StudioSubjectForm() {
                 angle: currentAngle,
             });
 
+            // E: 성별에 맞는 헤어스타일 랜덤 선택
+            const randomHairStyle = gender === 'male'
+                ? pickRandom(RANDOM_OPTIONS.hairStyleMale)
+                : pickRandom(RANDOM_OPTIONS.hairStyleFemale);
+
             // 패션 아이템 가시성에 따라 처리
-            // 보이지 않으면 빈값으로 (프롬프트에 포함되지 않도록)
-            const bottomWear = fashionVisibility.bottomWear ? randomFashion.values.bottomWear : '';
-            const footwear = fashionVisibility.footwear ? randomFashion.values.footwear : '';
-            const accessory = fashionVisibility.accessoryOk(randomFashion.values.accessory)
-                ? randomFashion.values.accessory
+            const topWear = randomTop?.value ?? '';
+            const bottomWear = fashionVisibility.bottomWear ? (randomBottom?.value ?? '') : '';
+            const footwear = fashionVisibility.footwear ? (randomFootwear?.value ?? '') : '';
+            const accessory = fashionVisibility.accessoryOk(randomAccessory1?.value ?? '')
+                ? (randomAccessory1?.value ?? '')
                 : '';
+            const accessory2 = randomAccessory2?.value ?? '';
 
             newSubjects.push({
                 autoMode: studioSubjects[i]?.autoMode ?? true,
                 // 외모 (APPEARANCE_PRESETS)
                 appearancePresetId: randomAppearance.id,
                 ...randomAppearance.values,
-                // 스타일 (STYLE_PRESETS)
+                // 스타일 (STYLE_PRESETS) - hairStyle은 성별에 맞게 오버라이드
                 ...randomStyle.values,
-                // 패션 (가시성 필터링 적용)
-                topWear: randomFashion.values.topWear,
+                hairStyle: randomHairStyle,
+                // 패션 (개별 아이템 + 가시성 필터링 적용)
+                topWear,
                 bottomWear,
                 footwear,
                 accessory,
-                accessory2: '',  // 기본값
+                accessory2,
                 // 포즈 (충돌 회피 적용)
                 bodyPose,
                 handPose,
@@ -305,14 +351,6 @@ export function StudioSubjectForm() {
         <>
             {/* 배경/구도/앵글/구성: PC 4열, 모바일 2열 */}
             <ComboboxRow>
-                {/* 배경 */}
-                <ComboboxField
-                    label="배경"
-                    options={BACKGROUND_OPTIONS}
-                    value={studioBackgroundType}
-                    onSelect={(value) => updateUserInput({ studioBackgroundType: value as UserInputSettings['studioBackgroundType'] })}
-                />
-
                 {/* 구도 */}
                 <ComboboxField
                     label="구도"
@@ -333,8 +371,9 @@ export function StudioSubjectForm() {
                         // 모든 피사체의 disabled된 패션 및 critical conflict 포즈 초기화
                         const updatedSubjects = studioSubjects.map(subject => ({
                             ...subject,
-                            bottomWear: bottomDisabled ? '' : subject.bottomWear,
-                            footwear: footwearDisabled ? '' : subject.footwear,
+                            // disabled → 빈값, enabled이고 빈값이면 → 기본값
+                            bottomWear: bottomDisabled ? '' : (subject.bottomWear || 'blue-jeans'),
+                            footwear: footwearDisabled ? '' : (subject.footwear || 'white-sneakers'),
                             // Critical conflict 포즈 → 기본값으로 초기화
                             bodyPose: bodyPoseConflicts[subject.bodyPose] === 'critical' ? 'straight' : subject.bodyPose,
                             handPose: handPoseConflicts[subject.handPose] === 'critical' ? 'natural-relaxed' : subject.handPose,
@@ -345,8 +384,8 @@ export function StudioSubjectForm() {
                             studioSubjects: updatedSubjects,
                         });
 
-                        const matrix = FRAMING_ANGLE_CONFLICTS[newComposition as keyof typeof FRAMING_ANGLE_CONFLICTS];
-                        if (matrix && matrix[cameraAngle] === 'disabled') {
+                        // 새 구도에서 현재 앵글이 disabled라면 아이레벨로 리셋
+                        if (getAngleConflict(newComposition, cameraAngle) === 'disabled') {
                             updateArtDirection({ cameraAngle: 'eye_level' });
                         }
                     }}
@@ -355,18 +394,27 @@ export function StudioSubjectForm() {
                 {/* 앵글 */}
                 <ComboboxField
                     label="앵글"
-                    options={CAMERA_ANGLE_OPTIONS.filter(opt => getAngleConflictLevel(opt.value) !== 'disabled')}
+                    options={CAMERA_ANGLE_OPTIONS}
                     value={cameraAngle}
                     onSelect={(value) => updateArtDirection({ cameraAngle: value })}
                     getConflictLevel={(value) => getAngleConflictLevel(value) as ConflictLevel}
                 />
 
-                {/* 사진비율 */}
-                <GroupedComboboxField
-                    label="비율"
-                    groups={ASPECT_RATIO_GROUPS}
-                    value={settings.camera.aspectRatio}
-                    onSelect={(value) => updateCamera({ aspectRatio: value })}
+                {/* 배경 */}
+                <ComboboxField
+                    label="배경"
+                    options={BACKGROUND_OPTIONS}
+                    value={studioBackgroundType}
+                    onSelect={(value) => updateUserInput({ studioBackgroundType: value as UserInputSettings['studioBackgroundType'] })}
+                />
+
+                {/* 소품 (차후 구현) */}
+                <ComboboxField
+                    label="소품"
+                    options={[{ value: 'none', label: '선택 안함' }]}
+                    value="none"
+                    onSelect={() => { }}
+                    disabled
                 />
             </ComboboxRow>
 
@@ -388,7 +436,7 @@ export function StudioSubjectForm() {
                     className="absolute right-0 h-6 w-6 text-zinc-500 hover:text-amber-400 hover:bg-zinc-800"
                     title="랜덤 인물 설정"
                 >
-                    <Shuffle className="w-4 h-4" />
+                    <HugeiconsIcon icon={ShuffleIcon} size={16} />
                 </Button>
             </div>
 

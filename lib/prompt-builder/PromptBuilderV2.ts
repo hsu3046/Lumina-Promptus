@@ -1,7 +1,7 @@
 // lib/prompt-builder/PromptBuilderV2.ts
 // IR(Intermediate Representation) 기반 프롬프트 빌더
 
-import type { PromptIR, SlotContent, UserSettings, ConflictReport, StudioSubject } from '@/types';
+import type { PromptIR, SlotContent, UserSettings, ConflictReport, StudioSubject, SnapSettings } from '@/types';
 import { PROMPT_SLOTS, getSlotById } from '@/config/slots/slot-definitions';
 import { getCameraById } from '@/config/mappings/cameras';
 import { getLensById } from '@/config/mappings/lenses';
@@ -13,6 +13,20 @@ import {
     FOOTWEAR_OPTIONS,
     ACCESSORY_OPTIONS,
 } from '@/config/mappings/fashion-options';
+import {
+    SNAP_SUBJECT_TYPES,
+    SNAP_TIME_OF_DAY,
+    SNAP_LOCATIONS,
+    SNAP_SPECIFIC_PLACES,
+    SNAP_COMPANIONS,
+    SNAP_ACTIONS,
+    SNAP_MANNERS,
+    SNAP_WEATHER,
+    SNAP_SEASONS,
+    SNAP_ATMOSPHERE,
+    SNAP_LIGHTING,
+    SNAP_CROWD_DENSITY,
+} from '@/config/mappings/snap-options';
 
 export class PromptBuilderV2 {
     private ir: PromptIR;
@@ -120,7 +134,7 @@ export class PromptBuilderV2 {
         });
     }
 
-    // Studio 모드 피사체 프롬프트 생성
+    // 피사체 프롬프트 생성 (모드별 분기)
     private getSubjectPrompt(): string {
         const { lensCharacteristicType } = this.settings.artDirection;
 
@@ -129,8 +143,122 @@ export class PromptBuilderV2 {
             return this.buildStudioSubjectPrompt();
         }
 
+        // Street (Snap) 모드: 스토리 빌더 기반
+        if (lensCharacteristicType === 'street' && this.settings.snap) {
+            return this.buildSnapPrompt();
+        }
+
         // 다른 모드: 기존 직접 입력
         return this.settings.userInput.subjectDescription || '';
+    }
+
+    // Snap 모드 프롬프트 생성 (스토리 빌더 기반)
+    private buildSnapPrompt(): string {
+        const snap = this.settings.snap!;
+        const parts: string[] = [];
+
+        // 1. 기본 스타일 선언
+        parts.push('A candid street photograph');
+
+        // 2. 피사체 (누가)
+        const subjectLabel = SNAP_SUBJECT_TYPES.find(s => s.value === snap.subject)?.label;
+        if (subjectLabel) {
+            parts.push(`of a ${subjectLabel}`);
+        }
+
+        // 3. 행동 (무엇을)
+        const actionLabel = SNAP_ACTIONS.find(a => a.value === snap.action)?.label;
+        if (actionLabel) {
+            parts.push(actionLabel);
+        }
+
+        // 4. 방식 (어떻게)
+        const mannerLabel = SNAP_MANNERS.find(m => m.value === snap.manner)?.label;
+        if (mannerLabel) {
+            parts.push(mannerLabel);
+        }
+
+        // 5. 동반자 (누구와)
+        const companionMap: Record<string, string> = {
+            alone: 'alone',
+            'with-friend': 'with a friend',
+            'with-lover': 'with a lover',
+            'with-family': 'with family',
+            'with-pet': 'with a pet',
+            'in-crowd': 'in a crowd',
+        };
+        if (snap.companion && companionMap[snap.companion]) {
+            parts.push(companionMap[snap.companion]);
+        }
+
+        // 6. 장소 (어디서)
+        const locationLabel = SNAP_LOCATIONS.find(l => l.value === snap.location)?.label;
+        if (locationLabel) {
+            parts.push(`in a ${locationLabel.toLowerCase()}`);
+        }
+
+        // 7. 시간대 (언제)
+        const timeMap: Record<string, string> = {
+            dawn: 'at dawn',
+            morning: 'in the morning',
+            midday: 'at midday',
+            afternoon: 'in the afternoon',
+            'golden-hour': 'during golden hour',
+            'blue-hour': 'during blue hour',
+            night: 'at night',
+            'late-night': 'late at night',
+        };
+        if (snap.timeOfDay && timeMap[snap.timeOfDay]) {
+            parts.push(timeMap[snap.timeOfDay]);
+        }
+
+        // 환경 섹션
+        const envParts: string[] = [];
+
+        // 8. 구체적인 장소
+        const placeLabel = SNAP_SPECIFIC_PLACES.find(p => p.value === snap.specificPlace)?.label;
+        if (placeLabel) {
+            envParts.push(`Set in ${placeLabel}`);
+        }
+
+        // 9. 계절 + 날씨
+        const seasonLabel = SNAP_SEASONS.find(s => s.value === snap.season)?.label;
+        const weatherLabel = SNAP_WEATHER.find(w => w.value === snap.weather)?.label;
+        if (seasonLabel || weatherLabel) {
+            const seasonWeather = [seasonLabel, weatherLabel].filter(Boolean).join(', ');
+            envParts.push(seasonWeather);
+        }
+
+        // 10. 분위기/효과
+        const atmosphereLabel = SNAP_ATMOSPHERE.find(a => a.value === snap.atmosphere)?.label;
+        if (atmosphereLabel) {
+            envParts.push(`with ${atmosphereLabel} atmosphere`);
+        }
+
+        // 11. 조명
+        const lightingLabel = SNAP_LIGHTING.find(l => l.value === snap.lighting)?.label;
+        if (lightingLabel && snap.lighting !== 'natural') {
+            envParts.push(`${lightingLabel} illumination`);
+        }
+
+        // 12. 군중 밀도
+        const crowdMap: Record<string, string> = {
+            empty: 'empty streets',
+            sparse: 'sparse crowd',
+            moderate: 'moderate crowd',
+            crowded: 'crowded street',
+            packed: 'densely packed crowd',
+        };
+        if (snap.crowdDensity && crowdMap[snap.crowdDensity]) {
+            envParts.push(crowdMap[snap.crowdDensity]);
+        }
+
+        // 환경 파트 결합
+        if (envParts.length > 0) {
+            parts.push(envParts.join('. '));
+        }
+
+        return parts.filter(Boolean).join(' ');
     }
 
     private buildStudioSubjectPrompt(): string {
@@ -408,15 +536,17 @@ export class PromptBuilderV2 {
                 parts.push(lens.vignetting);
             }
         } else {
-            // 그 외일 때: characteristic_studio (또는 선택된 characteristic 타입)
+            // 그 외일 때: 모드별 characteristic 오버라이드 우선, 없으면 기본 characteristic 사용
             const charType = this.settings.artDirection.lensCharacteristicType;
-            const charKeywords = {
+            const modeSpecificMap: Record<string, string | undefined> = {
                 studio: lens.characteristic_studio,
                 landscape: lens.characteristic_landscape,
                 architecture: lens.characteristic_architecture,
                 product: lens.characteristic_product,
                 street: lens.characteristic_street,
-            }[charType];
+            };
+            // 모드별 값이 있으면 사용, 없으면 기본 characteristic 폴백
+            const charKeywords = modeSpecificMap[charType] || lens.characteristic;
 
             if (charKeywords) {
                 parts.push(charKeywords);

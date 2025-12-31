@@ -1,116 +1,90 @@
-# Lumina Promptus - 충돌 검증 시스템 문서
+# Lumina Promptus - 충돌 규칙 시스템
 
 ## 개요
 
-이 문서는 Lumina Promptus의 충돌 검증 시스템을 설명합니다. 시스템은 카메라, 조명, 피사체 설정 간의 호환성을 실시간으로 검증하여 사용자에게 권장/경고/오류를 표시합니다.
+충돌 규칙은 **두 가지 시스템**이 공존합니다:
 
----
+| 시스템 | 위치 | 사용처 |
+|-------|------|-------|
+| **새 시스템** | `config/rules/conflict-rules.ts` | 피사체, 패션 |
+| **레거시 시스템** | 각 validator 파일 | 조명, 카메라 |
 
-## 충돌 레벨 정의
-
-모든 검증 시스템에서 통일된 5단계 레벨을 사용합니다:
+### 충돌 레벨 정의
 
 | 레벨 | UI 표시 | 의미 |
 |-----|--------|------|
-| `recommend` | 💡 파란 전구 | 최적의 조합 |
+| `recommend` | ⭐ 파란 별 | 최적의 조합 |
 | `ok` | (없음) | 문제 없음 |
-| `warning` | ⚠️ 노란 삼각형 | 비추천 (의도적 선택 가능) |
-| `critical` | 🔴 빨간 원형 | 결과물 심각하게 망가짐 |
-| `disabled` | (숨김) | 물리적/논리적 불가 |
+| `none` | ⚠️ 노란 삼각형 | 비추천 (경고만) |
+| `disabled` | 🔴 그레이아웃 | 선택 불가 |
+| `hide` | (숨김) | 완전 숨김 |
 
 ---
 
-## 파일 구조
+## 1. 새 충돌 시스템
 
+### 파일 구조
 ```
-lib/
-├── lens-composition-validator.ts    # 렌즈 × 구도/앵글 충돌
-├── portrait-conflict-validator.ts   # 포즈/표정/시선 충돌
-├── lighting-validator.ts            # 조명 설정 충돌
-└── exposure-calculator.ts           # 노출 계산
-
-config/
-├── lighting-rules.ts                # 조명 충돌 규칙 + 구도×패턴 매트릭스
-└── mappings/
-    ├── portrait-composition.ts      # 포트레이트 충돌 매트릭스
-    ├── cameras.ts                   # 카메라 바디 데이터
-    ├── lenses.ts                    # 렌즈 데이터
-    ├── lighting-patterns.ts         # 조명 패턴 프롬프트
-    └── fashion-options.ts           # 패션 옵션
+config/rules/
+├── conflict-rules.ts     # 규칙 정의 (source of truth)
+lib/rules/
+├── conflict-evaluator.ts # 규칙 평가 엔진
+├── legacy-adapter.ts     # UI 연동 함수
 ```
 
----
+### 적용 탭
+- ✅ **피사체 탭** (`StudioSubjectForm`, `PersonForm`)
+  - 앵글: `getAngleConflict()`
+  - 바디 포즈: `getBodyPoseConflict()`
+  - 핸드 포즈: `getHandPoseConflict()`
+- ✅ **패션 항목** (`PersonForm`)
+  - 하의/신발 visibility: `getFashionDisabled()`
 
-## 1. 렌즈 × 구도 충돌
+### 규칙 구조
+```typescript
+interface ConflictRule {
+    restriction: 'hide' | 'disabled' | 'none';
+    source: { field: string; values: string[] };
+    target: { field: string; affected: string[] };
+}
+```
 
-**파일**: `lib/lens-composition-validator.ts`
-
-### 매트릭스
-
-| 구도 | ultra_wide | wide | standard | medium_tele | telephoto | macro |
-|-----|-----------|------|----------|-------------|-----------|-------|
-| close-up | critical | warning | ok | recommend | ok | ok |
-| bust-shot | warning | ok | recommend | recommend | ok | disabled |
-| full-shot | recommend | recommend | ok | warning | critical | disabled |
-
-### 주요 함수
-
-- `getLensStatusForOption(framing, angle, compositionRule, lensId)`: 렌즈 상태 반환
-- `parseFocalLength(focalLength)`: 초점거리 문자열 → 숫자 변환
-
----
-
-## 2. 구도 × 앵글 충돌
-
-**파일**: `config/mappings/portrait-composition.ts`
-
-### 매트릭스 (`FRAMING_ANGLE_CONFLICTS`)
-
-| 구도 | eye_level | high | low | birds_eye | worms_eye | drone |
-|-----|-----------|------|-----|-----------|-----------|-------|
-| close-up | recommend | ok | warning | critical | critical | disabled |
-| bust-shot | recommend | ok | ok | warning | warning | disabled |
-| full-shot | ok | ok | recommend | recommend | recommend | recommend |
+### 새 규칙 추가 방법
+1. `config/rules/conflict-rules.ts`에 규칙 추가
+2. `lib/rules/legacy-adapter.ts`에 조회 함수 추가 (필요시)
+3. UI 컴포넌트에서 함수 호출
 
 ---
 
-## 3. 구도 × 조명 패턴 충돌
+## 2. 레거시 시스템
 
-**파일**: `config/lighting-rules.ts`
+### 조명 탭
+```
+config/lighting-rules.ts          # 충돌 규칙
+lib/lighting-validator.ts         # 검증 엔진
+```
 
-### 매트릭스 (`FRAMING_PATTERN_CONFLICTS`)
+**특징:**
+- `LightingValidator.validate()` - 실시간 검증
+- `RECOMMENDED_COMBINATIONS` - 권장 조합 표시
+- 동적 필터링 (`getValidRatios`, `getValidSpecials`)
 
-| 구도 | rembrandt | butterfly | loop | split |
-|-----|-----------|-----------|------|-------|
-| close-up | recommend | recommend | ok | warning |
-| waist-shot | warning | ok | recommend | critical |
-| full-shot | disabled | disabled | warning | disabled |
+### 카메라 탭
+```
+lib/lens-composition-validator.ts # 렌즈-구도 충돌 검증
+```
 
-### 주요 함수
+**특징:**
+- `FRAMING_LENS_MATRIX` - 구도 × 렌즈 카테고리 매트릭스
+- `getLensStatusForOption()` - 렌즈별 충돌 상태 조회
 
-- `LightingValidator.getPatternStatusForFraming(framing, pattern)`: 패턴 상태 반환
+### 포트레이트 충돌
+```
+config/mappings/portrait-composition.ts  # 충돌 매트릭스
+lib/portrait-conflict-validator.ts       # 검증 엔진  
+```
 
----
-
-## 4. 앵글 × 시선 충돌
-
-**파일**: `config/mappings/portrait-composition.ts`
-
-### 매트릭스 (`ANGLE_GAZE_CONFLICTS`)
-
-| 앵글 | direct-eye-contact | looking-up | looking-down |
-|-----|-------------------|------------|--------------|
-| low_angle | ok | warning | ok |
-| birds_eye | warning | critical | ok |
-| drone | warning | critical | ok |
-
----
-
-## 5. 포즈/표정/시선 충돌
-
-**파일**: `lib/portrait-conflict-validator.ts`
-
-8개 충돌 매트릭스를 검증:
+**8개 충돌 매트릭스 검증:**
 1. 구도 ↔ Body Pose
 2. 구도 ↔ Hand Pose
 3. Body Pose ↔ Expression
@@ -122,54 +96,21 @@ config/
 
 ---
 
-## 6. 조명 충돌
-
-**파일**: `lib/lighting-validator.ts`
-
-12개 검증 단계:
-1. Pattern + Key 충돌
-2. Key + Ratio 충돌
-3. Pattern + Ratio 충돌
-4. Special + Pattern/Key 충돌
-5. Special 간 충돌
-6. Special 개수 제한 (최대 3개)
-7. Quality 충돌
-8. ColorTemp + Mood 충돌
-9. TimeBase 충돌
-10. ColorTemp + TimeBase 충돌 (Error)
-11. ColorTemp + TimeBase 경고 (Warning)
-12. 권장 조합 추천
-
----
-
 ## UI 통합
 
-### CameraTab.tsx
-- 렌즈 드롭다운에 `getLensStatusForOption()` 사용
-- disabled 렌즈 숨김, recommend/warning/critical 아이콘 표시
-
-### LightingTab.tsx
-- 패턴 드롭다운에 `getPatternStatusForFraming()` 사용
-- disabled 패턴 숨김
-
-### StudioSubjectForm.tsx
-- 앵글 드롭다운에 `FRAMING_ANGLE_CONFLICTS` 사용
-- disabled 앵글 숨김, 구도 변경 시 자동 조정
+| 탭 | 사용 함수 | disabled 처리 |
+|---|----------|--------------|
+| **피사체** | `getAngleConflict()`, `getBodyPoseConflict()` | 그레이아웃 |
+| **패션** | `getFashionDisabled()` | 그레이아웃 |
+| **조명** | `LightingValidator.getPatternStatusForFraming()` | 숨김 |
+| **카메라** | `getLensStatusForOption()` | 숨김 |
 
 ---
 
-## 확장 가이드
+## 마이그레이션 로드맵 (선택적)
 
-### 새 충돌 규칙 추가
-
-1. **매트릭스 기반**: 해당 파일의 `*_CONFLICTS` Record에 추가
-2. **규칙 기반**: `CONFLICT_RULES` 배열에 condition 함수 추가
-
-### 새 UI 통합
-
-```typescript
-// 예: 새 드롭다운에 충돌 표시
-const status = getLensStatusForOption(framing, angle, compositionRule, lensId);
-if (status.level === 'disabled') return null;
-// 아이콘 렌더링
-```
+향후 조명/카메라 탭도 새 시스템으로 통합하려면:
+1. `conflict-rules.ts`에 규칙 추가
+2. `legacy-adapter.ts`에 조회 함수 구현
+3. UI에서 새 함수 사용
+4. 기존 validator 삭제

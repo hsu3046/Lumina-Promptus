@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useCallback } from 'react';
-import { AlertCircle, AlertTriangle, Lightbulb, CircleAlert, RotateCcw } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { AlertCircleIcon, Alert02Icon, BulbIcon, RefreshIcon, StarIcon } from '@hugeicons/core-free-icons';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -157,13 +158,13 @@ export function LightingTab() {
     // 충돌/권장 아이콘 렌더러
     const ConflictIcon = ({ status }: { status: ConflictStatus }) => {
         if (status === 'critical' || status === 'error') {
-            return <CircleAlert className="h-4 w-4 text-red-500 shrink-0" />;
+            return <HugeiconsIcon icon={AlertCircleIcon} size={16} className="text-red-500 shrink-0" />;
         }
         if (status === 'warning') {
-            return <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />;
+            return <HugeiconsIcon icon={Alert02Icon} size={16} className="text-amber-500 shrink-0" />;
         }
         if (status === 'recommended') {
-            return <Lightbulb className="h-4 w-4 text-blue-500 shrink-0" />;
+            return <HugeiconsIcon icon={StarIcon} size={16} className="text-blue-500 shrink-0" />;
         }
         return null;
     };
@@ -204,7 +205,7 @@ export function LightingTab() {
                     }}
                     className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
                 >
-                    <RotateCcw className="w-3 h-3" />
+                    <HugeiconsIcon icon={RefreshIcon} size={12} />
                     초기화
                 </button>
             </div>
@@ -244,11 +245,13 @@ export function LightingTab() {
                                         disabled={isCritical}
                                         className={isCritical ? "opacity-50" : ""}
                                     >
-                                        <div className="flex items-center gap-1">
-                                            {patternStatus.level === 'recommend' && <Lightbulb className="w-3 h-3 text-blue-500" />}
-                                            {isCritical && <CircleAlert className="w-3 h-3 text-red-500" />}
-                                            {patternStatus.level === 'warning' && <AlertTriangle className="w-3 h-3 text-amber-500" />}
+                                        <div className="flex items-center justify-between w-full gap-2">
                                             <span>{opt.label}</span>
+                                            <span className="flex items-center gap-1">
+                                                {patternStatus.level === 'recommend' && <HugeiconsIcon icon={StarIcon} size={12} className="text-blue-500" />}
+                                                {isCritical && <HugeiconsIcon icon={AlertCircleIcon} size={12} className="text-red-500" />}
+                                                {patternStatus.level === 'warning' && <HugeiconsIcon icon={Alert02Icon} size={12} className="text-amber-500" />}
+                                            </span>
                                         </div>
                                     </SelectItem>
                                 );
@@ -278,9 +281,9 @@ export function LightingTab() {
                                         disabled={isCritical}
                                         className={isCritical ? "opacity-50" : ""}
                                     >
-                                        <span className="flex items-center gap-2">
-                                            <ConflictIcon status={conflict.status} />
+                                        <span className="flex items-center justify-between w-full gap-2">
                                             <span>{opt.label}</span>
+                                            <ConflictIcon status={conflict.status} />
                                         </span>
                                     </SelectItem>
                                 );
@@ -310,9 +313,9 @@ export function LightingTab() {
                                         disabled={isCritical}
                                         className={isCritical ? "opacity-50" : ""}
                                     >
-                                        <span className="flex items-center gap-2">
-                                            <ConflictIcon status={conflict.status} />
+                                        <span className="flex items-center justify-between w-full gap-2">
                                             <span>{opt.label}</span>
+                                            <ConflictIcon status={conflict.status} />
                                         </span>
                                     </SelectItem>
                                 );
@@ -342,9 +345,9 @@ export function LightingTab() {
                                         disabled={isCritical}
                                         className={isCritical ? "opacity-50" : ""}
                                     >
-                                        <span className="flex items-center gap-2">
-                                            <ConflictIcon status={conflict.status} />
+                                        <span className="flex items-center justify-between w-full gap-2">
                                             <span>{opt.label}</span>
+                                            <ConflictIcon status={conflict.status} />
                                         </span>
                                     </SelectItem>
                                 );
@@ -374,9 +377,9 @@ export function LightingTab() {
                                         disabled={isCritical}
                                         className={isCritical ? "opacity-50" : ""}
                                     >
-                                        <span className="flex items-center gap-2">
-                                            <ConflictIcon status={conflict.status} />
+                                        <span className="flex items-center justify-between w-full gap-2">
                                             <span>{opt.label}</span>
+                                            <ConflictIcon status={conflict.status} />
                                         </span>
                                     </SelectItem>
                                 );
@@ -406,9 +409,9 @@ export function LightingTab() {
                                         disabled={isCritical}
                                         className={isCritical ? "opacity-50" : ""}
                                     >
-                                        <span className="flex items-center gap-2">
-                                            <ConflictIcon status={conflict.status} />
+                                        <span className="flex items-center justify-between w-full gap-2">
                                             <span>{opt.label}</span>
+                                            <ConflictIcon status={conflict.status} />
                                         </span>
                                     </SelectItem>
                                 );
@@ -443,8 +446,8 @@ export function LightingTab() {
                                     onCheckedChange={(checked) => handleSpecialToggle(opt.value, checked as boolean)}
                                 />
                                 <span className="text-xs flex items-center gap-1">
-                                    {isConflicting && <CircleAlert className="h-3 w-3 text-amber-500" />}
-                                    {!isValid && !isConflicting && <CircleAlert className="h-3 w-3 text-red-500" />}
+                                    {isConflicting && <HugeiconsIcon icon={AlertCircleIcon} size={12} className="text-amber-500" />}
+                                    {!isValid && !isConflicting && <HugeiconsIcon icon={AlertCircleIcon} size={12} className="text-red-500" />}
                                     {opt.label}
                                 </span>
                             </label>

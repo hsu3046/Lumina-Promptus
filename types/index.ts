@@ -65,6 +65,27 @@ export interface UserSettings {
   colorGrading: ColorGradingSettings;
   artDirection: ArtDirectionSettings;
   userInput: UserInputSettings;
+  snap?: SnapSettings; // 스냅 모드 설정 (선택)
+}
+
+// ===== Snap Mode Settings =====
+
+export interface SnapSettings {
+  // 피사체 설정 (누가/언제/어디서/누구와/무엇을/어떻게)
+  subject: string;      // 누가
+  timeOfDay: string;    // 언제
+  location: string;     // 어디서
+  companion: string;    // 누구와
+  action: string;       // 무엇을
+  manner: string;       // 어떻게
+
+  // 환경 설정
+  specificPlace: string;  // 구체적인 장소
+  weather: string;        // 날씨
+  season: string;         // 계절
+  atmosphere: string;     // 분위기/효과
+  lighting: string;       // 조명
+  crowdDensity: string;   // 군중 밀도
 }
 
 export interface CameraSettings {
@@ -282,6 +303,13 @@ export interface ShutterSpeedSpec {
   defaultValue: string;  // 기본값 "1/200"
 }
 
+export interface AspectRatioSpec {
+  landscape: string[];   // 가로 비율 ["3:2", "4:3", "16:9", "5:4"]
+  portrait: string[];    // 세로 비율 ["2:3", "3:4", "9:16", "4:5"]
+  square: string[];      // 정방형 ["1:1"]
+  defaultValue: string;  // 기본값 "3:2"
+}
+
 // ===== Mount System =====
 
 export type Mount =
@@ -314,6 +342,7 @@ export interface CameraBody {
   promptKeywords: string;
   isoSpec: ISOSpec;
   shutterSpeedSpec: ShutterSpeedSpec;
+  aspectRatioSpec?: AspectRatioSpec; // 카메라별 비율 설정 (없으면 기본값 사용)
 }
 
 export interface Lens {
@@ -326,11 +355,12 @@ export interface Lens {
   bokeh: string;
   vignetting: string;
   category: 'ultra_wide' | 'wide' | 'standard' | 'medium_telephoto' | 'telephoto' | 'macro';
-  characteristic_studio: string;
-  characteristic_landscape: string;
-  characteristic_architecture: string;
-  characteristic_product: string;
-  characteristic_street: string;
+  characteristic: string; // 기본 렌더링 특성 (필수)
+  characteristic_studio?: string; // 모드별 오버라이드 (선택)
+  characteristic_landscape?: string;
+  characteristic_architecture?: string;
+  characteristic_product?: string;
+  characteristic_street?: string;
   apertureSpec: ApertureSpec;
 }
 

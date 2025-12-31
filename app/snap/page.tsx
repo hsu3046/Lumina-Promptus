@@ -1,18 +1,16 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { SparklesIcon, ArrowDown01Icon, UserIcon, Sun01Icon, Camera01Icon } from '@hugeicons/core-free-icons';
+import { SparklesIcon, ArrowDown01Icon } from '@hugeicons/core-free-icons';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useSettingsStore } from '@/store/useSettingsStore';
 import { PromptPreview } from '@/components/settings';
-import { CameraTab, LightingTab, SubjectTab } from '@/components/settings/tabs';
+import { SnapTab } from '@/components/settings/tabs/snap/SnapTab';
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { Footer } from '@/components/ui/footer';
 import { useRouter } from 'next/navigation';
@@ -24,17 +22,11 @@ const MODES = [
     { value: 'snap', label: '스냅', href: '/snap', disabled: false },
 ] as const;
 
-export default function StudioPage() {
-    const { settings, updateCamera, updateLighting, updateArtDirection } = useSettingsStore();
+export default function SnapPage() {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
 
-    // 페이지 마운트 시 lensCharacteristicType을 'studio'로 설정
-    useEffect(() => {
-        updateArtDirection({ lensCharacteristicType: 'studio' });
-    }, [updateArtDirection]);
-
-    const currentModeInfo = MODES.find(m => m.value === 'studio')!;
+    const currentModeInfo = MODES.find(m => m.value === 'snap')!;
 
     // 모드 변경 핸들러
     const handleModeChange = (href: string, disabled: boolean) => {
@@ -75,7 +67,7 @@ export default function StudioPage() {
                                         key={mode.value}
                                         onClick={() => handleModeChange(mode.href, mode.disabled)}
                                         disabled={mode.disabled}
-                                        className={`${mode.value === 'studio' ? 'bg-amber-500/20 text-amber-400 font-semibold' : ''} ${mode.disabled ? 'opacity-50' : 'cursor-pointer'}`}
+                                        className={`${mode.value === 'snap' ? 'bg-amber-500/20 text-amber-400 font-semibold' : ''} ${mode.disabled ? 'opacity-50' : 'cursor-pointer'}`}
                                     >
                                         <span>{mode.label}</span>
                                         {mode.disabled && <span className="text-[10px] text-zinc-500 ml-auto">준비중</span>}
@@ -95,35 +87,7 @@ export default function StudioPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] lg:items-start gap-8">
                     {/* 왼쪽: 설정 패널 */}
                     <div ref={scrollContainerRef} className="space-y-6">
-                        {/* 스튜디오 모드 탭 */}
-                        <Tabs defaultValue="style" className="w-full">
-                            <TabsList className="w-full border-b border-zinc-800 p-0 h-auto">
-                                <TabsTrigger value="style" className="lp-tab-trigger">
-                                    <HugeiconsIcon icon={UserIcon} size={16} />
-                                    피사체 설정
-                                </TabsTrigger>
-                                <TabsTrigger value="lighting" className="lp-tab-trigger">
-                                    <HugeiconsIcon icon={Sun01Icon} size={16} />
-                                    라이팅 설정
-                                </TabsTrigger>
-                                <TabsTrigger value="camera" className="lp-tab-trigger">
-                                    <HugeiconsIcon icon={Camera01Icon} size={16} />
-                                    카메라 설정
-                                </TabsTrigger>
-                            </TabsList>
-
-                            <TabsContent value="style" className="mt-6">
-                                <SubjectTab />
-                            </TabsContent>
-
-                            <TabsContent value="lighting" className="mt-6">
-                                <LightingTab />
-                            </TabsContent>
-
-                            <TabsContent value="camera" className="mt-6">
-                                <CameraTab />
-                            </TabsContent>
-                        </Tabs>
+                        <SnapTab />
                     </div>
 
                     {/* 오른쪽: 프롬프트 (PC에서는 사이드, 모바일에서는 아래) */}

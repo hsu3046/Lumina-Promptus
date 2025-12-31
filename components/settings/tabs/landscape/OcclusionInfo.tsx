@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Layers, Eye, EyeOff } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Layers01Icon, ViewIcon, ViewOffSlashIcon } from '@hugeicons/core-free-icons';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { analyzeOcclusion } from '@/lib/landscape/occlusion-analyzer';
 import { LANDSCAPE_LENS_SPECS } from '@/config/mappings/landscape-environment';
@@ -35,7 +36,7 @@ export function OcclusionInfo() {
         return (
             <div className="bg-zinc-900/50 rounded-lg p-3">
                 <div className="flex items-center gap-2 text-zinc-500">
-                    <Layers className="w-4 h-4" />
+                    <HugeiconsIcon icon={Layers01Icon} size={16} />
                     <span className="text-xs">랜드마크를 추가하면 공간 분석이 표시됩니다</span>
                 </div>
             </div>
@@ -51,18 +52,18 @@ export function OcclusionInfo() {
     };
 
     // 차폐 상태 아이콘
-    const OcclusionIcon = analysis.occlusionRatio < 0.3 ? Eye : EyeOff;
+    const OcclusionIconComponent = analysis.occlusionRatio < 0.3 ? ViewIcon : ViewOffSlashIcon;
 
     return (
         <div className="bg-zinc-900/50 rounded-lg p-3 space-y-3">
             {/* 헤더 */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-amber-400">
-                    <Layers className="w-4 h-4" />
+                    <HugeiconsIcon icon={Layers01Icon} size={16} />
                     <span className="text-xs font-medium">공간 분석</span>
                 </div>
                 <div className={`flex items-center gap-1 ${getOcclusionColor()}`}>
-                    <OcclusionIcon className="w-3 h-3" />
+                    <HugeiconsIcon icon={OcclusionIconComponent} size={12} />
                     <span className="text-[10px]">
                         시야 차폐 {(analysis.occlusionRatio * 100).toFixed(0)}%
                     </span>

@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef, useEffect } from 'react';
-import { Sparkles, ChevronDown } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { SparklesIcon, ArrowDown01Icon } from '@hugeicons/core-free-icons';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -19,7 +20,7 @@ import { useSettingsStore } from '@/store/useSettingsStore';
 const MODES = [
     { value: 'studio', label: '스튜디오', href: '/studio', disabled: false },
     { value: 'landscape', label: '풍경', href: '/landscape', disabled: false },
-    { value: 'snap', label: '스냅', href: '/snap', disabled: true },
+    { value: 'snap', label: '스냅', href: '/snap', disabled: false },
 ] as const;
 
 export default function LandscapePage() {
@@ -52,7 +53,7 @@ export default function LandscapePage() {
                             <DropdownMenuTrigger asChild>
                                 <button className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
                                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                                        <Sparkles className="w-5 h-5 text-white" />
+                                        <HugeiconsIcon icon={SparklesIcon} size={20} className="text-white" />
                                     </div>
                                     <div className="text-left">
                                         <div className="flex items-center gap-1">
@@ -62,7 +63,7 @@ export default function LandscapePage() {
                                         </div>
                                         <p className="text-xs font-semibold text-amber-400 flex items-center gap-1">
                                             {currentModeInfo.label} 모드
-                                            <ChevronDown className="w-3 h-3 text-amber-400" />
+                                            <HugeiconsIcon icon={ArrowDown01Icon} size={12} className="text-amber-400" />
                                         </p>
                                     </div>
                                 </button>
@@ -90,14 +91,14 @@ export default function LandscapePage() {
 
             {/* 메인 콘텐츠 - 반응형 2열 레이아웃 */}
             <main className="max-w-7xl mx-auto px-4 py-6">
-                <div className="grid grid-cols-1 xl:grid-cols-[1fr_420px] xl:items-start gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] lg:items-start gap-8">
                     {/* 왼쪽: 설정 패널 */}
                     <div ref={scrollContainerRef} className="space-y-6">
                         <LandscapeTab />
                     </div>
 
                     {/* 오른쪽: 프롬프트 (PC에서는 사이드, 모바일에서는 아래) */}
-                    <div className="xl:sticky xl:top-24 xl:self-start">
+                    <div className="lg:sticky lg:top-24 lg:self-start">
                         <PromptPreview />
                     </div>
                 </div>

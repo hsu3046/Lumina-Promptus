@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Lightbulb, AlertTriangle, AlertCircle } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { StarIcon, Alert02Icon, AlertCircleIcon, BulbIcon } from '@hugeicons/core-free-icons';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
@@ -19,7 +20,7 @@ import {
 } from '@/components/ui/select';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useCameraSettings } from '@/components/hooks/useCameraSettings';
-import { CAMERA_BODIES_BY_BRAND, getCameraById } from '@/config/mappings/cameras';
+import { CAMERA_BODIES_BY_BRAND, getCameraById, DEFAULT_ASPECT_RATIO_SPEC } from '@/config/mappings/cameras';
 import { getLensesByMount, LENS_CATEGORY_LABELS, getLensById } from '@/config/mappings/lenses';
 import { getLensStatusForOption, type LensConflictLevel } from '@/lib/lens-composition-validator';
 import type { Lens } from '@/types';
@@ -88,15 +89,24 @@ export function CameraTab() {
         return null;
     }, [compatibleLensesByCategory, framing, angle]);
 
-    // 카메라 변경 시 호환 렌즈 자동 선택
+    // 카메라 변경 시 호환 렌즈 자동 선택 + 비율 기본값 업데이트
     const handleCameraChange = (cameraId: string) => {
-        updateCamera({ bodyId: cameraId });
         const camera = getCameraById(cameraId);
         if (camera) {
+            // 비율 기본값 가져오기
+            const spec = camera.aspectRatioSpec ?? DEFAULT_ASPECT_RATIO_SPEC;
+            const defaultAspectRatio = spec.defaultValue;
+
+            // 카메라 ID와 비율을 함께 업데이트
+            updateCamera({ bodyId: cameraId, aspectRatio: defaultAspectRatio });
+
+            // 호환 렌즈 자동 선택
             const lenses = getLensesByMount(camera.mount);
             if (lenses.length > 0) {
                 handleLensChange(lenses[0].id);
             }
+        } else {
+            updateCamera({ bodyId: cameraId });
         }
     };
 
@@ -171,11 +181,27 @@ export function CameraTab() {
                             {sortedBrands.map((brand) => (
                                 <SelectGroup key={brand}>
                                     <SelectLabel className="text-amber-400 font-medium">{brand}</SelectLabel>
-                                    {CAMERA_BODIES_BY_BRAND[brand].map((camera) => (
-                                        <SelectItem key={camera.id} value={camera.id}>
-                                            {camera.model}
-                                        </SelectItem>
-                                    ))}
+                                    {CAMERA_BODIES_BY_BRAND[brand].map((camera) => {
+                                        const isFilm = camera.id === 'leica_m3_film' || camera.id === 'hasselblad_500cm_film' || camera.id === 'pentax_67_film';
+                                        const isMediumFormat = camera.id === 'hasselblad_500cm_film' || camera.id === 'pentax_67_film';
+                                        return (
+                                            <SelectItem key={camera.id} value={camera.id}>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span>{camera.model}</span>
+                                                    {isFilm && (
+                                                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-600 text-amber-500">
+                                                            필름
+                                                        </Badge>
+                                                    )}
+                                                    {isMediumFormat && (
+                                                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-purple-600 text-purple-400">
+                                                            중형
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </SelectItem>
+                                        );
+                                    })}
                                 </SelectGroup>
                             ))}
                         </SelectContent>
@@ -210,17 +236,121 @@ export function CameraTab() {
                                                 disabled={isCritical}
                                                 className={isCritical ? "opacity-50" : ""}
                                             >
-                                                <div className="flex items-center gap-1">
-                                                    {lens.id === firstRecommendedLensId && <Lightbulb className="w-3 h-3 text-blue-500" />}
-                                                    {isCritical && <AlertCircle className="w-3 h-3 text-red-500" />}
-                                                    {status.level === 'warning' && <AlertTriangle className="w-3 h-3 text-amber-400" />}
+                                                <div className="flex items-center justify-between w-full gap-2">
                                                     <span>{lens.model}</span>
+                                                    <span className="flex items-center gap-1">
+                                                        {lens.id === firstRecommendedLensId && <HugeiconsIcon icon={StarIcon} size={12} className="text-blue-500" />}
+                                                        {isCritical && <HugeiconsIcon icon={AlertCircleIcon} size={12} className="text-red-500" />}
+                                                        {status.level === 'warning' && <HugeiconsIcon icon={Alert02Icon} size={12} className="text-amber-400" />}
+                                                    </span>
                                                 </div>
                                             </SelectItem>
                                         );
                                     })}
                                 </SelectGroup>
                             ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+
+            {/* 비율 / 스타일 - 2열 배치 */}
+            <div className="grid grid-cols-2 gap-4">
+                {/* 비율 */}
+                {(() => {
+                    const camera = getCameraById(settings.camera.bodyId);
+                    const spec = camera?.aspectRatioSpec ?? DEFAULT_ASPECT_RATIO_SPEC;
+                    const hasLandscape = spec.landscape.length > 0;
+                    const hasPortrait = spec.portrait.length > 0;
+                    const hasSquare = spec.square.length > 0;
+
+                    // 현재 선택된 비율이 변경된 spec에 없으면 기본값으로 변경
+                    const allRatios = [...spec.landscape, ...spec.portrait, ...spec.square];
+                    const currentRatio = settings.camera.aspectRatio;
+
+                    return (
+                        <div className="space-y-2">
+                            <Label>비율</Label>
+                            <Select
+                                value={allRatios.includes(currentRatio) ? currentRatio : spec.defaultValue}
+                                onValueChange={(value) => updateCamera({ aspectRatio: value })}
+                            >
+                                <SelectTrigger className="w-full bg-zinc-950 border-zinc-800">
+                                    <SelectValue placeholder="비율 선택" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-zinc-900 border-zinc-800">
+                                    {hasLandscape && (
+                                        <SelectGroup>
+                                            <SelectLabel className="text-amber-400 font-medium">가로</SelectLabel>
+                                            {spec.landscape.map((ratio) => {
+                                                // 비율에 맞는 아이콘 크기 계산 (기준 높이 12px)
+                                                const [w, h] = ratio.split(':').map(Number);
+                                                const baseHeight = 12;
+                                                const width = Math.round((w / h) * baseHeight);
+                                                return (
+                                                    <SelectItem key={ratio} value={ratio}>
+                                                        <span className="flex items-center gap-2">
+                                                            <span
+                                                                className="border border-zinc-500 rounded-[2px] shrink-0"
+                                                                style={{ width: `${width}px`, height: `${baseHeight}px` }}
+                                                            />
+                                                            <span>{ratio}</span>
+                                                        </span>
+                                                    </SelectItem>
+                                                );
+                                            })}
+                                        </SelectGroup>
+                                    )}
+                                    {hasPortrait && (
+                                        <SelectGroup>
+                                            <SelectLabel className="text-amber-400 font-medium">세로</SelectLabel>
+                                            {spec.portrait.map((ratio) => {
+                                                // 세로 비율: 기준 너비 10px
+                                                const [w, h] = ratio.split(':').map(Number);
+                                                const baseWidth = 10;
+                                                const height = Math.round((h / w) * baseWidth);
+                                                return (
+                                                    <SelectItem key={ratio} value={ratio}>
+                                                        <span className="flex items-center gap-2">
+                                                            <span
+                                                                className="border border-zinc-500 rounded-[2px] shrink-0"
+                                                                style={{ width: `${baseWidth}px`, height: `${height}px` }}
+                                                            />
+                                                            <span>{ratio}</span>
+                                                        </span>
+                                                    </SelectItem>
+                                                );
+                                            })}
+                                        </SelectGroup>
+                                    )}
+                                    {hasSquare && (
+                                        <SelectGroup>
+                                            <SelectLabel className="text-amber-400 font-medium">정방형</SelectLabel>
+                                            {spec.square.map((ratio) => (
+                                                <SelectItem key={ratio} value={ratio}>
+                                                    <span className="flex items-center gap-2">
+                                                        <span className="w-3.5 h-3.5 border border-zinc-500 rounded-[2px] shrink-0" />
+                                                        <span>{ratio}</span>
+                                                    </span>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    );
+                })()}
+
+                {/* 스타일 (차후 구현) */}
+                <div className="space-y-2">
+                    <Label>스타일</Label>
+                    <Select disabled>
+                        <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 opacity-50">
+                            <SelectValue placeholder="차후 구현" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-zinc-900 border-zinc-800">
+                            <SelectItem value="none">선택 안함</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -247,8 +377,8 @@ export function CameraTab() {
                             const showIcon = !lightingEnabled && !settings.camera.apertureAuto && style.icon !== 'none';
                             return (
                                 <>
-                                    {showIcon && style.icon === 'critical' && <AlertCircle className={`w-4 h-4 ${style.color}`} />}
-                                    {showIcon && style.icon === 'warning' && <AlertTriangle className={`w-4 h-4 ${style.color}`} />}
+                                    {showIcon && style.icon === 'critical' && <HugeiconsIcon icon={AlertCircleIcon} size={16} className={style.color} />}
+                                    {showIcon && style.icon === 'warning' && <HugeiconsIcon icon={Alert02Icon} size={16} className={style.color} />}
                                     <span className={`text-sm font-mono ${!settings.camera.apertureAuto && style.icon !== 'none' ? style.color : 'text-amber-400'}`}>
                                         {settings.camera.aperture}
                                     </span>
@@ -279,7 +409,7 @@ export function CameraTab() {
                         <Label>셔터 스피드</Label>
                         {lightingEnabled ? (
                             <Badge className="bg-amber-600 text-white">
-                                <Lightbulb className="w-3 h-3" /> 조명 촬영
+                                <HugeiconsIcon icon={BulbIcon} size={12} /> 조명 촬영
                             </Badge>
                         ) : (
                             <div className="flex items-center gap-1">
@@ -297,8 +427,8 @@ export function CameraTab() {
                             const showIcon = !lightingEnabled && !settings.camera.shutterSpeedAuto && style.icon !== 'none';
                             return (
                                 <>
-                                    {showIcon && style.icon === 'critical' && <AlertCircle className={`w-4 h-4 ${style.color}`} />}
-                                    {showIcon && style.icon === 'warning' && <AlertTriangle className={`w-4 h-4 ${style.color}`} />}
+                                    {showIcon && style.icon === 'critical' && <HugeiconsIcon icon={AlertCircleIcon} size={16} className={style.color} />}
+                                    {showIcon && style.icon === 'warning' && <HugeiconsIcon icon={Alert02Icon} size={16} className={style.color} />}
                                     <span className={`text-sm font-mono ${lightingEnabled ? 'text-zinc-500' : (showIcon ? style.color : 'text-amber-400')}`}>
                                         {lightingEnabled ? '1/125' : settings.camera.shutterSpeed}
                                     </span>
@@ -329,7 +459,7 @@ export function CameraTab() {
                         <Label>ISO</Label>
                         {lightingEnabled ? (
                             <Badge className="bg-amber-600 text-white">
-                                <Lightbulb className="w-3 h-3" /> 조명 촬영
+                                <HugeiconsIcon icon={BulbIcon} size={12} /> 조명 촬영
                             </Badge>
                         ) : (
                             <div className="flex items-center gap-1">
@@ -347,8 +477,8 @@ export function CameraTab() {
                             const showIcon = !lightingEnabled && !settings.camera.isoAuto && style.icon !== 'none';
                             return (
                                 <>
-                                    {showIcon && style.icon === 'critical' && <AlertCircle className={`w-4 h-4 ${style.color}`} />}
-                                    {showIcon && style.icon === 'warning' && <AlertTriangle className={`w-4 h-4 ${style.color}`} />}
+                                    {showIcon && style.icon === 'critical' && <HugeiconsIcon icon={AlertCircleIcon} size={16} className={style.color} />}
+                                    {showIcon && style.icon === 'warning' && <HugeiconsIcon icon={Alert02Icon} size={16} className={style.color} />}
                                     <span className={`text-sm font-mono ${lightingEnabled ? 'text-zinc-500' : (showIcon ? style.color : 'text-amber-400')}`}>
                                         {lightingEnabled ? '100' : settings.camera.iso}
                                     </span>
@@ -379,7 +509,7 @@ export function CameraTab() {
                         <Label>노출 보정</Label>
                         {lightingEnabled && (
                             <Badge className="bg-amber-600 text-white">
-                                <Lightbulb className="w-3 h-3" /> 조명 촬영
+                                <HugeiconsIcon icon={BulbIcon} size={12} /> 조명 촬영
                             </Badge>
                         )}
                     </div>
@@ -410,7 +540,7 @@ export function CameraTab() {
                         <Label>색온도</Label>
                         {lightingEnabled && (
                             <Badge className="bg-amber-600 text-white">
-                                <Lightbulb className="w-3 h-3" /> 조명 촬영
+                                <HugeiconsIcon icon={BulbIcon} size={12} /> 조명 촬영
                             </Badge>
                         )}
                     </div>

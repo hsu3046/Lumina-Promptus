@@ -110,7 +110,7 @@ gh repo create lumina-promptus --private --source=. --remote=origin --push
 - **Styling**: Tailwind CSS
 - **UI Components**: shadcn/ui
 - **State Management**: Zustand
-- **Icons**: Lucide React
+- **Icons**: Huge Icons (@hugeicons/react)
 
 ---
 

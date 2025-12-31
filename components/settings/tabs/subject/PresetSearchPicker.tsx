@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { Check, Search, X } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Tick01Icon, Search01Icon, Cancel01Icon } from '@hugeicons/core-free-icons';
 import { cn } from '@/lib/utils';
 
 interface PresetOption {
@@ -82,7 +83,7 @@ export function PresetSearchPicker<T extends PresetOption>({
             <span className="text-[10px] text-zinc-500 block mb-1">{label}</span>
             <div className="relative">
                 <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-md h-8 px-3 focus-within:border-zinc-700">
-                    <Search className="h-3 w-3 text-zinc-500 shrink-0" />
+                    <HugeiconsIcon icon={Search01Icon} size={12} className="text-zinc-500 shrink-0" />
                     <input
                         ref={inputRef}
                         type="text"
@@ -122,7 +123,7 @@ export function PresetSearchPicker<T extends PresetOption>({
                     />
                     {isSearching && search && (
                         <button onClick={handleClear} className="text-zinc-500 hover:text-zinc-300">
-                            <X className="h-3 w-3" />
+                            <HugeiconsIcon icon={Cancel01Icon} size={12} />
                         </button>
                     )}
                 </div>
@@ -141,9 +142,11 @@ export function PresetSearchPicker<T extends PresetOption>({
                                 onClick={() => handleSelect(option)}
                                 onMouseEnter={() => setHighlightedIndex(index)}
                             >
-                                <Check
+                                <HugeiconsIcon
+                                    icon={Tick01Icon}
+                                    size={12}
                                     className={cn(
-                                        "h-3 w-3 shrink-0",
+                                        "shrink-0",
                                         value === option.id ? "opacity-100 text-amber-500" : "opacity-0"
                                     )}
                                 />

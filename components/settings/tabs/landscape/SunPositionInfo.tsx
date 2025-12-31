@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Sun, Moon, Sunrise, Sunset } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Sun01Icon, Moon01Icon, SunriseIcon, SunsetIcon } from '@hugeicons/core-free-icons';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import {
     calculateSunPosition,
@@ -38,14 +39,14 @@ export function SunPositionInfo() {
     const getTimeIcon = () => {
         switch (sunData.timeLabel) {
             case 'Sunrise':
-                return <Sunrise className="w-4 h-4 text-orange-400" />;
+                return <HugeiconsIcon icon={SunriseIcon} size={16} className="text-orange-400" />;
             case 'Sunset':
-                return <Sunset className="w-4 h-4 text-orange-500" />;
+                return <HugeiconsIcon icon={SunsetIcon} size={16} className="text-orange-500" />;
             case 'Night':
             case 'Blue Hour':
-                return <Moon className="w-4 h-4 text-blue-400" />;
+                return <HugeiconsIcon icon={Moon01Icon} size={16} className="text-blue-400" />;
             default:
-                return <Sun className="w-4 h-4 text-yellow-400" />;
+                return <HugeiconsIcon icon={Sun01Icon} size={16} className="text-yellow-400" />;
         }
     };
 

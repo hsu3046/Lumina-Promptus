@@ -5,6 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { ComboboxField, GroupedComboboxField, type ConflictLevel as ComboboxConflictLevel } from '@/components/ui/combobox-field';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { getFieldConflictLevel, type PortraitConfig } from '@/lib/portrait-conflict-validator';
+import { getBodyPoseConflict, getHandPoseConflict, getFashionDisabled } from '@/lib/rules/legacy-adapter';
 import { PresetSearchPicker } from './PresetSearchPicker';
 import {
     APPEARANCE_PRESETS,
@@ -24,6 +25,12 @@ import {
     FOOTWEAR_GROUPS,
     ACCESSORY1_GROUPS,
     ACCESSORY2_GROUPS,
+    TOP_WEAR_OPTIONS,
+    BOTTOM_WEAR_OPTIONS,
+    FOOTWEAR_OPTIONS,
+    ACCESSORY1_OPTIONS,
+    ACCESSORY2_OPTIONS,
+    type GenderTag,
 } from '@/config/mappings/fashion-options';
 import {
     checkFashionConflicts,
@@ -169,19 +176,52 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
         return fashionConflicts.find(c => c.field === field);
     };
 
-    // 구도에 따른 패션 아이템 disabled 상태
-    // 클로즈업/웨이스트샷: 하의, 신발 disabled
-    // 클로즈업 ~ 니샷: 신발 disabled
-    const isBottomDisabled = ['extreme-close-up', 'close-up', 'bust-shot', 'waist-shot'].includes(framing);
-    const isFootwearDisabled = ['extreme-close-up', 'close-up', 'bust-shot', 'waist-shot', 'half-shot', 'three-quarter-shot'].includes(framing);
+    // 구도에 따른 패션 아이템 disabled 상태 (새 conflict 시스템 사용)
+    const fashionDisabled = getFashionDisabled(framing);
+    const isBottomDisabled = fashionDisabled.bottomWear;
+    const isFootwearDisabled = fashionDisabled.footwear;
 
     // autoMode: true = 검색창만, false = 모든 드롭다운 표시
     const showDetail = !subject.autoMode;
 
-    // 각 필드별 현재 충돌 레벨 계산 (ComboboxField용으로 변환)
+    // 각 필드별 현재 충돌 레벨 계산 (새 conflict 시스템 사용)
     const getConflict = (field: keyof PortraitConfig) => (value: string): ComboboxConflictLevel => {
+        // 바디 포즈와 핸드 포즈는 새 시스템 사용
+        if (field === 'bodyPose') {
+            return getBodyPoseConflict(framing, value) as ComboboxConflictLevel;
+        }
+        if (field === 'handPose') {
+            return getHandPoseConflict(framing, value) as ComboboxConflictLevel;
+        }
+        // 나머지는 레거시 시스템 (표정, 시선 등)
         const result = getFieldConflictLevel(currentConfig, field, value);
         return result.level as ComboboxConflictLevel;
+    };
+
+    // 성별 변경 시 헤어스타일 및 패션 자동 선택
+    const handleGenderChange = (newGender: 'male' | 'female' | 'androgynous') => {
+        // 성별별 헤어스타일 기본값
+        const hairStyleDefaults: Record<string, string> = {
+            male: 'short-straight',
+            female: 'long-straight',
+            androgynous: 'medium-straight',
+        };
+
+        // 구도에 따른 하의/신발 visibility
+        const bottomDisabled = ['extreme-close-up', 'close-up', 'bust-shot', 'waist-shot'].includes(framing);
+        const footwearDisabled = ['extreme-close-up', 'close-up', 'bust-shot', 'waist-shot', 'half-shot', 'three-quarter-shot'].includes(framing);
+
+        onUpdate({
+            gender: newGender,
+            hairStyle: hairStyleDefaults[newGender],
+            // 패션은 성별에 관계없이 기본 캐주얼
+            topWear: 'white-tshirt',
+            bottomWear: bottomDisabled ? '' : 'blue-jeans',
+            footwear: footwearDisabled ? '' : 'white-sneakers',
+            // 악세서리는 항상 빈값
+            accessory: '',
+            accessory2: '',
+        });
     };
 
     // 현재 선택된 프리셋 ID 계산
@@ -231,7 +271,7 @@ export function PersonForm({ index, subject, onUpdate }: PersonFormProps) {
                     label="성별"
                     options={GENDER_OPTIONS}
                     value={subject.gender}
-                    onSelect={(v) => onUpdate({ gender: v as 'male' | 'female' })}
+                    onSelect={(v) => handleGenderChange(v as 'male' | 'female' | 'androgynous')}
                 />
                 <ComboboxField
                     label="나이"

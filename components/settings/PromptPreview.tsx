@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Copy01Icon, CheckmarkCircle01Icon, Share05Icon } from '@hugeicons/core-free-icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -13,6 +15,7 @@ import { NanoBananaProExporter } from '@/lib/exporters/NanoBananaProExporter';
 import { ChatGPTExporter } from '@/lib/exporters/ChatGPTExporter';
 import { MidjourneyExporter } from '@/lib/exporters/MidjourneyExporter';
 import { LightingValidator } from '@/lib/lighting-validator';
+import { launchPrompt, type LauncherTarget } from '@/lib/prompt-launchers';
 import { buildLandscapePromptConfig, generateLandscapePrompt, generateSimpleLandscapePrompt } from '@/lib/landscape/prompt-generator';
 import type { LightingConfig, LightingPattern, LightingKey, LightingRatio, LightQuality, ColorTemperature, LightingMood, SpecialLighting } from '@/types/lighting.types';
 
@@ -27,9 +30,18 @@ const AI_TARGET_OPTIONS: { value: AITarget; label: string; desc: string }[] = [
 export function PromptPreview() {
     const { settings } = useSettingsStore();
     const [copied, setCopied] = useState(false);
+    const [launching, setLaunching] = useState(false);
     const [aiTarget, setAiTarget] = useState<AITarget>('nanobanana');
-    const [generatedPrompt, setGeneratedPrompt] = useState<string>('');
+    const [showQR, setShowQR] = useState(false);
+
+    // 모드별 프롬프트 분리 저장
+    const [studioPrompt, setStudioPrompt] = useState<string>('');
+    const [landscapePrompt, setLandscapePrompt] = useState<string>('');
     const [hasConflict, setHasConflict] = useState(false);
+
+    // 현재 모드
+    const currentMode = settings.artDirection.lensCharacteristicType;
+    const generatedPrompt = currentMode === 'landscape' ? landscapePrompt : studioPrompt;
 
     // 실시간 프롬프트 생성 - settings 또는 aiTarget 변경 시 자동 실행
     useEffect(() => {
@@ -38,6 +50,13 @@ export function PromptPreview() {
                 // 풍경 모드인 경우 별도 처리
                 if (settings.artDirection.lensCharacteristicType === 'landscape') {
                     const landscape = settings.landscape;
+
+                    // 장소가 선택되지 않았으면 프롬프트 비움
+                    if (!landscape.location.name) {
+                        setLandscapePrompt('');
+                        setHasConflict(false);
+                        return;
+                    }
 
                     // 프롬프트 설정 빌드
                     const config = buildLandscapePromptConfig(landscape);
@@ -53,7 +72,7 @@ export function PromptPreview() {
                     }
 
                     setHasConflict(false);
-                    setGeneratedPrompt(result);
+                    setLandscapePrompt(result);
                     return;
                 }
 
@@ -111,14 +130,15 @@ export function PromptPreview() {
                     }
                 }
 
-                setGeneratedPrompt(result);
+                setStudioPrompt(result);
             } catch (error) {
                 console.error('Prompt generation failed:', error);
             }
         };
 
         generatePrompt();
-    }, [settings, aiTarget]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [settings, aiTarget, settings.artDirection.lensCharacteristicType]);
 
     const handleCopy = async () => {
         if (!generatedPrompt) return;
@@ -127,31 +147,58 @@ export function PromptPreview() {
         setTimeout(() => setCopied(false), 2000);
     };
 
+    const handleLaunch = async () => {
+        if (!generatedPrompt || launching) return;
+        setLaunching(true);
+        try {
+            await launchPrompt(aiTarget as LauncherTarget, generatedPrompt);
+        } catch (error) {
+            console.error('Launch failed:', error);
+        } finally {
+            setLaunching(false);
+        }
+    };
+
     return (
         <div>
             <Card className="bg-zinc-900/50 border-zinc-800/50 py-0 gap-0 overflow-hidden">
                 {/* 프롬프트 타이틀 */}
-                <div className="bg-amber-500 px-4 py-2 flex items-center justify-center relative">
-                    <h2 className="text-white text-sm font-semibold text-center">프롬프트</h2>
+                <div className="bg-amber-500 px-4 py-2 flex items-center justify-between">
+                    {/* 왼쪽: 열기 버튼 */}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleLaunch}
+                        className="h-6 gap-1 text-white hover:bg-amber-600 text-xs px-2"
+                        disabled={!generatedPrompt || launching}
+                    >
+                        <HugeiconsIcon icon={Share05Icon} size={10} />
+                        {launching ? '여는 중...' : '열기'}
+                    </Button>
+
+                    {/* 중앙: 타이틀 */}
+                    <h2 className="text-white text-sm font-semibold">프롬프트</h2>
+
+                    {/* 오른쪽: 복사 버튼 */}
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={handleCopy}
-                        className="h-6 gap-1 text-white hover:bg-amber-600 absolute right-2 text-xs px-2"
+                        className="h-6 gap-1 text-white hover:bg-amber-600 text-xs px-2"
                         disabled={!generatedPrompt}
                     >
-                        {copied ? <Check className="w-2.5 h-2.5" /> : <Copy className="w-2.5 h-2.5" />}
+                        {copied ? <HugeiconsIcon icon={CheckmarkCircle01Icon} size={10} /> : <HugeiconsIcon icon={Copy01Icon} size={10} />}
                         {copied ? '복사됨' : '복사'}
                     </Button>
                 </div>
 
                 <CardContent className="pt-4 space-y-3">
-                    {/* AI 타겟 선택 Radio Group (항상 표시) */}
-                    <div className="space-y-2">
+                    {/* AI 타겟 선택 Radio Group */}
+                    <div className="flex items-center justify-center gap-4 flex-wrap">
                         <RadioGroup
                             value={aiTarget}
                             onValueChange={(value) => setAiTarget(value as AITarget)}
-                            className="flex justify-center gap-6"
+                            className="flex gap-4"
                         >
                             {AI_TARGET_OPTIONS.map((option) => (
                                 <div key={option.value} className="flex items-center gap-2">
@@ -164,14 +211,43 @@ export function PromptPreview() {
                         </RadioGroup>
                     </div>
 
-                    {/* 프롬프트 전체 표시 (접기 기능 제거) */}
+                    {/* 프롬프트 또는 QR 코드 표시 */}
                     <div className="space-y-2">
-                        <span className="text-xs text-zinc-500">{generatedPrompt.length}자</span>
-                        <ScrollArea className="h-[350px] rounded-lg border border-zinc-800 bg-zinc-950">
-                            <div className="p-4 text-sm text-zinc-300 font-mono leading-relaxed whitespace-pre-wrap">
-                                {generatedPrompt || <span className="text-zinc-600">설정을 변경하면 프롬프트가 자동으로 생성됩니다...</span>}
+                        {/* QR/텍스트 토글 버튼 (왼쪽) + 글자수 (오른쪽) */}
+                        <div className="flex items-center justify-between">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowQR(!showQR)}
+                                className="h-6 text-xs px-2 text-zinc-400 hover:text-zinc-200 border-zinc-700"
+                            >
+                                {showQR ? '텍스트 보기' : 'QR코드 보기'}
+                            </Button>
+                            <span className="text-xs text-zinc-500">{generatedPrompt.length}자</span>
+                        </div>
+                        {showQR ? (
+                            /* QR 코드 표시 */
+                            <div className="h-[350px] rounded-lg border border-zinc-800 bg-zinc-950 flex items-center justify-center">
+                                {generatedPrompt ? (
+                                    <div className="bg-white p-4 rounded-lg">
+                                        <QRCodeSVG
+                                            value={generatedPrompt}
+                                            size={280}
+                                            level="M"
+                                        />
+                                    </div>
+                                ) : (
+                                    <span className="text-zinc-600">프롬프트가 없습니다</span>
+                                )}
                             </div>
-                        </ScrollArea>
+                        ) : (
+                            /* 프롬프트 텍스트 표시 */
+                            <ScrollArea className="h-[350px] rounded-lg border border-zinc-800 bg-zinc-950">
+                                <div className="p-4 text-sm text-zinc-300 font-mono leading-relaxed whitespace-pre-wrap">
+                                    {generatedPrompt || <span className="text-zinc-600">설정을 변경하면 프롬프트가 자동으로 생성됩니다...</span>}
+                                </div>
+                            </ScrollArea>
+                        )}
                     </div>
 
                     {/* 충돌 경고 */}

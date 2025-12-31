@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { Mountain, Loader2, Trees, Waves, Landmark, Palette, Church, Camera, Building, MapPin } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { MountainIcon, Loading02Icon, Tree01Icon, WaveIcon, Building03Icon, ColorsIcon, ChurchIcon, Camera01Icon, Building01Icon, Location01Icon } from '@hugeicons/core-free-icons';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { SectionHeader } from '@/components/ui/section-header';
@@ -30,27 +31,27 @@ interface NearbyPlace {
 // 타입별 아이콘
 const getTypeIcon = (types: string[]) => {
     if (types.some(t => ['park', 'natural_feature', 'national_park', 'garden', 'hiking_area'].includes(t))) {
-        return <Trees className="w-3.5 h-3.5 text-green-500 shrink-0" />;
+        return <HugeiconsIcon icon={Tree01Icon} size={14} className="text-green-500 shrink-0" />;
     }
     if (types.includes('beach')) {
-        return <Waves className="w-3.5 h-3.5 text-cyan-500 shrink-0" />;
+        return <HugeiconsIcon icon={WaveIcon} size={14} className="text-cyan-500 shrink-0" />;
     }
     if (types.some(t => ['monument', 'cultural_landmark', 'historical_landmark'].includes(t))) {
-        return <Landmark className="w-3.5 h-3.5 text-amber-500 shrink-0" />;
+        return <HugeiconsIcon icon={Building03Icon} size={14} className="text-amber-500 shrink-0" />;
     }
     if (types.some(t => ['museum', 'art_gallery'].includes(t))) {
-        return <Palette className="w-3.5 h-3.5 text-purple-500 shrink-0" />;
+        return <HugeiconsIcon icon={ColorsIcon} size={14} className="text-purple-500 shrink-0" />;
     }
     if (types.some(t => ['church', 'mosque', 'hindu_temple', 'place_of_worship'].includes(t))) {
-        return <Church className="w-3.5 h-3.5 text-indigo-500 shrink-0" />;
+        return <HugeiconsIcon icon={ChurchIcon} size={14} className="text-indigo-500 shrink-0" />;
     }
     if (types.includes('tourist_attraction')) {
-        return <Camera className="w-3.5 h-3.5 text-rose-500 shrink-0" />;
+        return <HugeiconsIcon icon={Camera01Icon} size={14} className="text-rose-500 shrink-0" />;
     }
     if (types.some(t => ['building', 'stadium', 'observation_deck'].includes(t))) {
-        return <Building className="w-3.5 h-3.5 text-zinc-500 shrink-0" />;
+        return <HugeiconsIcon icon={Building01Icon} size={14} className="text-zinc-500 shrink-0" />;
     }
-    return <MapPin className="w-3.5 h-3.5 text-zinc-400 shrink-0" />;
+    return <HugeiconsIcon icon={Location01Icon} size={14} className="text-zinc-400 shrink-0" />;
 };
 
 // 카메라 방향 기준 상대 방향 계산
@@ -234,8 +235,8 @@ export function LandmarkInput() {
         <section className="space-y-3">
             {/* 일반 장소일 때만 헤더 표시 */}
             {!isWellKnownPlace && (
-                <SectionHeader icon={Mountain} title="주변 정보">
-                    {isSearching && <Loader2 className="w-3 h-3 animate-spin text-zinc-500" />}
+                <SectionHeader icon={MountainIcon} title="주변 정보">
+                    {isSearching && <HugeiconsIcon icon={Loading02Icon} size={12} className="animate-spin text-zinc-500" />}
                 </SectionHeader>
             )}
 
@@ -298,7 +299,7 @@ export function LandmarkInput() {
                                                     {lm.types && lm.types.length > 0 ? (
                                                         getTypeIcon(lm.types)
                                                     ) : (
-                                                        <MapPin className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                                                        <HugeiconsIcon icon={Location01Icon} size={14} className="text-zinc-400 shrink-0" />
                                                     )}
                                                     <span className={`flex-1 text-xs truncate ${isEnabled ? 'text-zinc-200' : 'text-zinc-500'}`}>
                                                         {lm.name}

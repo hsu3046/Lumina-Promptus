@@ -10,6 +10,7 @@ import type {
     UserInputSettings,
     UserSettings,
     StudioSubject,
+    SnapSettings,
 } from '@/types';
 import type { LandscapeSettings } from '@/types/landscape.types';
 
@@ -80,7 +81,7 @@ const createDefaultStudioSubject = (): StudioSubject => ({
     bodyType: 'average',
 
     // C: 패션
-    topWear: '',
+    topWear: 'white-tshirt',
     bottomWear: '',
     footwear: '',
     accessory: '',
@@ -128,24 +129,44 @@ const defaultLandscapeSettings: LandscapeSettings = {
     landmarks: [],
 };
 
-export const defaultSettings: UserSettings & { landscape: LandscapeSettings } = {
+// Snap 모드 기본값
+const defaultSnapSettings: SnapSettings = {
+    // 피사체 설정
+    subject: 'pedestrian',
+    timeOfDay: 'night',
+    location: 'alley',
+    companion: 'alone',
+    action: 'walking',
+    manner: 'leisurely',
+    // 환경 설정
+    specificPlace: '',
+    weather: 'after-rain',
+    season: 'autumn',
+    atmosphere: 'haze',
+    lighting: 'neon',
+    crowdDensity: 'sparse',
+};
+
+export const defaultSettings: UserSettings & { landscape: LandscapeSettings; snap: SnapSettings } = {
     camera: defaultCameraSettings,
     lighting: defaultLightingSettings,
     colorGrading: defaultColorGradingSettings,
     artDirection: defaultArtDirectionSettings,
     userInput: defaultUserInputSettings,
     landscape: defaultLandscapeSettings,
+    snap: defaultSnapSettings,
 };
 
 // Store 인터페이스
 interface SettingsStore {
-    settings: UserSettings & { landscape: LandscapeSettings };
+    settings: UserSettings & { landscape: LandscapeSettings; snap: SnapSettings };
     updateCamera: (camera: Partial<CameraSettings>) => void;
     updateLighting: (lighting: Partial<LightingSettings>) => void;
     updateColorGrading: (colorGrading: Partial<ColorGradingSettings>) => void;
     updateArtDirection: (artDirection: Partial<ArtDirectionSettings>) => void;
     updateUserInput: (userInput: Partial<UserInputSettings>) => void;
     updateLandscape: (landscape: Partial<LandscapeSettings>) => void;
+    updateSnap: (snap: Partial<SnapSettings>) => void;
     resetToDefaults: () => void;
 }
 
@@ -197,6 +218,14 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
             settings: {
                 ...state.settings,
                 landscape: { ...state.settings.landscape, ...landscape },
+            },
+        })),
+
+    updateSnap: (snap) =>
+        set((state) => ({
+            settings: {
+                ...state.settings,
+                snap: { ...state.settings.snap, ...snap },
             },
         })),
 

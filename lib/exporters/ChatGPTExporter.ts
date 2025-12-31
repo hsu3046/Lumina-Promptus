@@ -27,6 +27,8 @@ export class ChatGPTExporter {
      */
     export(): string {
         const sections: string[] = [];
+        const subjects = this.settings.userInput?.studioSubjects || [];
+        const isMultiple = subjects.length >= 2;
 
         // 1. Location - 배경 (먼저!)
         const location = this.getLocationSection();
@@ -60,8 +62,14 @@ export class ChatGPTExporter {
         const style = this.getStyleSection();
         if (style) sections.push(style);
 
-        // 각 섹션 끝의 마침표 제거 후 '. '로 조합 (이중 마침표 방지)
-        const content = sections.filter(Boolean).map(s => s.replace(/\.+$/, '')).join('. ');
+        // 2명 이상일 때 섹션 사이에 빈 줄 추가
+        const content = sections.filter(Boolean).join(isMultiple ? '\n\n' : '. ');
+
+        // 피사체가 2명 이상일 때 통합 사진 지시문 포함
+        if (isMultiple) {
+            return `Create a DSLR editorial portrait of the following ${subjects.length} people together in a single unified photograph without any dividing lines or frames.\n\n${content}`;
+        }
+
         return `Create a DSLR editorial portrait. ${content}`;
     }
 
@@ -88,9 +96,9 @@ export class ChatGPTExporter {
         const framingText = framingMap[framing || ''] || 'standard';
 
         // 첫 번째 피사체의 여백(margin) 가져오기
-        const subjects = this.settings.userInput?.studioSubjects;
+        const subjects = this.settings.userInput?.studioSubjects || [];
         const margin = subjects?.[0]?.margin || 'normal';
-        const position = subjects?.[0]?.position || 'center';
+        const isMultipleSubjects = subjects.length >= 2;
 
         // 여백에 따른 텍스트 (normal이면 추가 안함)
         const marginText = margin === 'tight' ? 'tight ' : margin === 'loose' ? 'loose ' : '';
@@ -112,14 +120,23 @@ export class ChatGPTExporter {
                 'worms_eye': 'a worm\'s eye'
             };
             const angleText = angleMap[cameraAngle] || cameraAngle;
+            sentences.push(`Shot from ${angleText} angle.`);
+        }
 
-            // 위치에 따른 텍스트 (center면 추가 안함)
-            if (position !== 'center') {
-                const positionText = position === 'left' ? 'left' : 'right';
-                sentences.push(`Shot from ${angleText} angle. The subject positioned on the ${positionText} side of the frame.`);
-            } else {
-                sentences.push(`Shot from ${angleText} angle.`);
+        // 3. 위치 정보: 2명 이상일 때 각 인물의 위치 표시
+        if (isMultipleSubjects) {
+            const positionDescriptions = subjects.map((subject, idx) => {
+                if (!subject.position || subject.position === 'center') return null;
+                const positionText = subject.position === 'left' ? 'left' : 'right';
+                return `Person ${idx + 1} is positioned on the ${positionText} side`;
+            }).filter(Boolean);
+
+            if (positionDescriptions.length > 0) {
+                sentences.push(`${positionDescriptions.join(', ')}.`);
             }
+        } else if (subjects.length === 1 && subjects[0]?.position && subjects[0]?.position !== 'center') {
+            const positionText = subjects[0].position === 'left' ? 'left' : 'right';
+            sentences.push(`The subject positioned on the ${positionText} side of the frame.`);
         }
 
         if (sentences.length === 0) return '';
@@ -137,10 +154,16 @@ export class ChatGPTExporter {
             return `Subject & Fashion: ${subjectContent}`;
         }
 
+        const isMultiple = subjects.length >= 2;
         const descriptions = subjects.map((subject, idx) => {
-            return this.buildAppearanceDescription(subject, subjects.length > 1 ? idx + 1 : null);
+            const desc = this.buildAppearanceDescription(subject, isMultiple ? idx + 1 : null);
+            return isMultiple ? `- ${desc}` : desc;
         });
 
+        // 2명 이상일 때 줄바꿈 구조
+        if (isMultiple) {
+            return `Subject:\n${descriptions.join('\n')}`;
+        }
         return `Subject: ${descriptions.join(' ')}`;
     }
 
@@ -272,6 +295,7 @@ export class ChatGPTExporter {
         const subjects = this.settings.userInput?.studioSubjects || [];
         if (subjects.length === 0) return '';
 
+        const isMultiple = subjects.length >= 2;
         const fashionDescriptions = subjects.map((subject, idx) => {
             const fashionParts: string[] = [];
             const topPrompt = TOP_WEAR_OPTIONS.find(o => o.value === subject.topWear)?.prompt;
@@ -287,11 +311,16 @@ export class ChatGPTExporter {
             if (fashionParts.length === 0) return '';
 
             const fashionText = this.joinWithAnd(fashionParts);
-            const prefix = subjects.length > 1 ? `Person ${idx + 1}: ` : '';
-            return `${prefix}wearing ${fashionText}`;
+            const prefix = isMultiple ? `Person ${idx + 1}: ` : '';
+            return `${isMultiple ? '- ' : ''}${prefix}wearing ${fashionText}`;
         }).filter(Boolean);
 
         if (fashionDescriptions.length === 0) return '';
+
+        // 2명 이상일 때 줄바꿈 구조
+        if (isMultiple) {
+            return `Fashion:\n${fashionDescriptions.join('\n')}`;
+        }
         return `Fashion: ${fashionDescriptions.join(' ')}`;
     }
 
@@ -317,6 +346,7 @@ export class ChatGPTExporter {
         const subjects = this.settings.userInput?.studioSubjects || [];
         if (subjects.length === 0) return '';
 
+        const isMultiple = subjects.length >= 2;
         const descriptions = subjects.map((subject, idx) => {
             const bodyPoseMap: Record<string, string> = {
                 straight: 'a natural standing pose',
@@ -380,11 +410,16 @@ export class ChatGPTExporter {
 
             if (parts.length === 0) return '';
 
-            const prefix = subjects.length > 1 ? `Person ${idx + 1}: ` : '';
-            return `${prefix}${this.joinWithAnd(parts)}`;
+            const prefix = isMultiple ? `Person ${idx + 1}: ` : '';
+            return `${isMultiple ? '- ' : ''}${prefix}${this.joinWithAnd(parts)}`;
         }).filter(Boolean);
 
         if (descriptions.length === 0) return '';
+
+        // 2명 이상일 때 줄바꿈 구조
+        if (isMultiple) {
+            return `Expression/Pose:\n${descriptions.join('\n')}`;
+        }
         return `Expression/Pose: ${descriptions.join(' ')}`;
     }
 

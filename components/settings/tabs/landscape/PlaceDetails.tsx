@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { Camera, Tag } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Camera01Icon, Tag01Icon } from '@hugeicons/core-free-icons';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { getSolarTimes, type SolarInfo } from '@/lib/landscape/solar-calculator';
 import type { LandscapeWeather, LandscapeSeason, LandscapeTimeOfDay } from '@/types/landscape.types';
@@ -194,7 +195,7 @@ export function PlaceDetails() {
         <div className="space-y-3">
             {/* 장소명 + 주소 */}
             <div className="flex items-start gap-3">
-                <Camera className="w-5 h-5 text-white shrink-0 mt-0.5" />
+                <HugeiconsIcon icon={Camera01Icon} size={20} className="text-white shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
                     <h3 className="text-base font-semibold text-white truncate">{location.name}</h3>
                     <p className="text-xs text-zinc-500 truncate">
@@ -206,7 +207,7 @@ export function PlaceDetails() {
             {/* 장소 유형 태그 */}
             {types.length > 0 && (
                 <div className="flex items-center gap-1.5 flex-wrap">
-                    <Tag className="w-3 h-3 text-zinc-500 shrink-0" />
+                    <HugeiconsIcon icon={Tag01Icon} size={12} className="text-zinc-500 shrink-0" />
                     {types.slice(0, 5).map((type) => (
                         <span
                             key={type}

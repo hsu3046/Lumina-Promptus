@@ -90,7 +90,6 @@ export const APPEARANCE_PRESETS: AppearancePreset[] = [
     { id: 'mixed-asian-caucasian', label: '아시안-백인 혼혈', keywords: ['mixed', '혼혈', '하프', '다문화'], description: '밝은 피부, 갈색 머리, 헤이즐 눈', values: { skinTone: 'light', hairColor: 'brown', eyeColor: 'hazel', faceShape: 'oval' } },
     { id: 'mixed-black-caucasian', label: '흑인-백인 혼혈', keywords: ['mixed', '혼혈', '다문화'], description: '미디움 피부, 갈색 머리, 갈색 눈', values: { skinTone: 'medium', hairColor: 'brown', eyeColor: 'brown', faceShape: 'oval' } },
     { id: 'irish-redhead', label: '아일랜드 레드헤드', keywords: ['irish', '아일랜드', '레드헤드', '빨간머리'], description: '창백한 피부, 빨간 머리, 녹색 눈', values: { skinTone: 'fair', hairColor: 'red', eyeColor: 'green', faceShape: 'heart' } },
-    { id: 'albino', label: '알비노', keywords: ['albino', '알비노', '하얀', '희귀'], description: '매우 창백한 피부, 흰 머리, 회색 눈', values: { skinTone: 'fair', hairColor: 'white', eyeColor: 'gray', faceShape: 'oval' } },
 ];
 
 

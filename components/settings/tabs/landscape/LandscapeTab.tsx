@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { useMemo } from 'react';
-import { MapPin, Sun, Camera, Compass, AlertTriangle } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Location01Icon, Sun01Icon, Camera01Icon, CompassIcon, Alert02Icon } from '@hugeicons/core-free-icons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -66,7 +67,7 @@ function EnvironmentConflictWarning({ season, weather }: { season: string; weath
     return (
         <div className="mt-4 p-3 bg-amber-900/30 border border-amber-500/50 rounded-lg">
             <div className="flex items-center gap-2 text-amber-400 text-xs">
-                <AlertTriangle className="w-4 h-4" />
+                <HugeiconsIcon icon={Alert02Icon} size={16} />
                 <span className="font-medium">설정 조합 주의</span>
             </div>
             <ul className="mt-1 space-y-1">
@@ -124,15 +125,15 @@ export function LandscapeTab() {
             {/* Underline 스타일 탭 */}
             <TabsList className="w-full border-b border-zinc-800 p-0 h-auto">
                 <TabsTrigger value="location" className="lp-tab-trigger">
-                    <MapPin className="w-4 h-4" />
+                    <HugeiconsIcon icon={Location01Icon} size={16} />
                     장소 설정
                 </TabsTrigger>
                 <TabsTrigger value="environment" className="lp-tab-trigger">
-                    <Sun className="w-4 h-4" />
+                    <HugeiconsIcon icon={Sun01Icon} size={16} />
                     환경 설정
                 </TabsTrigger>
                 <TabsTrigger value="camera" className="lp-tab-trigger">
-                    <Camera className="w-4 h-4" />
+                    <HugeiconsIcon icon={Camera01Icon} size={16} />
                     카메라 설정
                 </TabsTrigger>
             </TabsList>
@@ -141,7 +142,7 @@ export function LandscapeTab() {
             <TabsContent value="location" className="mt-6 space-y-6">
                 {/* 위치 검색 섹션 */}
                 <section className="space-y-3">
-                    <SectionHeader icon={MapPin} title="풍경 검색" />
+                    <SectionHeader icon={Location01Icon} title="풍경 검색" />
                     <LocationSearch />
                 </section>
 
@@ -158,7 +159,7 @@ export function LandscapeTab() {
 
                 {/* 위치 설정 섹션 */}
                 <section className="space-y-5">
-                    <SectionHeader icon={Compass} title="촬영 위치" />
+                    <SectionHeader icon={CompassIcon} title="촬영 위치" />
 
                     {/* 촬영 거리 */}
                     <div className="space-y-2">

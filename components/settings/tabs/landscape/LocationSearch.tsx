@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Search, MapPin, Navigation, Loader2, Trees, Landmark, Palette, Camera, Church, Building, Mountain, Waves } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Search01Icon, Location01Icon, Navigation01Icon, Loading02Icon, Tree01Icon, Building03Icon, ColorsIcon, Camera01Icon, ChurchIcon, Building01Icon, MountainIcon, WaveIcon } from '@hugeicons/core-free-icons';
 import { Input } from '@/components/ui/input';
 import { useSettingsStore } from '@/store/useSettingsStore';
 
@@ -273,7 +274,7 @@ export function LocationSearch() {
     return (
         <div ref={containerRef} className="relative">
             <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <HugeiconsIcon icon={Search01Icon} size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
                 <Input
                     ref={inputRef}
                     type="text"
@@ -286,16 +287,11 @@ export function LocationSearch() {
                             setIsOpen(true);
                         }
                     }}
-                    className="pl-10 pr-10 bg-secondary/50 border-secondary"
-                    style={{
-                        fontSize: '16px',
-                        transform: 'scale(0.85)',
-                        transformOrigin: 'left center',
-                        width: '118%',  // scale 보정
-                    }}
+                    className="pl-10 pr-10 bg-secondary/50 border-secondary text-sm"
+                    style={{ fontSize: '16px' }}
                 />
                 {isLoading && (
-                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
+                    <HugeiconsIcon icon={Loading02Icon} size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground animate-spin" />
                 )}
             </div>
 
@@ -303,7 +299,7 @@ export function LocationSearch() {
             {settings.landscape.location.name && (
                 <div className="flex items-center justify-end mt-2">
                     <span className="text-[10px] text-zinc-600 flex items-center gap-1">
-                        <Navigation className="w-3 h-3" />
+                        <HugeiconsIcon icon={Navigation01Icon} size={12} />
                         {lat.toFixed(4)}, {lng.toFixed(4)}
                     </span>
                 </div>
@@ -321,7 +317,7 @@ export function LocationSearch() {
                             className={`w-full px-3 py-2 text-left transition-colors flex items-center gap-2 border-b border-border ${selectedIndex === 0 ? 'bg-accent' : 'hover:bg-accent/50'
                                 }`}
                         >
-                            <Navigation className="w-4 h-4 text-amber-500 shrink-0" />
+                            <HugeiconsIcon icon={Navigation01Icon} size={16} className="text-amber-500 shrink-0" />
                             <div>
                                 <p className="text-sm font-medium text-amber-500">
                                     좌표로 이동
@@ -337,42 +333,42 @@ export function LocationSearch() {
                     {results.map((place, index) => {
                         const itemIndex = coordinateMatch ? index + 1 : index;
 
-                        // Google Places API 타입에 따른 Lucide 아이콘
+                        // Google Places API 타입에 따른 Huge Icons 아이콘
                         const getTypeIcon = (types: string[]) => {
                             // 자연/공원
                             if (types.some(t => ['park', 'national_park', 'state_park', 'garden', 'botanical_garden', 'dog_park', 'hiking_area', 'wildlife_park', 'wildlife_refuge'].includes(t))) {
-                                return <Trees className="w-4 h-4 text-green-500" />;
+                                return <HugeiconsIcon icon={Tree01Icon} size={16} className="text-green-500" />;
                             }
                             // 해변
                             if (types.includes('beach')) {
-                                return <Waves className="w-4 h-4 text-cyan-500" />;
+                                return <HugeiconsIcon icon={WaveIcon} size={16} className="text-cyan-500" />;
                             }
                             // 산/자연 지형
                             if (types.some(t => ['natural_feature', 'mountain', 'campground'].includes(t))) {
-                                return <Mountain className="w-4 h-4 text-emerald-500" />;
+                                return <HugeiconsIcon icon={MountainIcon} size={16} className="text-emerald-500" />;
                             }
                             // 문화재/기념비
                             if (types.some(t => ['monument', 'cultural_landmark', 'historical_landmark', 'historical_place', 'sculpture'].includes(t))) {
-                                return <Landmark className="w-4 h-4 text-amber-500" />;
+                                return <HugeiconsIcon icon={Building03Icon} size={16} className="text-amber-500" />;
                             }
                             // 박물관/미술관
                             if (types.some(t => ['museum', 'art_gallery', 'art_studio'].includes(t))) {
-                                return <Palette className="w-4 h-4 text-purple-500" />;
+                                return <HugeiconsIcon icon={ColorsIcon} size={16} className="text-purple-500" />;
                             }
                             // 종교 시설
                             if (types.some(t => ['church', 'mosque', 'hindu_temple', 'synagogue', 'place_of_worship'].includes(t))) {
-                                return <Church className="w-4 h-4 text-indigo-500" />;
+                                return <HugeiconsIcon icon={ChurchIcon} size={16} className="text-indigo-500" />;
                             }
                             // 관광 명소
                             if (types.includes('tourist_attraction')) {
-                                return <Camera className="w-4 h-4 text-rose-500" />;
+                                return <HugeiconsIcon icon={Camera01Icon} size={16} className="text-rose-500" />;
                             }
                             // 건물/시설
                             if (types.some(t => ['building', 'stadium', 'auditorium', 'observation_deck', 'aquarium', 'zoo'].includes(t))) {
-                                return <Building className="w-4 h-4 text-zinc-500" />;
+                                return <HugeiconsIcon icon={Building01Icon} size={16} className="text-zinc-500" />;
                             }
                             // 기본
-                            return <MapPin className="w-4 h-4 text-zinc-400" />;
+                            return <HugeiconsIcon icon={Location01Icon} size={16} className="text-zinc-400" />;
                         };
 
                         return (

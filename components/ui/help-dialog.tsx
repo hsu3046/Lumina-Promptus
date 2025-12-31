@@ -1,6 +1,7 @@
 'use client';
 
-import { Sparkles, Camera, MapPin, Sun, Palette } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { SparklesIcon, Camera01Icon, Location01Icon, Sun01Icon, ColorsIcon, HelpCircleIcon } from '@hugeicons/core-free-icons';
 import {
     Dialog,
     DialogContent,
@@ -10,21 +11,20 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { HelpCircle } from 'lucide-react';
 
 export function HelpDialog() {
     return (
         <Dialog>
             <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2 text-zinc-400">
-                    <HelpCircle className="w-4 h-4" />
+                    <HugeiconsIcon icon={HelpCircleIcon} size={16} />
                     도움말
                 </Button>
             </DialogTrigger>
             <DialogContent className="bg-zinc-900 border-zinc-800 max-w-lg max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-amber-400">
-                        <Sparkles className="w-5 h-5" />
+                        <HugeiconsIcon icon={SparklesIcon} size={20} />
                         Lumina Promptus 사용법
                     </DialogTitle>
                     <DialogDescription>
@@ -41,15 +41,15 @@ export function HelpDialog() {
                         </p>
                         <ul className="mt-2 space-y-1 text-xs text-zinc-400">
                             <li className="flex items-center gap-2">
-                                <Palette className="w-3 h-3 text-amber-500" />
+                                <HugeiconsIcon icon={ColorsIcon} size={12} className="text-amber-500" />
                                 <span><strong>피사체 설정:</strong> 인원수, 외모, 의상, 포즈 설정</span>
                             </li>
                             <li className="flex items-center gap-2">
-                                <Sun className="w-3 h-3 text-amber-500" />
+                                <HugeiconsIcon icon={Sun01Icon} size={12} className="text-amber-500" />
                                 <span><strong>라이팅 설정:</strong> 조명 패턴, 품질, 색온도 설정</span>
                             </li>
                             <li className="flex items-center gap-2">
-                                <Camera className="w-3 h-3 text-amber-500" />
+                                <HugeiconsIcon icon={Camera01Icon} size={12} className="text-amber-500" />
                                 <span><strong>카메라 설정:</strong> 카메라 바디, 렌즈, 노출 설정</span>
                             </li>
                         </ul>
@@ -65,15 +65,15 @@ export function HelpDialog() {
                         </p>
                         <ul className="mt-2 space-y-1 text-xs text-zinc-400">
                             <li className="flex items-center gap-2">
-                                <MapPin className="w-3 h-3 text-amber-500" />
+                                <HugeiconsIcon icon={Location01Icon} size={12} className="text-amber-500" />
                                 <span><strong>장소 검색:</strong> Google Places로 실제 장소 검색</span>
                             </li>
                             <li className="flex items-center gap-2">
-                                <Sun className="w-3 h-3 text-amber-500" />
+                                <HugeiconsIcon icon={Sun01Icon} size={12} className="text-amber-500" />
                                 <span><strong>환경 설정:</strong> 날씨, 계절, 시간대, 분위기 설정</span>
                             </li>
                             <li className="flex items-center gap-2">
-                                <Camera className="w-3 h-3 text-amber-500" />
+                                <HugeiconsIcon icon={Camera01Icon} size={12} className="text-amber-500" />
                                 <span><strong>카메라 설정:</strong> 촬영 거리, 고도 설정</span>
                             </li>
                         </ul>
