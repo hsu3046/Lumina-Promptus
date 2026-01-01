@@ -4,15 +4,15 @@ import { useMemo } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { ComboboxField, GroupedComboboxField, type ConflictLevel as ComboboxConflictLevel } from '@/components/ui/combobox-field';
 import { useSettingsStore } from '@/store/useSettingsStore';
-import { getFieldConflictLevel, type PortraitConfig } from '@/lib/portrait-conflict-validator';
-import { getBodyPoseConflict, getHandPoseConflict, getFashionDisabled } from '@/lib/rules/legacy-adapter';
+import { getFieldConflictLevel, type PortraitConfig } from './portrait-conflict-validator';
+import { getBodyPoseConflict, getHandPoseConflict, getFashionDisabled } from '@/lib/rules/conflict-adapter';
 import { PresetSearchPicker } from './PresetSearchPicker';
 import {
     APPEARANCE_PRESETS,
     STYLE_PRESETS,
     FASHION_PRESETS,
     POSE_PRESETS,
-} from '@/config/presets/subject-presets';
+} from './subject-presets';
 import {
     BODY_POSE_OPTIONS,
     HAND_POSE_OPTIONS,
@@ -35,7 +35,7 @@ import {
 import {
     checkFashionConflicts,
     type FashionConflictResult,
-} from '@/config/mappings/framing-fashion-conflicts';
+} from '@/lib/rules/conflict-framing-fashion';
 import type {
     StudioSubject,
     PortraitFraming,

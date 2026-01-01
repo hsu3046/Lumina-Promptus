@@ -225,7 +225,7 @@
 
   /* 탭 트리거 (언더라인 스타일) */
   .lp-tab-trigger {
-    @apply flex-1 gap-2 py-1.5 border-b-2 border-transparent text-zinc-400 hover:text-zinc-200;
+    @apply flex-1 gap-2 py-1.5 border-b-2 border-transparent text-base text-zinc-400 hover:text-zinc-200;
     @apply data-[state=active]:border-amber-500 data-[state=active]:text-amber-500;
   }
 

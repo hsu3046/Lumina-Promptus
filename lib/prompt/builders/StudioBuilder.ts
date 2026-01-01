@@ -2,11 +2,11 @@
 // IR(Intermediate Representation) 기반 프롬프트 빌더
 
 import type { PromptIR, SlotContent, UserSettings, ConflictReport, StudioSubject, SnapSettings } from '@/types';
-import { PROMPT_SLOTS, getSlotById } from '@/config/slots/slot-definitions';
+import { PROMPT_SLOTS, getSlotById } from '@/lib/prompt/slot-definitions';
 import { getCameraById } from '@/config/mappings/cameras';
 import { getLensById } from '@/config/mappings/lenses';
 import { buildLightingPrompt } from '@/config/mappings/lighting-patterns';
-import { detectConflicts } from '@/lib/conflict-resolver/rules';
+import { detectConflicts } from '@/lib/rules/conflict-resolver';
 import {
     TOP_WEAR_OPTIONS,
     BOTTOM_WEAR_OPTIONS,

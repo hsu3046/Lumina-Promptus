@@ -82,17 +82,12 @@ export function PresetSearchPicker<T extends PresetOption>({
         <div className="min-w-0" ref={containerRef}>
             <span className="text-[10px] text-zinc-500 block mb-1">{label}</span>
             <div className="relative">
-                <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded-md h-8 px-3 focus-within:border-zinc-700">
+                <div className="flex items-center bg-zinc-800/70 border border-zinc-800 rounded-md h-8 px-3 focus-within:border-zinc-700">
                     <HugeiconsIcon icon={Search01Icon} size={12} className="text-zinc-500 shrink-0" />
                     <input
                         ref={inputRef}
                         type="text"
-                        className="flex-1 bg-transparent text-zinc-200 font-bold placeholder:text-zinc-500 placeholder:font-normal border-none outline-none px-2 origin-left"
-                        style={{
-                            fontSize: '16px',
-                            transform: 'scale(0.75)',  // 16px * 0.75 = 12px 시각적 크기
-                            transformOrigin: 'left center',
-                        }}
+                        className="flex-1 min-w-0 bg-transparent text-zinc-200 placeholder:text-zinc-500 border-none outline-none px-2 text-[16px] md:text-xs"
                         placeholder={placeholder}
                         value={displayValue}
                         onChange={(e) => {
@@ -103,11 +98,16 @@ export function PresetSearchPicker<T extends PresetOption>({
                         }}
                         onFocus={() => {
                             setOpen(true);
-                            setIsSearching(true);
-                            setSearch('');  // 포커스하면 검색어 초기화
+                            // 값이 있으면 그대로 유지, 검색 모드로 진입만 함
+                            if (!value) {
+                                setIsSearching(true);
+                            }
                             setHighlightedIndex(0);
                         }}
                         onKeyDown={(e) => {
+                            // 한글 IME 조합 중이면 무시 (Enter가 조합 완료용으로 사용됨)
+                            if (e.nativeEvent.isComposing) return;
+
                             if (e.key === 'ArrowDown') {
                                 e.preventDefault();
                                 setHighlightedIndex(prev =>
@@ -117,13 +117,39 @@ export function PresetSearchPicker<T extends PresetOption>({
                                 e.preventDefault();
                                 setHighlightedIndex(prev => prev > 0 ? prev - 1 : 0);
                             } else if (e.key === 'Enter' && filteredOptions.length > 0) {
+                                e.preventDefault();
                                 handleSelect(filteredOptions[highlightedIndex]);
+                            } else if (e.key === 'Escape') {
+                                setOpen(false);
+                                setIsSearching(false);
+                                setSearch('');
                             }
                         }}
                     />
-                    {isSearching && search && (
-                        <button onClick={handleClear} className="text-zinc-500 hover:text-zinc-300">
+                    {/* X 버튼: 값 있을 때 표시, 클릭 시 초기화 + 검색 모드 */}
+                    {value && !isSearching && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setSearch('');
+                                setIsSearching(true);
+                                setOpen(true);
+                                inputRef.current?.focus();
+                            }}
+                            className="text-zinc-500 hover:text-zinc-300 p-0.5"
+                            title="검색하려면 클릭"
+                        >
                             <HugeiconsIcon icon={Cancel01Icon} size={12} />
+                        </button>
+                    )}
+                    {/* 검색 중일 때 X 버튼 - 검색어 지우기 */}
+                    {isSearching && search && (
+                        <button
+                            onClick={handleClear}
+                            className="text-zinc-400 hover:text-zinc-200 p-1 shrink-0"
+                            title="검색어 지우기"
+                        >
+                            <HugeiconsIcon icon={Cancel01Icon} size={14} />
                         </button>
                     )}
                 </div>

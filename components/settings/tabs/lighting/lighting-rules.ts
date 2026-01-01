@@ -397,7 +397,7 @@ export const RECOMMENDED_COMBINATIONS: Record<LightingPattern, {
         mood: 'natural'
     },
     butterfly: {
-        key: 'high-key',
+        key: 'mid-key',
         ratio: '2:1',
         quality: 'soft',
         colorTemp: 'daylight',

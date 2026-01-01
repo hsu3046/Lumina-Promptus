@@ -10,14 +10,12 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useSettingsStore } from '@/store/useSettingsStore';
-import { PromptBuilderV2 } from '@/lib/prompt-builder/PromptBuilderV2';
-import { NanoBananaProExporter } from '@/lib/exporters/NanoBananaProExporter';
-import { ChatGPTExporter } from '@/lib/exporters/ChatGPTExporter';
-import { MidjourneyExporter } from '@/lib/exporters/MidjourneyExporter';
-import { LightingValidator } from '@/lib/lighting-validator';
-import { launchPrompt, type LauncherTarget } from '@/lib/prompt-launchers';
-import { buildLandscapePromptConfig, generateLandscapePrompt, generateSimpleLandscapePrompt } from '@/lib/landscape/prompt-generator';
-import type { LightingConfig, LightingPattern, LightingKey, LightingRatio, LightQuality, ColorTemperature, LightingMood, SpecialLighting } from '@/types/lighting.types';
+import { PromptBuilderV2 } from '@/lib/prompt/builders/StudioBuilder';
+import { NanoBananaProExporter } from '@/lib/prompt/exporters/NanoBananaExporter';
+import { ChatGPTExporter } from '@/lib/prompt/exporters/ChatGPTExporter';
+import { MidjourneyExporter } from '@/lib/prompt/exporters/MidjourneyExporter';
+import { launchPrompt, type LauncherTarget } from '@/lib/prompt/launchers';
+import { buildLandscapePromptConfig, generateLandscapePrompt, generateSimpleLandscapePrompt } from '@/lib/prompt/builders/LandscapeBuilder';
 
 type AITarget = 'nanobanana' | 'chatgpt' | 'midjourney';
 
@@ -37,7 +35,7 @@ export function PromptPreview() {
     // 모드별 프롬프트 분리 저장
     const [studioPrompt, setStudioPrompt] = useState<string>('');
     const [landscapePrompt, setLandscapePrompt] = useState<string>('');
-    const [hasConflict, setHasConflict] = useState(false);
+
 
     // 현재 모드
     const currentMode = settings.artDirection.lensCharacteristicType;
@@ -54,7 +52,6 @@ export function PromptPreview() {
                     // 장소가 선택되지 않았으면 프롬프트 비움
                     if (!landscape.location.name) {
                         setLandscapePrompt('');
-                        setHasConflict(false);
                         return;
                     }
 
@@ -71,7 +68,6 @@ export function PromptPreview() {
                         result = generateLandscapePrompt(config);
                     }
 
-                    setHasConflict(false);
                     setLandscapePrompt(result);
                     return;
                 }
@@ -81,34 +77,7 @@ export function PromptPreview() {
                 const builder = new PromptBuilderV2(settings);
                 const newIR = await builder.buildIR();
 
-                // Step 2: 충돌 체크 (라이팅 + IR)
-                let conflictDetected = false;
-
-                // IR 충돌
-                if (newIR.metadata.conflicts && newIR.metadata.conflicts.length > 0) {
-                    conflictDetected = true;
-                }
-
-                // 라이팅 충돌
-                if (settings.lighting.enabled) {
-                    const lightingConfig: LightingConfig = {
-                        pattern: settings.lighting.pattern as LightingPattern,
-                        key: settings.lighting.key as LightingKey,
-                        ratio: settings.lighting.ratio as LightingRatio | undefined,
-                        quality: settings.lighting.quality as LightQuality | undefined,
-                        colorTemp: settings.lighting.colorTemp as ColorTemperature | undefined,
-                        mood: settings.lighting.mood as LightingMood | undefined,
-                        special: settings.lighting.special as SpecialLighting[] | undefined,
-                    };
-                    const validation = LightingValidator.validate(lightingConfig);
-                    if (validation.errors.length > 0 || validation.warnings.length > 0) {
-                        conflictDetected = true;
-                    }
-                }
-
-                setHasConflict(conflictDetected);
-
-                // Step 3: 선택된 모델에 따라 Exporter 호출
+                // Step 2: 선택된 모델에 따라 Exporter 호출
                 let result: string;
 
                 switch (aiTarget) {
@@ -250,12 +219,7 @@ export function PromptPreview() {
                         )}
                     </div>
 
-                    {/* 충돌 경고 */}
-                    {hasConflict && (
-                        <p className="text-xs text-red-400 text-center">
-                            ⚠️ 서로 모순되는 설정이 있어서 이미지 생성 시 AI가 제대로 표현하지 못할 가능성이 있습니다.
-                        </p>
-                    )}
+
                 </CardContent>
             </Card>
         </div>

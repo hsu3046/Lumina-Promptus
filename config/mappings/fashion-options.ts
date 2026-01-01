@@ -1,17 +1,3 @@
-import {
-    TShirtIcon,
-    HoodieIcon,
-    Shirt01Icon,
-    Dress01Icon,
-    LongSleeveShirtIcon,
-    VestIcon,
-    SleevelessIcon,
-    JoggerPantsIcon,
-    ShortsPantsIcon,
-    Dress03Icon,
-} from '@hugeicons/core-free-icons';
-import type { IconSvgElement } from '@hugeicons/react';
-
 // 성별 태그 타입
 export type GenderTag = 'male' | 'female' | 'unisex';
 
@@ -170,51 +156,51 @@ export const TOP_WEAR_GROUPS = [
     {
         label: '캐주얼',
         options: [
-            { value: 'white-tshirt', label: '흰 티셔츠', icon: TShirtIcon },
-            { value: 'black-tshirt', label: '검은 티셔츠', icon: TShirtIcon },
-            { value: 'graphic-tee', label: '그래픽 티', icon: TShirtIcon },
-            { value: 'hoodie', label: '후디', icon: HoodieIcon },
-            { value: 'sweater', label: '스웨터', icon: LongSleeveShirtIcon },
-            { value: 'cardigan', label: '가디건', icon: LongSleeveShirtIcon },
+            { value: 'white-tshirt', label: '흰 티셔츠' },
+            { value: 'black-tshirt', label: '검은 티셔츠' },
+            { value: 'graphic-tee', label: '그래픽 티' },
+            { value: 'hoodie', label: '후디' },
+            { value: 'sweater', label: '스웨터' },
+            { value: 'cardigan', label: '가디건' },
         ],
     },
     {
         label: '포멀',
         options: [
-            { value: 'dress-shirt', label: '드레스 셔츠', icon: Shirt01Icon },
-            { value: 'suit-jacket', label: '수트 재킷', icon: Shirt01Icon },
-            { value: 'blazer', label: '블레이저', icon: Shirt01Icon },
-            { value: 'tuxedo', label: '턱시도', icon: Shirt01Icon },
+            { value: 'dress-shirt', label: '드레스 셔츠' },
+            { value: 'suit-jacket', label: '수트 재킷' },
+            { value: 'blazer', label: '블레이저' },
+            { value: 'tuxedo', label: '턱시도' },
         ],
     },
     {
         label: '드레스',
         options: [
-            { value: 'casual-dress', label: '캐주얼 드레스', icon: Dress01Icon },
-            { value: 'cocktail-dress', label: '칵테일 드레스', icon: Dress03Icon },
-            { value: 'evening-gown', label: '이브닝 가운', icon: Dress01Icon },
-            { value: 'wedding-dress', label: '웨딩 드레스', icon: Dress01Icon },
+            { value: 'casual-dress', label: '캐주얼 드레스' },
+            { value: 'cocktail-dress', label: '칵테일 드레스' },
+            { value: 'evening-gown', label: '이브닝 가운' },
+            { value: 'wedding-dress', label: '웨딩 드레스' },
         ],
     },
     {
         label: '아웃웨어',
         options: [
-            { value: 'leather-jacket', label: '가죽 재킷', icon: LongSleeveShirtIcon },
-            { value: 'denim-jacket', label: '데님 재킷', icon: LongSleeveShirtIcon },
-            { value: 'trench-coat', label: '트렌치 코트', icon: LongSleeveShirtIcon },
-            { value: 'wool-coat', label: '울 코트', icon: LongSleeveShirtIcon },
-            { value: 'puffer-jacket', label: '패딩 재킷', icon: VestIcon },
+            { value: 'leather-jacket', label: '가죽 재킷' },
+            { value: 'denim-jacket', label: '데님 재킷' },
+            { value: 'trench-coat', label: '트렌치 코트' },
+            { value: 'wool-coat', label: '울 코트' },
+            { value: 'puffer-jacket', label: '패딩 재킷' },
         ],
     },
     {
         label: '기타',
         options: [
-            { value: 'tank-top', label: '탱크탑', icon: SleevelessIcon },
-            { value: 'crop-top', label: '크롭탑', icon: SleevelessIcon },
-            { value: 'polo-shirt', label: '폴로셔츠', icon: TShirtIcon },
-            { value: 'turtleneck', label: '터틀넥', icon: LongSleeveShirtIcon },
-            { value: 'blouse', label: '블라우스', icon: Shirt01Icon },
-            { value: 'hanbok-jeogori', label: '한복 저고리', icon: LongSleeveShirtIcon },
+            { value: 'tank-top', label: '탱크탑' },
+            { value: 'crop-top', label: '크롭탑' },
+            { value: 'polo-shirt', label: '폴로셔츠' },
+            { value: 'turtleneck', label: '터틀넥' },
+            { value: 'blouse', label: '블라우스' },
+            { value: 'hanbok-jeogori', label: '한복 저고리' },
         ],
     },
 ] as const;
@@ -224,39 +210,39 @@ export const BOTTOM_WEAR_GROUPS = [
     {
         label: '팬츠',
         options: [
-            { value: 'blue-jeans', label: '청바지', icon: JoggerPantsIcon },
-            { value: 'black-jeans', label: '검은 청바지', icon: JoggerPantsIcon },
-            { value: 'skinny-jeans', label: '스키니진', icon: JoggerPantsIcon },
-            { value: 'baggy-jeans', label: '배기진', icon: JoggerPantsIcon },
-            { value: 'chinos', label: '치노 팬츠', icon: JoggerPantsIcon },
-            { value: 'dress-pants', label: '드레스 팬츠', icon: JoggerPantsIcon },
-            { value: 'cargo-pants', label: '카고 팬츠', icon: JoggerPantsIcon },
-            { value: 'tuxedo-pants', label: '턱시도 팬츠', icon: JoggerPantsIcon },
+            { value: 'blue-jeans', label: '청바지' },
+            { value: 'black-jeans', label: '검은 청바지' },
+            { value: 'skinny-jeans', label: '스키니진' },
+            { value: 'baggy-jeans', label: '배기진' },
+            { value: 'chinos', label: '치노 팬츠' },
+            { value: 'dress-pants', label: '드레스 팬츠' },
+            { value: 'cargo-pants', label: '카고 팬츠' },
+            { value: 'tuxedo-pants', label: '턱시도 팬츠' },
         ],
     },
     {
         label: '스포츠/캐주얼',
         options: [
-            { value: 'joggers', label: '조거 팬츠', icon: JoggerPantsIcon },
-            { value: 'yoga-pants', label: '요가 팬츠', icon: JoggerPantsIcon },
-            { value: 'shorts', label: '반바지', icon: ShortsPantsIcon },
-            { value: 'leggings', label: '레깅스', icon: JoggerPantsIcon },
+            { value: 'joggers', label: '조거 팬츠' },
+            { value: 'yoga-pants', label: '요가 팬츠' },
+            { value: 'shorts', label: '반바지' },
+            { value: 'leggings', label: '레깅스' },
         ],
     },
     {
         label: '스커트',
         options: [
-            { value: 'mini-skirt', label: '미니 스커트', icon: Dress01Icon },
-            { value: 'midi-skirt', label: '미디 스커트', icon: Dress01Icon },
-            { value: 'maxi-skirt', label: '맥시 스커트', icon: Dress01Icon },
-            { value: 'pleated-skirt', label: '플리츠 스커트', icon: Dress01Icon },
-            { value: 'pencil-skirt', label: '펜슬 스커트', icon: Dress01Icon },
+            { value: 'mini-skirt', label: '미니 스커트' },
+            { value: 'midi-skirt', label: '미디 스커트' },
+            { value: 'maxi-skirt', label: '맥시 스커트' },
+            { value: 'pleated-skirt', label: '플리츠 스커트' },
+            { value: 'pencil-skirt', label: '펜슬 스커트' },
         ],
     },
     {
         label: '기타',
         options: [
-            { value: 'hanbok-chima', label: '한복 치마', icon: Dress01Icon },
+            { value: 'hanbok-chima', label: '한복 치마' },
         ],
     },
 ] as const;

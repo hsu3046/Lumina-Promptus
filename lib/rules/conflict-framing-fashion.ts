@@ -2,7 +2,7 @@
 // 구도(Framing)와 패션 아이템 간의 충돌/가시성 규칙
 
 import type { PortraitFraming } from '@/types';
-import type { ConflictLevel } from './portrait-composition';
+import type { ConflictLevel } from '@/config/mappings/portrait-composition';
 
 // ===== 악세서리 카테고리 분류 =====
 export type AccessoryCategory = 'headwear' | 'eyewear' | 'neckwear' | 'earwear' | 'wristwear' | 'other';

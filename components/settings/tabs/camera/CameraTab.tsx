@@ -19,12 +19,12 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { useSettingsStore } from '@/store/useSettingsStore';
-import { useCameraSettings } from '@/components/hooks/useCameraSettings';
+import { useCameraSettings } from './useCameraSettings';
 import { CAMERA_BODIES_BY_BRAND, getCameraById, DEFAULT_ASPECT_RATIO_SPEC } from '@/config/mappings/cameras';
 import { getLensesByMount, LENS_CATEGORY_LABELS, getLensById } from '@/config/mappings/lenses';
-import { getLensStatusForOption, type LensConflictLevel } from '@/lib/lens-composition-validator';
+import { getLensStatusForOption, type LensConflictLevel } from './lens-composition-validator';
 import type { Lens } from '@/types';
-import type { ExposureStatusLevel } from '@/lib/exposure-calculator';
+import type { ExposureStatusLevel } from './exposure-calculator';
 
 // 카메라 브랜드 정렬 순서
 const BRAND_ORDER = ['Canon', 'Nikon', 'Sony', 'Fujifilm', 'Leica', 'Hasselblad', 'Pentax'];
@@ -174,7 +174,7 @@ export function CameraTab() {
                         value={settings.camera.bodyId}
                         onValueChange={handleCameraChange}
                     >
-                        <SelectTrigger className="w-full bg-zinc-950 border-zinc-800">
+                        <SelectTrigger className="w-full bg-zinc-800/70 border-zinc-800">
                             <SelectValue placeholder="카메라 선택" />
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-900 border-zinc-800 max-h-80">
@@ -215,7 +215,7 @@ export function CameraTab() {
                         value={settings.camera.lensId}
                         onValueChange={handleLensChange}
                     >
-                        <SelectTrigger className="w-full bg-zinc-950 border-zinc-800">
+                        <SelectTrigger className="w-full bg-zinc-800/70 border-zinc-800">
                             <SelectValue placeholder="렌즈 선택" />
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-900 border-zinc-800 max-h-80">
@@ -275,7 +275,7 @@ export function CameraTab() {
                                 value={allRatios.includes(currentRatio) ? currentRatio : spec.defaultValue}
                                 onValueChange={(value) => updateCamera({ aspectRatio: value })}
                             >
-                                <SelectTrigger className="w-full bg-zinc-950 border-zinc-800">
+                                <SelectTrigger className="w-full bg-zinc-800/70 border-zinc-800">
                                     <SelectValue placeholder="비율 선택" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-zinc-900 border-zinc-800">
@@ -346,7 +346,7 @@ export function CameraTab() {
                 <div className="space-y-2">
                     <Label>스타일</Label>
                     <Select disabled>
-                        <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 opacity-50">
+                        <SelectTrigger className="w-full bg-zinc-800/70 border-zinc-800 opacity-50">
                             <SelectValue placeholder="차후 구현" />
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-900 border-zinc-800">

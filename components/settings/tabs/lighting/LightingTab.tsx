@@ -1,151 +1,42 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { AlertCircleIcon, Alert02Icon, BulbIcon, RefreshIcon, StarIcon } from '@hugeicons/core-free-icons';
+import { RefreshIcon } from '@hugeicons/core-free-icons';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/components/ui/select';
+import { ComboboxField, type ConflictLevel } from '@/components/ui/combobox-field';
 import { useSettingsStore } from '@/store/useSettingsStore';
-import { LightingValidator } from '@/lib/lighting-validator';
 import {
     PATTERN_OPTIONS,
-    PATTERN_PRESETS,
     KEY_OPTIONS,
     RATIO_OPTIONS,
     QUALITY_OPTIONS,
     COLOR_TEMP_OPTIONS,
     MOOD_OPTIONS,
     SPECIAL_OPTIONS,
-    RECOMMENDED_COMBINATIONS,
-    LIGHTING_CONFLICTS,
-} from '@/config/lighting-rules';
+} from './lighting-rules';
+import { LIGHTING_PRESETS } from '@/config/mappings/lighting-patterns';
+import {
+    getLightingPatternConflict,
+    getLightingKeyConflictForPattern,
+    getLightingKeyConflictForRatio,
+    getLightingRatioConflictForKey,
+    getLightingRatioConflictForQuality,
+    getLightingQualityConflictForRatio,
+    getLightingQualityWarningForPattern,
+} from '@/lib/rules/conflict-adapter';
 import type { LightingSettings } from '@/types';
-import type {
-    LightingPattern,
-    LightingKey,
-    LightingRatio,
-    LightQuality,
-    ColorTemperature,
-    LightingMood,
-    SpecialLighting,
-    LightingConfig
-} from '@/types/lighting.types';
+import type { SpecialLighting } from '@/types/lighting.types';
 
-// 충돌 상태 타입 (recommended 추가)
-type ConflictStatus = 'none' | 'warning' | 'error' | 'recommended' | 'critical';
-
-// 아이템 충돌 상태 계산 결과
-interface ItemConflictInfo {
-    status: ConflictStatus;
-    tooltip?: string;
-}
+// ===== 컴포넌트 =====
 
 export function LightingTab() {
     const { settings, updateLighting } = useSettingsStore();
     const lighting = settings.lighting;
-    const studioComposition = settings.userInput.studioComposition;
-
-    // 현재 설정 기반 config 생성
-    const currentConfig = useMemo((): LightingConfig => ({
-        pattern: lighting.pattern as LightingPattern,
-        key: lighting.key as LightingKey,
-        ratio: lighting.ratio as LightingRatio | undefined,
-        quality: lighting.quality as LightQuality | undefined,
-        colorTemp: lighting.colorTemp as ColorTemperature | undefined,
-        mood: lighting.mood as LightingMood | undefined,
-        special: lighting.special as SpecialLighting[] | undefined,
-    }), [lighting]);
-
-    // 특정 필드 변경 시 충돌/권장 상태 계산
-    const getConflictStatus = useCallback((
-        field: keyof LightingConfig,
-        value: string
-    ): ItemConflictInfo => {
-        const testConfig = { ...currentConfig, [field]: value };
-        const result = LightingValidator.validate(testConfig);
-
-        if (result.errors.length > 0) {
-            return { status: 'critical', tooltip: result.errors[0] };
-        }
-        if (result.warnings.length > 0) {
-            return { status: 'warning', tooltip: result.warnings[0] };
-        }
-
-        // 권장 조합 체크
-        const recommended = RECOMMENDED_COMBINATIONS[currentConfig.pattern];
-        if (recommended) {
-            const isRecommended = (
-                (field === 'key' && value === recommended.key) ||
-                (field === 'ratio' && value === recommended.ratio) ||
-                (field === 'quality' && value === recommended.quality) ||
-                (field === 'colorTemp' && value === recommended.colorTemp) ||
-                (field === 'mood' && value === recommended.mood)
-            );
-            if (isRecommended) {
-                return { status: 'recommended', tooltip: '권장 조합' };
-            }
-        }
-
-        return { status: 'none' };
-    }, [currentConfig]);
-
-    // 유효한 Ratio 옵션 (동적 필터링)
-    const validRatios = useMemo(() => {
-        return LightingValidator.getValidRatios(
-            lighting.pattern as LightingPattern,
-            lighting.key as LightingKey
-        );
-    }, [lighting.pattern, lighting.key]);
-
-    // 유효한 Special 옵션 (동적 필터링)
-    const validSpecials = useMemo(() => {
-        return LightingValidator.getValidSpecials(
-            lighting.pattern as LightingPattern,
-            lighting.key as LightingKey
-        );
-    }, [lighting.pattern, lighting.key]);
-
-    // 검증 결과
-    const validation = useMemo(() => {
-        return LightingValidator.validate(currentConfig);
-    }, [currentConfig]);
-
     const isDisabled = !lighting.enabled;
 
-    // 현재 선택된 특수 조명과 충돌하는 항목 목록 반환
-    const getConflictingSpecials = useCallback((selected: SpecialLighting[]): SpecialLighting[] => {
-        const conflicting: SpecialLighting[] = [];
-
-        for (const sel of selected) {
-            for (const conflict of LIGHTING_CONFLICTS.specialToSpecialConflicts) {
-                if (conflict.severity !== 'error') continue;  // error 레벨만 disabled
-
-                if (conflict.special1 === sel && !selected.includes(conflict.special2)) {
-                    conflicting.push(conflict.special2);
-                } else if (conflict.special2 === sel && !selected.includes(conflict.special1)) {
-                    conflicting.push(conflict.special1);
-                }
-            }
-        }
-
-        return [...new Set(conflicting)];  // 중복 제거
-    }, []);
-
-    // 현재 충돌하는 특수 조명 목록
-    const conflictingSpecials = useMemo(() => {
-        return getConflictingSpecials(lighting.special || []);
-    }, [lighting.special, getConflictingSpecials]);
-
-    // Special 토글 핸들러 (단순화)
+    // Special 토글 핸들러
     const handleSpecialToggle = (special: SpecialLighting, checked: boolean) => {
         const current = lighting.special || [];
         if (checked) {
@@ -155,19 +46,8 @@ export function LightingTab() {
         }
     };
 
-    // 충돌/권장 아이콘 렌더러
-    const ConflictIcon = ({ status }: { status: ConflictStatus }) => {
-        if (status === 'critical' || status === 'error') {
-            return <HugeiconsIcon icon={AlertCircleIcon} size={16} className="text-red-500 shrink-0" />;
-        }
-        if (status === 'warning') {
-            return <HugeiconsIcon icon={Alert02Icon} size={16} className="text-amber-500 shrink-0" />;
-        }
-        if (status === 'recommended') {
-            return <HugeiconsIcon icon={StarIcon} size={16} className="text-blue-500 shrink-0" />;
-        }
-        return null;
-    };
+    // 첫번째 프리셋 (Standard Portrait)
+    const defaultPreset = LIGHTING_PRESETS[0];
 
     return (
         <div className="space-y-4">
@@ -180,245 +60,171 @@ export function LightingTab() {
                         {lighting.enabled ? '조명 설정 활성화' : '자연광/주변광 모드'}
                     </p>
                 </div>
-                <Switch
-                    id="lighting-switch"
-                    checked={lighting.enabled}
-                    onCheckedChange={(checked) => updateLighting({ enabled: checked })}
-                />
+                <div className="flex items-center gap-3">
+                    {/* 리셋 버튼 */}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            updateLighting({
+                                pattern: defaultPreset.params.pattern,
+                                key: defaultPreset.params.key,
+                                ratio: defaultPreset.params.ratio,
+                                quality: defaultPreset.params.quality,
+                                colorTemp: defaultPreset.params.colorTemp,
+                                mood: defaultPreset.params.mood,
+                                special: defaultPreset.params.special || [],
+                            });
+                        }}
+                        className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                        disabled={isDisabled}
+                    >
+                        <HugeiconsIcon icon={RefreshIcon} size={12} />
+                        초기화
+                    </button>
+                    <Switch
+                        id="lighting-switch"
+                        checked={lighting.enabled}
+                        onCheckedChange={(checked) => {
+                            if (checked) {
+                                // ON시 첫번째 프리셋 자동 적용
+                                updateLighting({
+                                    enabled: true,
+                                    pattern: defaultPreset.params.pattern,
+                                    key: defaultPreset.params.key,
+                                    ratio: defaultPreset.params.ratio,
+                                    quality: defaultPreset.params.quality,
+                                    colorTemp: defaultPreset.params.colorTemp,
+                                    mood: defaultPreset.params.mood,
+                                    special: defaultPreset.params.special || [],
+                                });
+                            } else {
+                                updateLighting({ enabled: false });
+                            }
+                        }}
+                    />
+                </div>
             </div>
 
-            {/* 초기화 버튼 */}
-            <div className={`flex justify-end ${isDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
-                <button
-                    type="button"
-                    onClick={() => {
-                        const preset = PATTERN_PRESETS.rembrandt;
-                        updateLighting({
-                            pattern: 'rembrandt',
-                            key: preset.key,
-                            ratio: preset.ratio,
-                            quality: preset.quality,
-                            colorTemp: preset.colorTemp,
-                            mood: preset.mood,
-                            special: [],
-                        });
-                    }}
-                    className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-                >
-                    <HugeiconsIcon icon={RefreshIcon} size={12} />
-                    초기화
-                </button>
+            {/* 프리셋 선택 */}
+            <div className={`space-y-2 ${isDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
+                <Label className="text-xs text-zinc-500">프리셋</Label>
+                <div className="flex flex-wrap gap-2">
+                    {LIGHTING_PRESETS.map((preset) => {
+                        const isSelected = lighting.enabled &&
+                            lighting.pattern === preset.params.pattern &&
+                            lighting.key === preset.params.key &&
+                            lighting.ratio === preset.params.ratio &&
+                            lighting.quality === preset.params.quality &&
+                            lighting.colorTemp === preset.params.colorTemp &&
+                            lighting.mood === preset.params.mood;
+                        return (
+                            <button
+                                key={preset.id}
+                                type="button"
+                                onClick={() => {
+                                    updateLighting({
+                                        pattern: preset.params.pattern,
+                                        key: preset.params.key,
+                                        ratio: preset.params.ratio,
+                                        quality: preset.params.quality,
+                                        colorTemp: preset.params.colorTemp,
+                                        mood: preset.params.mood,
+                                        special: preset.params.special || [],
+                                    });
+                                }}
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors
+                                    ${isSelected
+                                        ? 'bg-amber-500 text-black border-amber-500'
+                                        : 'bg-zinc-800/50 text-zinc-300 border-zinc-700 hover:border-amber-500/50'
+                                    }`}
+                                title={preset.description}
+                            >
+                                {preset.label}
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* 6개 드롭다운 그리드: PC 3열 / Mobile 2열 */}
             <div className={`grid grid-cols-2 md:grid-cols-3 gap-3 ${isDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
                 {/* 조명 패턴 */}
-                <div className="space-y-1.5">
-                    <Label className="text-xs text-zinc-500">조명 패턴</Label>
-                    <Select
-                        value={lighting.pattern}
-                        onValueChange={(v) => {
-                            const pattern = v as LightingSettings['pattern'];
-                            const preset = PATTERN_PRESETS[pattern];
-                            updateLighting({
-                                pattern,
-                                key: preset.key,
-                                ratio: preset.ratio,
-                                quality: preset.quality,
-                                colorTemp: preset.colorTemp,
-                                mood: preset.mood,
-                            });
-                        }}
-                    >
-                        <SelectTrigger className="bg-zinc-950 border-zinc-800 w-full">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800">
-                            {PATTERN_OPTIONS.map(opt => {
-                                const patternStatus = LightingValidator.getPatternStatusForFraming(studioComposition, opt.value);
-                                const isCritical = patternStatus.level === 'critical';
-                                if (patternStatus.level === 'disabled') return null;
-                                return (
-                                    <SelectItem
-                                        key={opt.value}
-                                        value={opt.value}
-                                        disabled={isCritical}
-                                        className={isCritical ? "opacity-50" : ""}
-                                    >
-                                        <div className="flex items-center justify-between w-full gap-2">
-                                            <span>{opt.label}</span>
-                                            <span className="flex items-center gap-1">
-                                                {patternStatus.level === 'recommend' && <HugeiconsIcon icon={StarIcon} size={12} className="text-blue-500" />}
-                                                {isCritical && <HugeiconsIcon icon={AlertCircleIcon} size={12} className="text-red-500" />}
-                                                {patternStatus.level === 'warning' && <HugeiconsIcon icon={Alert02Icon} size={12} className="text-amber-500" />}
-                                            </span>
-                                        </div>
-                                    </SelectItem>
-                                );
-                            })}
-                        </SelectContent>
-                    </Select>
-                </div>
+                <ComboboxField
+                    label="조명 패턴"
+                    options={PATTERN_OPTIONS}
+                    value={lighting.pattern}
+                    onSelect={(value) => {
+                        const newPattern = value as LightingSettings['pattern'];
+                        // 새 패턴에서 현재 키가 충돌하면 mid-key로 리셋
+                        const keyConflict = getLightingPatternConflict(newPattern, lighting.key);
+                        const newKey = keyConflict === 'disabled' ? 'mid-key' : lighting.key;
+                        updateLighting({ pattern: newPattern, key: newKey });
+                    }}
+                    getConflictLevel={(value) => getLightingPatternConflict(value, lighting.key)}
+                />
 
                 {/* Key (밝기) */}
-                <div className="space-y-1.5">
-                    <Label className="text-xs text-zinc-500">키 (밝기)</Label>
-                    <Select
-                        value={lighting.key}
-                        onValueChange={(v) => updateLighting({ key: v as LightingSettings['key'] })}
-                    >
-                        <SelectTrigger className="bg-zinc-950 border-zinc-800 w-full">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800">
-                            {KEY_OPTIONS.map(opt => {
-                                const conflict = getConflictStatus('key', opt.value);
-                                const isCritical = conflict.status === 'critical';
-                                return (
-                                    <SelectItem
-                                        key={opt.value}
-                                        value={opt.value}
-                                        disabled={isCritical}
-                                        className={isCritical ? "opacity-50" : ""}
-                                    >
-                                        <span className="flex items-center justify-between w-full gap-2">
-                                            <span>{opt.label}</span>
-                                            <ConflictIcon status={conflict.status} />
-                                        </span>
-                                    </SelectItem>
-                                );
-                            })}
-                        </SelectContent>
-                    </Select>
-                </div>
+                <ComboboxField
+                    label="키 (밝기)"
+                    options={KEY_OPTIONS}
+                    value={lighting.key}
+                    onSelect={(value) => {
+                        const newKey = value as LightingSettings['key'];
+                        // 새 키에서 현재 비율이 충돌하면 4:1로 리셋
+                        const ratioConflict = getLightingRatioConflictForKey(lighting.ratio || '', newKey);
+                        const newRatio = ratioConflict === 'disabled' ? '4:1' : lighting.ratio;
+                        updateLighting({ key: newKey, ratio: newRatio });
+                    }}
+                    getConflictLevel={(value) => {
+                        // 패턴과 충돌 또는 비율과 충돌
+                        const patternConflict = getLightingKeyConflictForPattern(value, lighting.pattern);
+                        if (patternConflict === 'disabled') return 'disabled';
+                        const ratioConflict = getLightingKeyConflictForRatio(value, lighting.ratio || '');
+                        return ratioConflict;
+                    }}
+                />
 
                 {/* Ratio (대비 비율) */}
-                <div className="space-y-1.5">
-                    <Label className="text-xs text-zinc-500">대비 비율</Label>
-                    <Select
-                        value={lighting.ratio || ''}
-                        onValueChange={(v) => updateLighting({ ratio: v as LightingSettings['ratio'] })}
-                    >
-                        <SelectTrigger className="bg-zinc-950 border-zinc-800 w-full">
-                            <SelectValue placeholder="선택" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800">
-                            {RATIO_OPTIONS.filter(opt => validRatios.includes(opt.value)).map(opt => {
-                                const conflict = getConflictStatus('ratio', opt.value);
-                                const isCritical = conflict.status === 'critical';
-                                return (
-                                    <SelectItem
-                                        key={opt.value}
-                                        value={opt.value}
-                                        disabled={isCritical}
-                                        className={isCritical ? "opacity-50" : ""}
-                                    >
-                                        <span className="flex items-center justify-between w-full gap-2">
-                                            <span>{opt.label}</span>
-                                            <ConflictIcon status={conflict.status} />
-                                        </span>
-                                    </SelectItem>
-                                );
-                            })}
-                        </SelectContent>
-                    </Select>
-                </div>
+                <ComboboxField
+                    label="대비 비율"
+                    options={RATIO_OPTIONS}
+                    value={lighting.ratio || ''}
+                    onSelect={(value) => updateLighting({ ratio: value as LightingSettings['ratio'] })}
+                    getConflictLevel={(value) => {
+                        const keyConflict = getLightingRatioConflictForKey(value, lighting.key);
+                        if (keyConflict === 'disabled') return 'disabled';
+                        return getLightingRatioConflictForQuality(value, lighting.quality || '');
+                    }}
+                />
 
                 {/* Quality (광질) */}
-                <div className="space-y-1.5">
-                    <Label className="text-xs text-zinc-500">광질</Label>
-                    <Select
-                        value={lighting.quality || ''}
-                        onValueChange={(v) => updateLighting({ quality: v as LightingSettings['quality'] })}
-                    >
-                        <SelectTrigger className="bg-zinc-950 border-zinc-800 w-full">
-                            <SelectValue placeholder="선택" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800">
-                            {QUALITY_OPTIONS.map(opt => {
-                                const conflict = getConflictStatus('quality', opt.value);
-                                const isCritical = conflict.status === 'critical';
-                                return (
-                                    <SelectItem
-                                        key={opt.value}
-                                        value={opt.value}
-                                        disabled={isCritical}
-                                        className={isCritical ? "opacity-50" : ""}
-                                    >
-                                        <span className="flex items-center justify-between w-full gap-2">
-                                            <span>{opt.label}</span>
-                                            <ConflictIcon status={conflict.status} />
-                                        </span>
-                                    </SelectItem>
-                                );
-                            })}
-                        </SelectContent>
-                    </Select>
-                </div>
+                <ComboboxField
+                    label="광질"
+                    options={QUALITY_OPTIONS}
+                    value={lighting.quality || ''}
+                    onSelect={(value) => updateLighting({ quality: value as LightingSettings['quality'] })}
+                    getConflictLevel={(value) => {
+                        const ratioConflict = getLightingQualityConflictForRatio(value, lighting.ratio || '');
+                        if (ratioConflict === 'disabled') return 'disabled';
+                        return getLightingQualityWarningForPattern(value, lighting.pattern);
+                    }}
+                />
 
                 {/* ColorTemp (색온도) */}
-                <div className="space-y-1.5">
-                    <Label className="text-xs text-zinc-500">색온도</Label>
-                    <Select
-                        value={lighting.colorTemp || ''}
-                        onValueChange={(v) => updateLighting({ colorTemp: v as LightingSettings['colorTemp'] })}
-                    >
-                        <SelectTrigger className="bg-zinc-950 border-zinc-800 w-full">
-                            <SelectValue placeholder="선택" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800">
-                            {COLOR_TEMP_OPTIONS.map(opt => {
-                                const conflict = getConflictStatus('colorTemp', opt.value);
-                                const isCritical = conflict.status === 'critical';
-                                return (
-                                    <SelectItem
-                                        key={opt.value}
-                                        value={opt.value}
-                                        disabled={isCritical}
-                                        className={isCritical ? "opacity-50" : ""}
-                                    >
-                                        <span className="flex items-center justify-between w-full gap-2">
-                                            <span>{opt.label}</span>
-                                            <ConflictIcon status={conflict.status} />
-                                        </span>
-                                    </SelectItem>
-                                );
-                            })}
-                        </SelectContent>
-                    </Select>
-                </div>
+                <ComboboxField
+                    label="색온도"
+                    options={COLOR_TEMP_OPTIONS}
+                    value={lighting.colorTemp || ''}
+                    onSelect={(value) => updateLighting({ colorTemp: value as LightingSettings['colorTemp'] })}
+                />
 
                 {/* Mood (분위기) */}
-                <div className="space-y-1.5">
-                    <Label className="text-xs text-zinc-500">분위기</Label>
-                    <Select
-                        value={lighting.mood || ''}
-                        onValueChange={(v) => updateLighting({ mood: v as LightingSettings['mood'] })}
-                    >
-                        <SelectTrigger className="bg-zinc-950 border-zinc-800 w-full">
-                            <SelectValue placeholder="선택" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800">
-                            {MOOD_OPTIONS.map(opt => {
-                                const conflict = getConflictStatus('mood', opt.value);
-                                const isCritical = conflict.status === 'critical';
-                                return (
-                                    <SelectItem
-                                        key={opt.value}
-                                        value={opt.value}
-                                        disabled={isCritical}
-                                        className={isCritical ? "opacity-50" : ""}
-                                    >
-                                        <span className="flex items-center justify-between w-full gap-2">
-                                            <span>{opt.label}</span>
-                                            <ConflictIcon status={conflict.status} />
-                                        </span>
-                                    </SelectItem>
-                                );
-                            })}
-                        </SelectContent>
-                    </Select>
-                </div>
+                <ComboboxField
+                    label="분위기"
+                    options={MOOD_OPTIONS}
+                    value={lighting.mood || ''}
+                    onSelect={(value) => updateLighting({ mood: value as LightingSettings['mood'] })}
+                />
             </div>
 
             {/* Special Lighting (전체 너비) */}
@@ -426,30 +232,23 @@ export function LightingTab() {
                 <Label className="text-xs text-zinc-500">특수 조명</Label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {SPECIAL_OPTIONS.map(opt => {
-                        const isValid = validSpecials.includes(opt.value);
                         const isChecked = lighting.special?.includes(opt.value) || false;
-                        const isConflicting = conflictingSpecials.includes(opt.value);
                         const isMaxReached = (lighting.special?.length || 0) >= 2 && !isChecked;
-                        const isItemDisabled = !isValid || isConflicting || isMaxReached;
 
                         return (
                             <label
                                 key={opt.value}
                                 className={`flex items-center gap-2 p-2 rounded-md border transition-colors
                                         ${isChecked ? 'bg-amber-600/20 border-amber-600' : 'bg-zinc-900 border-zinc-800'}
-                                        ${isItemDisabled ? 'opacity-40 cursor-not-allowed' : 'hover:border-zinc-600 cursor-pointer'}
+                                        ${isMaxReached ? 'opacity-40 cursor-not-allowed' : 'hover:border-zinc-600 cursor-pointer'}
                                     `}
                             >
                                 <Checkbox
                                     checked={isChecked}
-                                    disabled={isItemDisabled}
+                                    disabled={isMaxReached}
                                     onCheckedChange={(checked) => handleSpecialToggle(opt.value, checked as boolean)}
                                 />
-                                <span className="text-xs flex items-center gap-1">
-                                    {isConflicting && <HugeiconsIcon icon={AlertCircleIcon} size={12} className="text-amber-500" />}
-                                    {!isValid && !isConflicting && <HugeiconsIcon icon={AlertCircleIcon} size={12} className="text-red-500" />}
-                                    {opt.label}
-                                </span>
+                                <span className="text-xs">{opt.label}</span>
                             </label>
                         );
                     })}

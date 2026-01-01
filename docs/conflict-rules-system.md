@@ -25,11 +25,10 @@
 
 ### 파일 구조
 ```
-config/rules/
-├── conflict-rules.ts     # 규칙 정의 (source of truth)
 lib/rules/
-├── conflict-evaluator.ts # 규칙 평가 엔진
-├── legacy-adapter.ts     # UI 연동 함수
+├── conflict-rules.ts     # 규칙 정의 (source of truth)
+├── conflict-adapter.ts   # UI 연동 함수
+├── conflict-evaluator.ts # 규칙 평가 엔진 (확장용)
 ```
 
 ### 적용 탭
@@ -39,6 +38,11 @@ lib/rules/
   - 핸드 포즈: `getHandPoseConflict()`
 - ✅ **패션 항목** (`PersonForm`)
   - 하의/신발 visibility: `getFashionDisabled()`
+- ✅ **조명 탭** (`LightingTab`)
+  - 패턴-키: `getLightingPatternConflict()`, `getLightingKeyConflictForPattern()`
+  - 키-비율: `getLightingKeyConflictForRatio()`, `getLightingRatioConflictForKey()`
+  - 광질-비율: `getLightingQualityConflictForRatio()`, `getLightingRatioConflictForQuality()`
+  - 광질-패턴(경고): `getLightingQualityWarningForPattern()`
 
 ### 규칙 구조
 ```typescript
@@ -51,23 +55,12 @@ interface ConflictRule {
 
 ### 새 규칙 추가 방법
 1. `config/rules/conflict-rules.ts`에 규칙 추가
-2. `lib/rules/legacy-adapter.ts`에 조회 함수 추가 (필요시)
+2. `lib/rules/conflict-adapter.ts`에 조회 함수 추가 (필요시)
 3. UI 컴포넌트에서 함수 호출
 
 ---
 
 ## 2. 레거시 시스템
-
-### 조명 탭
-```
-config/lighting-rules.ts          # 충돌 규칙
-lib/lighting-validator.ts         # 검증 엔진
-```
-
-**특징:**
-- `LightingValidator.validate()` - 실시간 검증
-- `RECOMMENDED_COMBINATIONS` - 권장 조합 표시
-- 동적 필터링 (`getValidRatios`, `getValidSpecials`)
 
 ### 카메라 탭
 ```
@@ -111,6 +104,6 @@ lib/portrait-conflict-validator.ts       # 검증 엔진
 
 향후 조명/카메라 탭도 새 시스템으로 통합하려면:
 1. `conflict-rules.ts`에 규칙 추가
-2. `legacy-adapter.ts`에 조회 함수 구현
+2. `conflict-adapter.ts`에 조회 함수 구현
 3. UI에서 새 함수 사용
 4. 기존 validator 삭제

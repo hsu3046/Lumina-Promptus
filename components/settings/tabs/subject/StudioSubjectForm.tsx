@@ -13,13 +13,13 @@ import {
     FRAMING_BODY_POSE_CONFLICTS,
     FRAMING_HAND_POSE_CONFLICTS,
 } from '@/config/mappings/portrait-composition';
-import { getAngleConflict } from '@/lib/rules/legacy-adapter';
+import { getAngleConflict } from '@/lib/rules/conflict-adapter';
 import {
     APPEARANCE_PRESETS,
     STYLE_PRESETS,
     FASHION_PRESETS,
     POSE_PRESETS,
-} from '@/config/presets/subject-presets';
+} from './subject-presets';
 import {
     TOP_WEAR_OPTIONS,
     BOTTOM_WEAR_OPTIONS,
@@ -31,7 +31,7 @@ import {
 import {
     selectConflictAwarePose,
     getFashionVisibility,
-} from '@/lib/conflict-aware-random';
+} from './conflict-aware-random';
 import type { StudioSubject, UserInputSettings, PortraitFraming, PortraitExpression } from '@/types';
 
 const DEFAULT_SUBJECT: StudioSubject = {

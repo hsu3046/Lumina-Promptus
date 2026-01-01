@@ -6,9 +6,9 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { usePromptStore } from '@/store/usePromptStore';
-import { PromptBuilderV2 } from '@/lib/prompt-builder/PromptBuilderV2';
-import { NanoBananaProExporter } from '@/lib/exporters/NanoBananaProExporter';
-import { PromptDiffGenerator } from '@/lib/diff/PromptDiffGenerator';
+import { PromptBuilderV2 } from '@/lib/prompt/builders/StudioBuilder';
+import { NanoBananaProExporter } from '@/lib/prompt/exporters/NanoBananaExporter';
+import { PromptDiffGenerator } from '@/lib/prompt/prompt-diff-generator';
 import type { PromptIR, PromptDiff } from '@/types';
 
 interface UsePromptBuilderReturn {

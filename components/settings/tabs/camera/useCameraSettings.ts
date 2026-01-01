@@ -10,7 +10,7 @@ import {
     calculateAutoAperture,
     calculateAutoShutterSpeed,
     calculateAutoISO,
-} from '@/lib/exposure-calculator';
+} from './exposure-calculator';
 import { getCameraById } from '@/config/mappings/cameras';
 import { getLensById } from '@/config/mappings/lenses';
 
@@ -30,7 +30,7 @@ export interface ExposureInfo {
     currentEV: number;
     targetEV: number;
     difference: number;
-    status: import('@/lib/exposure-calculator').ExposureStatusLevel;
+    status: import('./exposure-calculator').ExposureStatusLevel;
 }
 
 export function useCameraSettings() {

@@ -1,8 +1,8 @@
-// lib/rules/legacy-adapter.ts
-// 충돌 규칙 어댑터 - 새 conflict-rules.ts 기반
+// lib/rules/conflict-adapter.ts
+// 충돌 규칙 어댑터 - conflict-rules.ts 기반
 
 import type { ConflictLevel } from '@/components/ui/combobox-field';
-import { STUDIO_CONFLICT_RULES, type Restriction } from '@/config/rules/conflict-rules';
+import { STUDIO_CONFLICT_RULES, type Restriction } from '@/lib/rules/conflict-rules';
 import {
     FRAMING_BODY_POSE_CONFLICTS,
     FRAMING_HAND_POSE_CONFLICTS,
@@ -108,62 +108,60 @@ export function applyFramingConflicts<T extends { value: string }>(
     }));
 }
 
-// ===== 라이팅 충돌 =====
-
-import {
-    FRAMING_PATTERN_CONFLICTS,
-    LIGHTING_CONFLICTS,
-    type FramingPatternConflictLevel,
-} from '@/config/lighting-rules';
-import type { LightingPattern, LightingKey, LightingRatio, SpecialLighting } from '@/types/lighting.types';
+// ===== 라이팅 충돌 (새 시스템) =====
 
 /**
- * 구도 기반 라이팅 패턴 충돌 레벨 조회
+ * 패턴 선택 시 키와의 충돌 조회
  */
-export function getLightingPatternConflict(framing: string, pattern: string): ConflictLevel {
-    const matrix = FRAMING_PATTERN_CONFLICTS[framing];
-    if (!matrix) return 'ok';
-    const level = matrix[pattern as LightingPattern];
-    return mapLegacyLevel(level as FramingPatternConflictLevel);
+export function getLightingPatternConflict(pattern: string, currentKey: string): ConflictLevel {
+    const restriction = getConflictFromRules(STUDIO_CONFLICT_RULES, 'lightingPattern', pattern, 'lightingKey', currentKey);
+    return mapRestriction(restriction);
 }
 
 /**
- * 패턴-키 충돌 여부 조회
+ * 키 선택 시 패턴과의 충돌 조회
  */
-export function getPatternKeyConflict(pattern: string, key: string): ConflictLevel {
-    const conflicts = LIGHTING_CONFLICTS.patternKeyConflicts;
-    const found = conflicts.find(c => c.pattern === pattern && c.key === key);
-    return found ? 'disabled' : 'ok';
+export function getLightingKeyConflictForPattern(key: string, currentPattern: string): ConflictLevel {
+    const restriction = getConflictFromRules(STUDIO_CONFLICT_RULES, 'lightingPattern', currentPattern, 'lightingKey', key);
+    return mapRestriction(restriction);
 }
 
 /**
- * 키-비율 충돌 여부 조회
+ * 키 선택 시 비율과의 충돌 조회
  */
-export function getKeyRatioConflict(key: string, ratio: string): ConflictLevel {
-    const conflicts = LIGHTING_CONFLICTS.keyRatioConflicts;
-    const found = conflicts.find(c => c.key === key && (c.ratios as string[]).includes(ratio));
-    return found ? 'disabled' : 'ok';
+export function getLightingKeyConflictForRatio(key: string, currentRatio: string): ConflictLevel {
+    const restriction = getConflictFromRules(STUDIO_CONFLICT_RULES, 'lightingKey', key, 'lightingRatio', currentRatio);
+    return mapRestriction(restriction);
 }
 
 /**
- * 패턴-비율 충돌 여부 조회
+ * 비율 선택 시 키와의 충돌 조회
  */
-export function getPatternRatioConflict(pattern: string, ratio: string): ConflictLevel {
-    const conflicts = LIGHTING_CONFLICTS.patternRatioConflicts;
-    const found = conflicts.find(c => c.pattern === pattern && (c.ratios as string[]).includes(ratio));
-    return found ? 'disabled' : 'ok';
+export function getLightingRatioConflictForKey(ratio: string, currentKey: string): ConflictLevel {
+    const restriction = getConflictFromRules(STUDIO_CONFLICT_RULES, 'lightingKey', currentKey, 'lightingRatio', ratio);
+    return mapRestriction(restriction);
 }
 
 /**
- * 특수 조명 간 충돌 여부 조회
+ * 비율 선택 시 광질과의 충돌 조회
  */
-export function getSpecialConflict(special1: string, special2: string): ConflictLevel {
-    const conflicts = LIGHTING_CONFLICTS.specialToSpecialConflicts;
-    const found = conflicts.find(c =>
-        (c.special1 === special1 && c.special2 === special2) ||
-        (c.special1 === special2 && c.special2 === special1)
-    );
-    if (!found) return 'ok';
-    return found.severity === 'error' ? 'disabled' : 'none';
+export function getLightingRatioConflictForQuality(ratio: string, currentQuality: string): ConflictLevel {
+    const restriction = getConflictFromRules(STUDIO_CONFLICT_RULES, 'lightingQuality', currentQuality, 'lightingRatio', ratio);
+    return mapRestriction(restriction);
 }
 
+/**
+ * 광질 선택 시 비율과의 충돌 조회
+ */
+export function getLightingQualityConflictForRatio(quality: string, currentRatio: string): ConflictLevel {
+    const restriction = getConflictFromRules(STUDIO_CONFLICT_RULES, 'lightingQuality', quality, 'lightingRatio', currentRatio);
+    return mapRestriction(restriction);
+}
+
+/**
+ * 광질 선택 시 패턴과의 경고 조회
+ */
+export function getLightingQualityWarningForPattern(quality: string, currentPattern: string): ConflictLevel {
+    const restriction = getConflictFromRules(STUDIO_CONFLICT_RULES, 'lightingQuality', quality, 'lightingPattern', currentPattern);
+    return mapRestriction(restriction);
+}

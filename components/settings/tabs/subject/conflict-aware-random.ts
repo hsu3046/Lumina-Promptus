@@ -27,7 +27,7 @@ import {
 import {
     FRAMING_VISIBILITY,
     ACCESSORY_CATEGORIES,
-} from '@/config/mappings/framing-fashion-conflicts';
+} from '@/lib/rules/conflict-framing-fashion';
 
 // ===== 헬퍼: 충돌 레벨 확인 (warning, critical, disabled 모두 피함) =====
 function isConflict(level: ConflictLevel | undefined): boolean {

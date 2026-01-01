@@ -107,8 +107,11 @@ export function ComboboxField({
         }
     };
 
-    // 키보드 핸들러
+    // 키보드 핸들러 (한글 IME 조합 중에는 무시)
     const handleKeyDown = (e: React.KeyboardEvent) => {
+        // 한글 IME 조합 중이면 무시 (Enter가 조합 완료용으로 사용됨)
+        if (e.nativeEvent.isComposing) return;
+
         if (!open) {
             // 팝오버가 닫혀있을 때 Enter/ArrowDown으로 열기
             if (e.key === 'Enter' || e.key === 'ArrowDown') {
@@ -155,8 +158,9 @@ export function ComboboxField({
         }
     };
 
-    // 표시할 값: 선택된 항목이 있으면 라벨, 없으면 검색어
-    const displayValue = selectedOption?.label || searchValue;
+    // 표시할 값: 선택된 항목이 있으면 라벨만, 없으면 검색어
+    // (선택 상태에서는 searchValue 무시)
+    const displayValue = value ? (selectedOption?.label || '') : searchValue;
 
     // 검색어 변경 시 하이라이트 인덱스 리셋
     React.useEffect(() => {
@@ -183,7 +187,7 @@ export function ComboboxField({
                         role="combobox"
                         aria-expanded={open}
                         className={cn(
-                            "flex items-center w-full h-8 px-3 rounded-md border bg-zinc-950 border-zinc-800 text-xs",
+                            "flex items-center gap-2 w-full h-8 px-3 rounded-md border bg-zinc-800/70 border-zinc-800 text-xs",
                             disabled ? "opacity-50 cursor-not-allowed" : "cursor-text",
                             open && "ring-1 ring-amber-500"
                         )}
@@ -202,6 +206,21 @@ export function ComboboxField({
                             disabled={disabled}
                             className="flex-1 min-w-0 bg-transparent outline-none placeholder:text-zinc-500 text-[16px] md:text-xs"
                         />
+                        {/* 선택된 옵션의 색상 원 표시 */}
+                        {selectedOption?.color && (
+                            <span
+                                className="w-3 h-3 rounded-full shrink-0"
+                                style={{ backgroundColor: selectedOption.color }}
+                            />
+                        )}
+                        {/* 선택된 옵션의 아이콘 표시 */}
+                        {selectedOption?.icon && (
+                            <HugeiconsIcon icon={selectedOption.icon} size={14} className="text-zinc-400 shrink-0" />
+                        )}
+                        {/* 충돌 아이콘 표시 (라벨 전달 또는 현재 선택된 값의 충돌) */}
+                        {(showLabelConflict || (value && getConflictLevel?.(value))) && (
+                            <ConflictIcon level={showLabelConflict || getConflictLevel?.(value) || 'ok'} />
+                        )}
                         {/* Clear 버튼 또는 Chevron 아이콘 */}
                         {clearable && (value || searchValue) ? (
                             <span
@@ -302,6 +321,7 @@ interface GroupedComboboxFieldProps {
     emptyMessage?: string;
     className?: string;
     disabled?: boolean;
+    clearable?: boolean;
 }
 
 export function GroupedComboboxField({
@@ -314,73 +334,178 @@ export function GroupedComboboxField({
     emptyMessage = '결과 없음',
     className,
     disabled = false,
+    clearable = false,
 }: GroupedComboboxFieldProps) {
     const [open, setOpen] = React.useState(false);
+    const [searchValue, setSearchValue] = React.useState('');
+    const [highlightedIndex, setHighlightedIndex] = React.useState(0);
 
-    // 모든 그룹에서 선택된 옵션 찾기
-    const selectedOption = groups.flatMap(g => g.options).find(opt => opt.value === value);
+    // 모든 그룹에서 옵션 플랫화
+    const allOptions = groups.flatMap(g => g.options);
+    const selectedOption = allOptions.find(opt => opt.value === value);
+
+    // 필터링된 그룹 (검색어 기반)
+    const filteredGroups = groups.map(group => ({
+        ...group,
+        options: group.options.filter(opt =>
+            opt.label.toLowerCase().includes(searchValue.toLowerCase())
+        )
+    })).filter(group => group.options.length > 0);
+
+    // 모든 필터링된 옵션 (플랫)
+    const filteredOptions = filteredGroups.flatMap(g => g.options);
+
+    // 표시 값 계산: 선택된 값이 있으면 라벨만, 없으면 검색어
+    const displayValue = value ? (selectedOption?.label || '') : searchValue;
+
+    // 클리어 핸들러
+    const handleClear = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        setSearchValue('');
+        onSelect('');
+    };
+
+    // 키보드 핸들러 (한글 IME 조합 중에는 무시)
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        // 한글 IME 조합 중이면 무시 (Enter가 조합 완료용으로 사용됨)
+        if (e.nativeEvent.isComposing) return;
+
+        if (!open) {
+            if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                setOpen(true);
+                e.preventDefault();
+            }
+            return;
+        }
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setHighlightedIndex(prev =>
+                    prev < filteredOptions.length - 1 ? prev + 1 : prev
+                );
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setHighlightedIndex(prev => (prev > 0 ? prev - 1 : 0));
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (filteredOptions[highlightedIndex]) {
+                    onSelect(filteredOptions[highlightedIndex].value);
+                    setOpen(false);
+                    setSearchValue('');
+                }
+                break;
+            case 'Escape':
+                setOpen(false);
+                setSearchValue('');
+                break;
+            case 'Tab':
+                setOpen(false);
+                setSearchValue('');
+                break;
+        }
+    };
+
+    // 팝오버 열릴 때 하이라이트 리셋
+    React.useEffect(() => {
+        if (open) {
+            setHighlightedIndex(0);
+        }
+    }, [open]);
 
     return (
         <div className={cn("min-w-0", className)}>
-            <Label className={cn("text-[10px] mb-1 flex items-center gap-1", disabled ? "text-zinc-600" : "text-zinc-500")}>
-                {labelIcon && <HugeiconsIcon icon={labelIcon} size={12} />}
-                {label}
-            </Label>
+            {label && (
+                <Label className={cn("text-[10px] mb-1 flex items-center gap-1", disabled ? "text-zinc-600" : "text-zinc-500")}>
+                    {labelIcon && <HugeiconsIcon icon={labelIcon} size={12} />}
+                    {label}
+                </Label>
+            )}
             <Popover open={disabled ? false : open} onOpenChange={disabled ? undefined : setOpen}>
                 <PopoverTrigger asChild>
-                    <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={open}
-                        disabled={disabled}
+                    <div
                         className={cn(
-                            "w-full h-8 justify-between bg-zinc-950 border-zinc-800 text-xs",
-                            disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-zinc-800"
+                            "flex items-center w-full h-8 px-3 rounded-md border bg-zinc-800/70 border-zinc-800 text-xs",
+                            disabled ? "opacity-50 cursor-not-allowed" : "cursor-text",
+                            open && "ring-1 ring-amber-500"
                         )}
                     >
-                        <span className="truncate">
-                            {selectedOption?.label || placeholder}
-                        </span>
-                        <span className="flex items-center gap-1">
-                            {selectedOption?.icon && (
-                                <HugeiconsIcon icon={selectedOption.icon} size={12} className="text-zinc-400" />
-                            )}
-                            <HugeiconsIcon icon={UnfoldMoreIcon} size={12} className="shrink-0 opacity-50" />
-                        </span>
-                    </Button>
+                        <input
+                            type="text"
+                            value={displayValue}
+                            onChange={(e) => {
+                                setSearchValue(e.target.value);
+                                if (value) onSelect('');
+                                if (!open) setOpen(true);
+                            }}
+                            onKeyDown={handleKeyDown}
+                            onClick={() => setOpen(true)}
+                            placeholder={placeholder}
+                            disabled={disabled}
+                            className="flex-1 min-w-0 bg-transparent outline-none placeholder:text-zinc-500 text-[16px] md:text-xs"
+                        />
+                        {/* Clear 버튼 또는 Chevron 아이콘 */}
+                        {clearable && (value || searchValue) ? (
+                            <span
+                                onClick={handleClear}
+                                className="p-0.5 rounded hover:bg-zinc-700 transition-colors cursor-pointer"
+                                title="선택 해제"
+                            >
+                                <HugeiconsIcon icon={Cancel01Icon} size={14} className="text-zinc-400 hover:text-zinc-200" />
+                            </span>
+                        ) : (
+                            <HugeiconsIcon icon={UnfoldMoreIcon} size={14} className="shrink-0 opacity-50" />
+                        )}
+                    </div>
                 </PopoverTrigger>
-                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-zinc-900 border-zinc-800">
-                    <Command className="bg-transparent">
+                <PopoverContent
+                    className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] p-0 bg-zinc-900 border-zinc-800 overflow-hidden"
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                    sideOffset={4}
+                    align="start"
+                >
+                    <Command className="bg-transparent" shouldFilter={false}>
                         <CommandList className="max-h-[250px]">
                             <CommandEmpty className="py-2 text-xs text-zinc-500 text-center">
                                 {emptyMessage}
                             </CommandEmpty>
-                            {groups.map((group, groupIdx) => (
+                            {filteredGroups.map((group, groupIdx) => (
                                 <CommandGroup key={groupIdx} heading={group.label}>
-                                    {group.options.map((opt) => (
-                                        <CommandItem
-                                            key={opt.value}
-                                            value={opt.label}
-                                            onSelect={() => {
-                                                onSelect(opt.value);
-                                                setOpen(false);
-                                            }}
-                                            className="text-xs cursor-pointer"
-                                        >
-                                            <HugeiconsIcon
-                                                icon={Tick01Icon}
-                                                size={12}
+                                    {group.options.map((opt) => {
+                                        const globalIndex = filteredOptions.findIndex(o => o.value === opt.value);
+                                        const isHighlighted = globalIndex === highlightedIndex;
+                                        return (
+                                            <CommandItem
+                                                key={opt.value}
+                                                value={opt.label}
+                                                onSelect={() => {
+                                                    onSelect(opt.value);
+                                                    setOpen(false);
+                                                    setSearchValue('');
+                                                }}
                                                 className={cn(
-                                                    "mr-2",
-                                                    value === opt.value ? "opacity-100 text-amber-500" : "opacity-0"
+                                                    "text-xs cursor-pointer",
+                                                    isHighlighted && "bg-zinc-800"
                                                 )}
-                                            />
-                                            <span className="flex-1">{opt.label}</span>
-                                            {opt.icon && (
-                                                <HugeiconsIcon icon={opt.icon} size={12} className="text-zinc-400 shrink-0 ml-auto" />
-                                            )}
-                                        </CommandItem>
-                                    ))}
+                                            >
+                                                <HugeiconsIcon
+                                                    icon={Tick01Icon}
+                                                    size={12}
+                                                    className={cn(
+                                                        "mr-2",
+                                                        value === opt.value ? "opacity-100 text-amber-500" : "opacity-0"
+                                                    )}
+                                                />
+                                                <span className="flex-1">{opt.label}</span>
+                                                {opt.icon && (
+                                                    <HugeiconsIcon icon={opt.icon} size={12} className="text-zinc-400 shrink-0 ml-auto" />
+                                                )}
+                                            </CommandItem>
+                                        );
+                                    })}
                                 </CommandGroup>
                             ))}
                         </CommandList>

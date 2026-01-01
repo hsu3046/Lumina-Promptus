@@ -1,7 +1,7 @@
 // lib/rules/conflict-evaluator.ts
 // 충돌 규칙 평가 엔진
 
-import type { ConflictRule, Restriction } from '@/config/rules/conflict-rules';
+import type { ConflictRule, Restriction } from '@/lib/rules/conflict-rules';
 
 export interface RestrictionInfo {
     field: string;

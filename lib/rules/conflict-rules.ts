@@ -85,7 +85,49 @@ export const STUDIO_CONFLICT_RULES: ConflictRule[] = [
     },
 
     // === 라이팅 충돌 ===
-    // (라이팅 충돌은 legacy-adapter.ts에서 처리)
+
+    // Pattern + Key 충돌 (disabled)
+    {
+        restriction: 'disabled',
+        source: { field: 'lightingPattern', values: ['split'] },
+        target: { field: 'lightingKey', affected: ['high-key'] },
+    },
+    {
+        restriction: 'disabled',
+        source: { field: 'lightingPattern', values: ['butterfly'] },
+        target: { field: 'lightingKey', affected: ['low-key'] },
+    },
+    {
+        restriction: 'disabled',
+        source: { field: 'lightingPattern', values: ['rembrandt'] },
+        target: { field: 'lightingKey', affected: ['high-key'] },
+    },
+
+    // Key + Ratio 충돌 (disabled)
+    {
+        restriction: 'disabled',
+        source: { field: 'lightingKey', values: ['high-key'] },
+        target: { field: 'lightingRatio', affected: ['8:1', '16:1'] },
+    },
+    {
+        restriction: 'disabled',
+        source: { field: 'lightingKey', values: ['low-key'] },
+        target: { field: 'lightingRatio', affected: ['2:1', '3:1'] },
+    },
+
+    // Quality + Ratio 충돌 (disabled)
+    {
+        restriction: 'disabled',
+        source: { field: 'lightingQuality', values: ['soft'] },
+        target: { field: 'lightingRatio', affected: ['16:1'] },
+    },
+
+    // Quality + Pattern 경고 (none)
+    {
+        restriction: 'none',
+        source: { field: 'lightingQuality', values: ['hard'] },
+        target: { field: 'lightingPattern', affected: ['butterfly'] },
+    },
 
     // === 구도-렌즈 화각 충돌 ===
 
