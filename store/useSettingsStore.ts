@@ -57,7 +57,7 @@ const defaultArtDirectionSettings: ArtDirectionSettings = {
     compositionRule: 'rule_of_thirds',
     cameraAngle: 'eye_level',
     shotType: 'medium_shot',
-    photographerStyleId: undefined,
+    photoStyleId: undefined,
     environmentEffects: [],
     lensCharacteristicType: 'studio',
 };

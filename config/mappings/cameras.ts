@@ -443,3 +443,15 @@ export const CAMERA_BODIES_BY_BRAND = CAMERA_BODIES.reduce<Record<string, Camera
 export function getCameraById(id: string): CameraBody | undefined {
     return CAMERA_BODIES.find(camera => camera.id === id);
 }
+
+// Mount 기반 카메라 타입 라벨 반환
+export function getCameraTypeLabel(mount: Mount): string {
+    const dslrMounts: Mount[] = ['Canon EF', 'Nikon F'];
+    const rangefinderMounts: Mount[] = ['Leica M'];
+    const filmMounts: Mount[] = ['Hasselblad V', 'Pentax 67', 'Canon FD', 'Minolta MD'];
+
+    if (dslrMounts.includes(mount)) return 'DSLR';
+    if (rangefinderMounts.includes(mount)) return 'rangefinder';
+    if (filmMounts.includes(mount)) return 'film camera';
+    return 'mirrorless';
+}

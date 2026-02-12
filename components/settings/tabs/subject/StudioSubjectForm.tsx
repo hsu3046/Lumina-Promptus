@@ -10,10 +10,8 @@ import { useSettingsStore } from '@/store/useSettingsStore';
 import { PersonForm } from './PersonForm';
 import {
     FRAMING_OPTIONS,
-    FRAMING_BODY_POSE_CONFLICTS,
-    FRAMING_HAND_POSE_CONFLICTS,
 } from '@/config/mappings/portrait-composition';
-import { getAngleConflict } from '@/lib/rules/conflict-adapter';
+import { getAngleConflict, getBodyPoseConflict, getHandPoseConflict } from '@/lib/rules/conflict-adapter';
 import {
     APPEARANCE_PRESETS,
     STYLE_PRESETS,
@@ -364,19 +362,16 @@ export function StudioSubjectForm() {
                         const bottomDisabled = ['extreme-close-up', 'close-up', 'bust-shot', 'waist-shot'].includes(newComposition);
                         const footwearDisabled = ['extreme-close-up', 'close-up', 'bust-shot', 'waist-shot', 'half-shot', 'three-quarter-shot'].includes(newComposition);
 
-                        // 새 구도에서의 포즈 충돌 맵
-                        const bodyPoseConflicts = FRAMING_BODY_POSE_CONFLICTS[newFraming] || {};
-                        const handPoseConflicts = FRAMING_HAND_POSE_CONFLICTS[newFraming] || {};
-
-                        // 모든 피사체의 disabled된 패션 및 critical conflict 포즈 초기화
+                        // 모든 피사체의 disabled된 패션 및 disabled conflict 포즈 초기화
+                        // conflict-adapter 사용 (STUDIO_CONFLICT_RULES 기반)
                         const updatedSubjects = studioSubjects.map(subject => ({
                             ...subject,
                             // disabled → 빈값, enabled이고 빈값이면 → 기본값
                             bottomWear: bottomDisabled ? '' : (subject.bottomWear || 'blue-jeans'),
                             footwear: footwearDisabled ? '' : (subject.footwear || 'white-sneakers'),
-                            // Critical conflict 포즈 → 기본값으로 초기화
-                            bodyPose: bodyPoseConflicts[subject.bodyPose] === 'critical' ? 'straight' : subject.bodyPose,
-                            handPose: handPoseConflicts[subject.handPose] === 'critical' ? 'natural-relaxed' : subject.handPose,
+                            // Disabled conflict 포즈 → 기본값으로 초기화
+                            bodyPose: getBodyPoseConflict(newComposition, subject.bodyPose) === 'disabled' ? 'straight' : subject.bodyPose,
+                            handPose: getHandPoseConflict(newComposition, subject.handPose) === 'disabled' ? 'natural-relaxed' : subject.handPose,
                         }));
 
                         updateUserInput({

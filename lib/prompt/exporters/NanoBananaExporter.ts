@@ -29,22 +29,29 @@ export class NanoBananaProExporter {
         const sections: string[] = [];
         const subjects = this.settings.userInput?.studioSubjects || [];
         const isMultiple = subjects.length >= 2;
+        const isSnap = this.settings.artDirection?.lensCharacteristicType === 'street';
 
         // 1. [Subject] - 외모 (성별+나이+체형+얼굴형+눈색+피부톤+머리색+헤어스타일)
         const subject = this.getSubjectSection();
         if (subject) sections.push(subject);
 
-        // 2. [Fashion] - 패션 (상의+하의+신발+악세서리)
-        const fashion = this.getFashionSection();
-        if (fashion) sections.push(fashion);
+        // Snap 모드에서는 Fashion/Expression 생략
+        if (!isSnap) {
+            // 2. [Fashion] - 패션 (상의+하의+신발+악세서리)
+            const fashion = this.getFashionSection();
+            if (fashion) sections.push(fashion);
+        }
 
         // 3. [Composition] - 프레이밍, 구도, 앵글
         const composition = this.getCompositionSection();
         if (composition) sections.push(composition);
 
-        // 4. [Expression/Pose] - 포즈, 표정, 시선 통합
-        const expressionPose = this.getExpressionPoseSection();
-        if (expressionPose) sections.push(expressionPose);
+        // Snap 모드에서는 Expression/Pose 생략
+        if (!isSnap) {
+            // 4. [Expression/Pose] - 포즈, 표정, 시선 통합
+            const expressionPose = this.getExpressionPoseSection();
+            if (expressionPose) sections.push(expressionPose);
+        }
 
         // 5. [Location] - 배경
         const location = this.getLocationSection();
@@ -75,66 +82,89 @@ export class NanoBananaProExporter {
      */
     private getCompositionSection(): string {
         const sentences: string[] = [];
+        const isSnap = this.settings.artDirection?.lensCharacteristicType === 'street';
 
         // 1. 첫 번째 문장: 비율 + 프레이밍
         const aspectRatio = this.ir.slots.aspect_ratio?.content || '';
-        const framing = this.settings.userInput?.studioComposition;
 
-        const framingMap: Record<string, string> = {
-            'extreme-close-up': 'extreme close-up',
-            'close-up': 'close-up',
-            'bust-shot': 'bust shot',
-            'waist-shot': 'waist shot',
-            'half-shot': 'medium shot',
-            'three-quarter-shot': 'knee shot',
-            'full-shot': 'full body shot',
-            'long-shot': 'long shot',
-        };
-        const framingText = framingMap[framing || ''] || 'standard';
-
-        // 첫 번째 피사체의 여백(margin) 가져오기
-        const subjects = this.settings.userInput?.studioSubjects || [];
-        const margin = subjects?.[0]?.margin || 'normal';
-        const isMultipleSubjects = subjects.length >= 2;
-
-        // 여백에 따른 텍스트 (normal이면 추가 안함)
-        const marginText = margin === 'tight' ? 'tight ' : margin === 'loose' ? 'loose ' : '';
-
-        if (aspectRatio) {
-            sentences.push(`${aspectRatio} with a ${marginText}${framingText} framing.`);
-        } else if (framing) {
-            sentences.push(`A ${marginText}${framingText} framing.`);
-        }
-
-        // 2. 두 번째 문장: 앵글
-        const cameraAngle = this.settings.artDirection?.cameraAngle;
-        if (cameraAngle) {
-            const angleMap: Record<string, string> = {
-                'eye_level': 'a direct eye-level',
-                'high_angle': 'a high',
-                'low_angle': 'a low',
-                'birds_eye': 'a bird\'s eye',
-                'worms_eye': 'a worm\'s eye'
+        if (isSnap) {
+            // Snap 모드: 렌즈 화각 기반 framing
+            const lens = getLensById(this.settings.camera.lensId);
+            const snapFramingMap: Record<string, string> = {
+                'ultra_wide': 'environmental wide shot',
+                'wide': 'full body shot',
+                'standard': 'three-quarter shot',
+                'medium_telephoto': 'medium shot',
+                'telephoto': 'tight medium shot',
+                'macro': 'extreme close-up',
             };
-            const angleText = angleMap[cameraAngle] || cameraAngle;
-            sentences.push(`Shot from ${angleText} angle.`);
-        }
+            const snapFraming = snapFramingMap[lens?.category || ''] || 'medium shot';
 
-        // 3. 위치 정보: 2명 이상일 때 각 인물의 위치 표시
-        if (isMultipleSubjects) {
-            const positionDescriptions = subjects.map((subject, idx) => {
-                if (!subject.position || subject.position === 'center') return null;
-                const positionText = subject.position === 'left' ? 'left' : 'right';
-                return `Person ${idx + 1} is positioned on the ${positionText} side`;
-            }).filter(Boolean);
-
-            if (positionDescriptions.length > 0) {
-                sentences.push(`${positionDescriptions.join(', ')}.`);
+            if (aspectRatio) {
+                sentences.push(`${aspectRatio} with a ${snapFraming} framing.`);
+            } else {
+                sentences.push(`A ${snapFraming} framing.`);
             }
-        } else if (subjects.length === 1 && subjects[0]?.position && subjects[0]?.position !== 'center') {
-            // 1명일 때 기존 로직
-            const positionText = subjects[0].position === 'left' ? 'left' : 'right';
-            sentences.push(`The subject positioned on the ${positionText} side of the frame.`);
+
+            // Snap 모드: Studio의 angle dictionary 대신 관찰자 시점
+            sentences.push('shot from a natural, observational perspective');
+        } else {
+            // Studio 모드: 기존 로직 유지
+            const framing = this.settings.userInput?.studioComposition;
+
+            const framingMap: Record<string, string> = {
+                'extreme-close-up': 'extreme close-up',
+                'close-up': 'close-up',
+                'bust-shot': 'bust shot',
+                'waist-shot': 'waist shot',
+                'half-shot': 'medium shot',
+                'three-quarter-shot': 'knee shot',
+                'full-shot': 'full body shot',
+                'long-shot': 'long shot',
+            };
+            const framingText = framingMap[framing || ''] || 'standard';
+
+            // 첫 번째 피사체의 여백(margin) 가져오기
+            const subjects = this.settings.userInput?.studioSubjects || [];
+            const margin = subjects?.[0]?.margin || 'normal';
+            const isMultipleSubjects = subjects.length >= 2;
+
+            // 여백에 따른 텍스트 (normal이면 추가 안함)
+            const marginText = margin === 'tight' ? 'tight ' : margin === 'loose' ? 'loose ' : '';
+
+            if (aspectRatio) {
+                sentences.push(`${aspectRatio} with a ${marginText}${framingText} framing.`);
+            } else if (framing) {
+                sentences.push(`A ${marginText}${framingText} framing.`);
+            }
+
+            // 2. 두 번째 문장: 앵글 (Dictionary 기반 구도별 프롬프트)
+            const cameraAngle = this.settings.artDirection?.cameraAngle;
+            if (cameraAngle) {
+                const { getPrompt, ANGLE_DICT } = require('@/lib/dictionary');
+                const framing = this.settings.userInput?.studioComposition || 'half-shot';
+                const anglePrompt = getPrompt(ANGLE_DICT, cameraAngle, { framing });
+                if (anglePrompt) {
+                    sentences.push(anglePrompt);
+                }
+            }
+
+            // 3. 위치 정보: 2명 이상일 때 각 인물의 위치 표시
+            if (isMultipleSubjects) {
+                const positionDescriptions = subjects.map((subject, idx) => {
+                    if (!subject.position || subject.position === 'center') return null;
+                    const positionText = subject.position === 'left' ? 'left' : 'right';
+                    return `Person ${idx + 1} is positioned on the ${positionText} side`;
+                }).filter(Boolean);
+
+                if (positionDescriptions.length > 0) {
+                    sentences.push(`${positionDescriptions.join(', ')}.`);
+                }
+            } else if (subjects.length === 1 && subjects[0]?.position && subjects[0]?.position !== 'center') {
+                // 1명일 때 기존 로직
+                const positionText = subjects[0].position === 'left' ? 'left' : 'right';
+                sentences.push(`The subject positioned on the ${positionText} side of the frame.`);
+            }
         }
 
         if (sentences.length === 0) return '';
@@ -146,6 +176,13 @@ export class NanoBananaProExporter {
      * 성별+나이+체형+얼굴형+눈색+피부톤+머리색+헤어스타일
      */
     private getSubjectSection(): string {
+        // Snap(Street) 모드: IR 슬롯의 narrative 직접 사용
+        if (this.settings.artDirection?.lensCharacteristicType === 'street') {
+            const subjectContent = this.ir.slots.subject?.content || '';
+            if (!subjectContent) return '';
+            return `[Subject] ${subjectContent}`;
+        }
+
         const subjects = this.settings.userInput?.studioSubjects || [];
         if (subjects.length === 0) {
             // IR에서 subject 슬롯 사용 (fallback)
@@ -295,41 +332,20 @@ export class NanoBananaProExporter {
     }
 
     /**
-     * [Fashion] - 패션 정보 (상의+하의+신발+악세서리)
+     * [Fashion] - 패션 정보 (IR 슬롯 사용)
      */
     private getFashionSection(): string {
-        const subjects = this.settings.userInput?.studioSubjects || [];
-        if (subjects.length === 0) return '';
-
-        const isMultiple = subjects.length >= 2;
-        const fashionDescriptions = subjects.map((subject, idx) => {
-            const fashionParts: string[] = [];
-            const topPrompt = TOP_WEAR_OPTIONS.find(o => o.value === subject.topWear)?.prompt;
-            const bottomPrompt = BOTTOM_WEAR_OPTIONS.find(o => o.value === subject.bottomWear)?.prompt;
-            const footPrompt = FOOTWEAR_OPTIONS.find(o => o.value === subject.footwear)?.prompt;
-            const accPrompt = ACCESSORY_OPTIONS.find(o => o.value === subject.accessory)?.prompt;
-
-            // 관사(a/an) 추가
-            if (topPrompt) fashionParts.push(this.addArticle(topPrompt));
-            if (bottomPrompt) fashionParts.push(bottomPrompt); // pants, jeans 등 복수형은 관사 없음
-            if (footPrompt) fashionParts.push(footPrompt); // sneakers, shoes 등 복수형은 관사 없음
-            if (accPrompt) fashionParts.push(this.addArticle(accPrompt));
-
-            if (fashionParts.length === 0) return '';
-
-            // 마지막 항목 앞에 "and" 추가
-            const fashionText = this.joinWithAnd(fashionParts);
-            const prefix = isMultiple ? `Person ${idx + 1}: ` : '';
-            return `${isMultiple ? '- ' : ''}${prefix}wearing ${fashionText}`;
-        }).filter(Boolean);
-
-        if (fashionDescriptions.length === 0) return '';
-
-        // 2명 이상일 때 줄바꿈 구조
-        if (isMultiple) {
-            return `[Fashion]\n${fashionDescriptions.join('\n')}`;
+        // IR 슬롯에서 fashion 가져오기 (StudioBuilder에서 생성)
+        const fashion = this.ir.slots.fashion?.content;
+        if (fashion) {
+            const subjects = this.settings.userInput?.studioSubjects || [];
+            const isMultiple = subjects.length >= 2;
+            if (isMultiple) {
+                return `[Fashion]\n${fashion}`;
+            }
+            return `[Fashion] ${fashion}`;
         }
-        return `[Fashion] ${fashionDescriptions.join(' ')}`;
+        return '';
     }
 
     /**
@@ -359,91 +375,17 @@ export class NanoBananaProExporter {
      * 예: "in an elegant contrapposto pose with relaxed natural hands, a natural warm smile, and direct eye contact with the camera"
      */
     private getExpressionPoseSection(): string {
-        const subjects = this.settings.userInput?.studioSubjects || [];
-        if (subjects.length === 0) return '';
-
-        const isMultiple = subjects.length >= 2;
-        const descriptions = subjects.map((subject, idx) => {
-            // 바디 포즈
-            const bodyPoseMap: Record<string, string> = {
-                straight: 'a natural standing pose',
-                contrapposto: 'an elegant contrapposto pose',
-                's-curve': 'an s-curve body pose',
-                'three-quarter-turn': 'a three-quarter turn pose',
-                sitting: 'a sitting pose',
-                reclining: 'a reclining pose'
-            };
-
-            // 핸드 포즈
-            const handPoseMap: Record<string, string> = {
-                'natural-relaxed': 'relaxed natural hands',
-                'editorial-hands': 'editorial hands touching face',
-                'pocket-hands': 'hands in pockets',
-                'crossed-arms': 'arms crossed',
-                'framing-face': 'hands framing face',
-                'hair-touch': 'touching hair'
-            };
-
-            // 표정
-            const expressionMap: Record<string, string> = {
-                'natural-smile': 'a natural warm smile',
-                'bright-smile': 'a bright joyful smile',
-                'subtle-smile': 'a subtle elegant smile',
-                'neutral': 'a neutral expression',
-                'serious': 'a serious expression',
-                'pensive': 'a pensive thoughtful expression',
-                'mysterious': 'a mysterious expression',
-                'intense': 'an intense expression',
-                'playful': 'a playful expression',
-                'sensual': 'a sensual expression'
-            };
-
-            // 시선
-            const gazeMap: Record<string, string> = {
-                'direct-eye-contact': 'direct eye contact with the camera',
-                'off-camera': 'looking off-camera',
-                'looking-up': 'looking upward',
-                'looking-down': 'looking downward',
-                'side-gaze': 'a side gaze',
-                'over-shoulder': 'looking over shoulder',
-                'eyes-closed': 'eyes closed',
-                'half-closed-eyes': 'half-closed eyes'
-            };
-
-            const bodyPose = bodyPoseMap[subject.bodyPose] || '';
-            const handPose = handPoseMap[subject.handPose] || '';
-            const expression = expressionMap[subject.expression] || '';
-            const gaze = gazeMap[subject.gazeDirection] || '';
-
-            // 조합: "in an elegant contrapposto pose with relaxed natural hands, a natural warm smile, and direct eye contact with the camera"
-            const parts: string[] = [];
-
-            // 포즈 부분: "in {pose} with {handPose}"
-            if (bodyPose && handPose) {
-                parts.push(`in ${bodyPose} with ${handPose}`);
-            } else if (bodyPose) {
-                parts.push(`in ${bodyPose}`);
-            } else if (handPose) {
-                parts.push(`with ${handPose}`);
+        // IR 슬롯에서 expression_pose 가져오기 (StudioBuilder에서 생성)
+        const expressionPose = this.ir.slots.expression_pose?.content;
+        if (expressionPose) {
+            const subjects = this.settings.userInput?.studioSubjects || [];
+            const isMultiple = subjects.length >= 2;
+            if (isMultiple) {
+                return `[Expression/Pose]\n${expressionPose}`;
             }
-
-            // 표정, 시선 추가
-            if (expression) parts.push(expression);
-            if (gaze) parts.push(gaze);
-
-            if (parts.length === 0) return '';
-
-            const prefix = isMultiple ? `Person ${idx + 1}: ` : '';
-            return `${isMultiple ? '- ' : ''}${prefix}${this.joinWithAnd(parts)}`;
-        }).filter(Boolean);
-
-        if (descriptions.length === 0) return '';
-
-        // 2명 이상일 때 줄바꿈 구조
-        if (isMultiple) {
-            return `[Expression/Pose]\n${descriptions.join('\n')}`;
+            return `[Expression/Pose] ${expressionPose}`;
         }
-        return `[Expression/Pose] ${descriptions.join(' ')}`;
+        return '';
     }
 
     /**
@@ -456,94 +398,49 @@ export class NanoBananaProExporter {
     }
 
     /**
-     * [Location] - 배경
+     * [Location] - 배경 (IR 슬롯 사용)
      */
     private getLocationSection(): string {
-        const backgroundType = this.settings.userInput?.studioBackgroundType;
-        if (!backgroundType) return '';
-
-        const backgroundMap: Record<string, string> = {
-            'seamless_white': 'clean white studio backdrop',
-            'seamless_gray': 'neutral gray studio backdrop',
-            'seamless_black': 'dark black studio backdrop',
-            'seamless_red': 'wine red studio backdrop',
-            'seamless_blue': 'chromakey blue screen',
-            'seamless_green': 'chromakey green screen',
-            'seamless_beige': 'warm beige studio backdrop',
-            'textured': 'textured studio backdrop'
-        };
-
-        const background = backgroundMap[backgroundType] || 'studio backdrop';
-        return `[Location] ${background}`;
+        // IR 슬롯에서 location 가져오기 (StudioBuilder에서 생성)
+        const location = this.ir.slots.location?.content;
+        if (location) {
+            return `[Location] ${location}`;
+        }
+        return '';
     }
 
     /**
-     * [Tech Specs] - 카메라 바디, 렌즈, 조리개
-     * 문장 구조:
-     * - Shot on a Sony A7R V with a Sony FE 85mm f/1.4 GM lens for extreme sharpness and resolution.
-     * - Shallow depth of field (f/1.4) creates a creamy, cinematic bokeh background that perfectly isolates the subject.
+     * [Tech Specs] - 카메라 바디, 렌즈, 조리개 (IR 슬롯 사용)
      */
     private getTechSpecsSection(): string {
-        const camera = getCameraById(this.settings.camera?.bodyId);
-        const lens = getLensById(this.settings.camera?.lensId);
-
-        if (!camera && !lens) {
-            // Fallback to IR slots
-            const cameraBody = this.ir.slots.camera_body?.content || '';
-            const lensContent = this.ir.slots.lens?.content || '';
-            if (cameraBody || lensContent) {
-                return `[Tech Specs] ${[cameraBody, lensContent].filter(Boolean).join(', ')}`;
-            }
-            return '';
+        // IR 슬롯에서 tech_specs 가져오기 (StudioBuilder에서 생성)
+        const techSpecs = this.ir.slots.tech_specs?.content;
+        if (techSpecs) {
+            return `[Tech Specs] ${techSpecs}`;
         }
 
-        const sentences: string[] = [];
-
-        // 1. 첫 번째 문장: "Shot on a {Camera} with a {Lens} lens for {characteristic_studio}."
-        const cameraText = camera ? `${camera.brand} ${camera.model}` : '';
-        const lensText = lens ? `${lens.brand} ${lens.model}` : '';
-        const characteristic = lens?.characteristic_studio || '';
-
-        if (cameraText && lensText && characteristic) {
-            sentences.push(`Shot on a ${cameraText} with a ${lensText} lens for ${characteristic}.`);
-        } else if (cameraText && lensText) {
-            sentences.push(`Shot on a ${cameraText} with a ${lensText} lens.`);
-        } else if (cameraText) {
-            sentences.push(`Shot on a ${cameraText}.`);
-        } else if (lensText) {
-            sentences.push(`Shot with a ${lensText} lens.`);
+        // Fallback: 기존 IR 슬롯 조합
+        const cameraBody = this.ir.slots.camera_body?.content || '';
+        const lensContent = this.ir.slots.lens?.content || '';
+        if (cameraBody || lensContent) {
+            return `[Tech Specs] ${[cameraBody, lensContent].filter(Boolean).join(', ')}`;
         }
-
-        // 2. 두 번째 문장: 조리개가 maxAperture인 경우 bokeh + vignetting 설명 추가
-        const currentAperture = this.settings.camera?.aperture;
-        if (lens && currentAperture) {
-            const isMaxAperture = currentAperture === lens.maxAperture;
-            if (isMaxAperture) {
-                // Bokeh 설명
-                if (lens.bokeh) {
-                    sentences.push(`Shallow depth of field (${currentAperture}) creates ${lens.bokeh} that perfectly isolates the subject.`);
-                }
-                // Vignetting 설명
-                if (lens.vignetting) {
-                    sentences.push(`${lens.vignetting} adds artistic depth to the image.`);
-                }
-            } else if (currentAperture) {
-                // maxAperture가 아닌 경우 간단한 조리개 정보
-                sentences.push(`Shot at ${currentAperture} aperture.`);
-            }
-        }
-
-        if (sentences.length === 0) return '';
-        return `[Tech Specs] ${sentences.join(' ')}`;
+        return '';
     }
 
     /**
-     * [Style] - ISO, Shutter Speed 정보 (Auto가 아닌 경우만)
+     * [Style] - ISO, Shutter Speed + Photo Style 프리셋
      */
     private getStyleSection(): string {
         const parts: string[] = [];
 
-        // ISO (Auto가 아닌 경우만)
+        // 1) Photo Style (IR style 슬롯에서 가져옴)
+        const styleContent = this.ir.slots.style?.content;
+        if (styleContent) {
+            parts.push(styleContent);
+        }
+
+        // 2) ISO (Auto가 아닌 경우만)
         const iso = this.settings.camera?.iso;
         const isoAuto = this.settings.camera?.isoAuto;
         if (iso && !isoAuto) {
@@ -556,11 +453,10 @@ export class NanoBananaProExporter {
             }
         }
 
-        // Shutter Speed (Auto가 아닌 경우만)
+        // 3) Shutter Speed (Auto가 아닌 경우만)
         const shutterSpeed = this.settings.camera?.shutterSpeed;
         const shutterSpeedAuto = this.settings.camera?.shutterSpeedAuto;
         if (shutterSpeed && !shutterSpeedAuto) {
-            // 셔터 스피드 값에서 숫자 추출 (예: "1/500" -> 500)
             const speedMatch = shutterSpeed.match(/1\/(\d+)/);
             if (speedMatch) {
                 const speed = parseInt(speedMatch[1]);
@@ -572,7 +468,6 @@ export class NanoBananaProExporter {
                     parts.push(`${shutterSpeed}s shutter speed allowing some motion blur`);
                 }
             } else if (shutterSpeed.includes('"')) {
-                // 긴 노출 (예: "2"")
                 parts.push(`${shutterSpeed} long exposure for smooth motion effects`);
             }
         }

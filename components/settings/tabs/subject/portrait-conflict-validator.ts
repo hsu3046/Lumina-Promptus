@@ -2,7 +2,6 @@
 // 포트레이트 구도/포즈/표정/시선 충돌 검증
 
 import type {
-    PortraitFraming,
     PortraitBodyPose,
     PortraitHandPose,
     PortraitExpression,
@@ -10,8 +9,6 @@ import type {
 } from '@/types';
 
 import {
-    FRAMING_BODY_POSE_CONFLICTS,
-    FRAMING_HAND_POSE_CONFLICTS,
     BODY_POSE_EXPRESSION_CONFLICTS,
     HAND_POSE_EXPRESSION_CONFLICTS,
     EXPRESSION_GAZE_CONFLICTS,
@@ -21,8 +18,13 @@ import {
     type ConflictLevel
 } from '@/config/mappings/portrait-composition';
 
+import {
+    getBodyPoseConflict,
+    getHandPoseConflict,
+} from '@/lib/rules/conflict-adapter';
+
 export interface PortraitConflict {
-    level: ConflictLevel;
+    level: ConflictLevel | string;
     field1: string;
     field2: string;
     value1: string;
@@ -31,7 +33,7 @@ export interface PortraitConflict {
 }
 
 export interface PortraitConfig {
-    framing: PortraitFraming;
+    framing: string;
     bodyPose: PortraitBodyPose;
     handPose: PortraitHandPose;
     expression: PortraitExpression;
@@ -41,35 +43,36 @@ export interface PortraitConfig {
 
 /**
  * 포트레이트 설정 전체 검증
+ * STUDIO_CONFLICT_RULES 기반 (conflict-adapter 사용)
  */
 export function validatePortraitConfig(config: PortraitConfig): PortraitConflict[] {
     const conflicts: PortraitConflict[] = [];
 
-    // 1. 구도 ↔ Body Pose
-    const framingBodyPose = FRAMING_BODY_POSE_CONFLICTS[config.framing]?.[config.bodyPose];
-    if (framingBodyPose) {
+    // 1. 구도 ↔ Body Pose (conflict-adapter 사용)
+    const framingBodyPose = getBodyPoseConflict(config.framing, config.bodyPose);
+    if (framingBodyPose !== 'ok') {
         conflicts.push({
             level: framingBodyPose,
             field1: 'framing',
             field2: 'bodyPose',
             value1: config.framing,
             value2: config.bodyPose,
-            message: framingBodyPose === 'critical'
+            message: framingBodyPose === 'disabled'
                 ? `${config.framing}에서는 ${config.bodyPose} 포즈가 화면에 보이지 않습니다`
                 : `${config.framing}에서 ${config.bodyPose} 포즈는 비효율적입니다`,
         });
     }
 
-    // 2. 구도 ↔ Hand Pose
-    const framingHandPose = FRAMING_HAND_POSE_CONFLICTS[config.framing]?.[config.handPose];
-    if (framingHandPose) {
+    // 2. 구도 ↔ Hand Pose (conflict-adapter 사용)
+    const framingHandPose = getHandPoseConflict(config.framing, config.handPose);
+    if (framingHandPose !== 'ok') {
         conflicts.push({
             level: framingHandPose,
             field1: 'framing',
             field2: 'handPose',
             value1: config.framing,
             value2: config.handPose,
-            message: framingHandPose === 'critical'
+            message: framingHandPose === 'disabled'
                 ? `${config.framing}에서는 ${config.handPose}가 화면에 보이지 않습니다`
                 : `${config.framing}에서 ${config.handPose}는 디테일이 약합니다`,
         });

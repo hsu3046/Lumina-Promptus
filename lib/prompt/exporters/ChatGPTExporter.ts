@@ -3,8 +3,9 @@
 // NanoBananaProExporter와 동일한 구조 사용
 
 import type { PromptIR, UserSettings, StudioSubject } from '@/types';
-import { getCameraById } from '@/config/mappings/cameras';
+import { getCameraById, getCameraTypeLabel } from '@/config/mappings/cameras';
 import { getLensById } from '@/config/mappings/lenses';
+import { getPrompt, ANGLE_DICT } from '@/lib/dictionary';
 import {
     TOP_WEAR_OPTIONS,
     BOTTOM_WEAR_OPTIONS,
@@ -29,6 +30,7 @@ export class ChatGPTExporter {
         const sections: string[] = [];
         const subjects = this.settings.userInput?.studioSubjects || [];
         const isMultiple = subjects.length >= 2;
+        const isSnap = this.settings.artDirection?.lensCharacteristicType === 'street';
 
         // 1. Location - 배경 (먼저!)
         const location = this.getLocationSection();
@@ -38,13 +40,16 @@ export class ChatGPTExporter {
         const subject = this.getSubjectSection();
         if (subject) sections.push(subject);
 
-        // 3. Fashion - 패션
-        const fashion = this.getFashionSection();
-        if (fashion) sections.push(fashion);
+        // Snap 모드에서는 Fashion/Expression 생략
+        if (!isSnap) {
+            // 3. Fashion - 패션
+            const fashion = this.getFashionSection();
+            if (fashion) sections.push(fashion);
 
-        // 4. Expression/Pose - 포즈, 표정, 시선 통합
-        const expressionPose = this.getExpressionPoseSection();
-        if (expressionPose) sections.push(expressionPose);
+            // 4. Expression/Pose - 포즈, 표정, 시선 통합
+            const expressionPose = this.getExpressionPoseSection();
+            if (expressionPose) sections.push(expressionPose);
+        }
 
         // 5. Composition - 프레이밍, 구도, 앵글
         const composition = this.getCompositionSection();
@@ -65,12 +70,21 @@ export class ChatGPTExporter {
         // 2명 이상일 때 섹션 사이에 빈 줄 추가
         const content = sections.filter(Boolean).join(isMultiple ? '\n\n' : '. ');
 
-        // 피사체가 2명 이상일 때 통합 사진 지시문 포함
-        if (isMultiple) {
-            return `Create a DSLR editorial portrait of the following ${subjects.length} people together in a single unified photograph without any dividing lines or frames.\n\n${content}`;
+        // Snap 모드 prefix
+        if (isSnap) {
+            return `Generate a candid street photograph. ${content}`;
         }
 
-        return `Create a DSLR editorial portrait. ${content}`;
+        // 카메라 mount 기반 동적 타입 라벨
+        const camera = getCameraById(this.settings.camera?.bodyId);
+        const cameraType = camera ? getCameraTypeLabel(camera.mount) : 'DSLR';
+
+        // 피사체가 2명 이상일 때 통합 사진 지시문 포함
+        if (isMultiple) {
+            return `Create a ${cameraType} editorial portrait of the following ${subjects.length} people together in a single unified photograph without any dividing lines or frames.\n\n${content}`;
+        }
+
+        return `Create a ${cameraType} editorial portrait. ${content}`;
     }
 
     /**
@@ -78,65 +92,83 @@ export class ChatGPTExporter {
      */
     private getCompositionSection(): string {
         const sentences: string[] = [];
+        const isSnap = this.settings.artDirection?.lensCharacteristicType === 'street';
 
         // 1. 첫 번째 문장: 비율 + 프레이밍
         const aspectRatio = this.ir.slots.aspect_ratio?.content || '';
-        const framing = this.settings.userInput?.studioComposition;
 
-        const framingMap: Record<string, string> = {
-            'extreme-close-up': 'extreme close-up',
-            'close-up': 'close-up',
-            'bust-shot': 'bust shot',
-            'waist-shot': 'waist shot',
-            'half-shot': 'medium shot',
-            'three-quarter-shot': 'knee shot',
-            'full-shot': 'full body shot',
-            'long-shot': 'long shot',
-        };
-        const framingText = framingMap[framing || ''] || 'standard';
-
-        // 첫 번째 피사체의 여백(margin) 가져오기
-        const subjects = this.settings.userInput?.studioSubjects || [];
-        const margin = subjects?.[0]?.margin || 'normal';
-        const isMultipleSubjects = subjects.length >= 2;
-
-        // 여백에 따른 텍스트 (normal이면 추가 안함)
-        const marginText = margin === 'tight' ? 'tight ' : margin === 'loose' ? 'loose ' : '';
-
-        if (aspectRatio) {
-            sentences.push(`${aspectRatio} with a ${marginText}${framingText} framing.`);
-        } else if (framing) {
-            sentences.push(`A ${marginText}${framingText} framing.`);
-        }
-
-        // 2. 두 번째 문장: 앵글
-        const cameraAngle = this.settings.artDirection?.cameraAngle;
-        if (cameraAngle) {
-            const angleMap: Record<string, string> = {
-                'eye_level': 'a direct eye-level',
-                'high_angle': 'a high',
-                'low_angle': 'a low',
-                'birds_eye': 'a bird\'s eye',
-                'worms_eye': 'a worm\'s eye'
+        if (isSnap) {
+            // Snap 모드: 렌즈 화각 기반 framing
+            const lens = getLensById(this.settings.camera.lensId);
+            const snapFramingMap: Record<string, string> = {
+                'ultra_wide': 'environmental wide shot',
+                'wide': 'full body shot',
+                'standard': 'three-quarter shot',
+                'medium_telephoto': 'medium shot',
+                'telephoto': 'tight medium shot',
+                'macro': 'extreme close-up',
             };
-            const angleText = angleMap[cameraAngle] || cameraAngle;
-            sentences.push(`Shot from ${angleText} angle.`);
-        }
+            const snapFraming = snapFramingMap[lens?.category || ''] || 'medium shot';
 
-        // 3. 위치 정보: 2명 이상일 때 각 인물의 위치 표시
-        if (isMultipleSubjects) {
-            const positionDescriptions = subjects.map((subject, idx) => {
-                if (!subject.position || subject.position === 'center') return null;
-                const positionText = subject.position === 'left' ? 'left' : 'right';
-                return `Person ${idx + 1} is positioned on the ${positionText} side`;
-            }).filter(Boolean);
-
-            if (positionDescriptions.length > 0) {
-                sentences.push(`${positionDescriptions.join(', ')}.`);
+            if (aspectRatio) {
+                sentences.push(`${aspectRatio} with a ${snapFraming} framing.`);
+            } else {
+                sentences.push(`A ${snapFraming} framing.`);
             }
-        } else if (subjects.length === 1 && subjects[0]?.position && subjects[0]?.position !== 'center') {
-            const positionText = subjects[0].position === 'left' ? 'left' : 'right';
-            sentences.push(`The subject positioned on the ${positionText} side of the frame.`);
+
+            // Snap 모드: Studio의 angle dictionary 대신 관찰자 시점
+            sentences.push('Shot from a natural, observational perspective.');
+        } else {
+            // Studio 모드: 기존 로직 유지
+            const framing = this.settings.userInput?.studioComposition;
+
+            const framingMap: Record<string, string> = {
+                'extreme-close-up': 'extreme close-up',
+                'close-up': 'close-up',
+                'bust-shot': 'bust shot',
+                'waist-shot': 'waist shot',
+                'half-shot': 'medium shot',
+                'three-quarter-shot': 'knee shot',
+                'full-shot': 'full body shot',
+                'long-shot': 'long shot',
+            };
+            const framingText = framingMap[framing || ''] || 'standard';
+
+            const subjects = this.settings.userInput?.studioSubjects || [];
+            const margin = subjects?.[0]?.margin || 'normal';
+            const isMultipleSubjects = subjects.length >= 2;
+
+            const marginText = margin === 'tight' ? 'tight ' : margin === 'loose' ? 'loose ' : '';
+
+            if (aspectRatio) {
+                sentences.push(`${aspectRatio} with a ${marginText}${framingText} framing.`);
+            } else if (framing) {
+                sentences.push(`A ${marginText}${framingText} framing.`);
+            }
+
+            const cameraAngle = this.settings.artDirection?.cameraAngle;
+            if (cameraAngle) {
+                const framing = this.settings.userInput?.studioComposition || 'half-shot';
+                const anglePrompt = getPrompt(ANGLE_DICT, cameraAngle, { framing });
+                if (anglePrompt) {
+                    sentences.push(anglePrompt);
+                }
+            }
+
+            if (isMultipleSubjects) {
+                const positionDescriptions = subjects.map((subject, idx) => {
+                    if (!subject.position || subject.position === 'center') return null;
+                    const positionText = subject.position === 'left' ? 'left' : 'right';
+                    return `Person ${idx + 1} is positioned on the ${positionText} side`;
+                }).filter(Boolean);
+
+                if (positionDescriptions.length > 0) {
+                    sentences.push(`${positionDescriptions.join(', ')}.`);
+                }
+            } else if (subjects.length === 1 && subjects[0]?.position && subjects[0]?.position !== 'center') {
+                const positionText = subjects[0].position === 'left' ? 'left' : 'right';
+                sentences.push(`The subject positioned on the ${positionText} side of the frame.`);
+            }
         }
 
         if (sentences.length === 0) return '';
@@ -147,6 +179,13 @@ export class ChatGPTExporter {
      * [Subject] - 외모 정보만 추출
      */
     private getSubjectSection(): string {
+        // Snap(Street) 모드: IR 슬롯의 narrative 직접 사용
+        if (this.settings.artDirection?.lensCharacteristicType === 'street') {
+            const subjectContent = this.ir.slots.subject?.content || '';
+            if (!subjectContent) return '';
+            return `Subject: ${subjectContent}`;
+        }
+
         const subjects = this.settings.userInput?.studioSubjects || [];
         if (subjects.length === 0) {
             const subjectContent = this.ir.slots.subject?.content || '';
@@ -289,39 +328,19 @@ export class ChatGPTExporter {
     }
 
     /**
-     * [Fashion] - 패션 정보
+     * [Fashion] - 패션 정보 (IR 슬롯 사용)
      */
     private getFashionSection(): string {
-        const subjects = this.settings.userInput?.studioSubjects || [];
-        if (subjects.length === 0) return '';
-
-        const isMultiple = subjects.length >= 2;
-        const fashionDescriptions = subjects.map((subject, idx) => {
-            const fashionParts: string[] = [];
-            const topPrompt = TOP_WEAR_OPTIONS.find(o => o.value === subject.topWear)?.prompt;
-            const bottomPrompt = BOTTOM_WEAR_OPTIONS.find(o => o.value === subject.bottomWear)?.prompt;
-            const footPrompt = FOOTWEAR_OPTIONS.find(o => o.value === subject.footwear)?.prompt;
-            const accPrompt = ACCESSORY_OPTIONS.find(o => o.value === subject.accessory)?.prompt;
-
-            if (topPrompt) fashionParts.push(this.addArticle(topPrompt));
-            if (bottomPrompt) fashionParts.push(bottomPrompt);
-            if (footPrompt) fashionParts.push(footPrompt);
-            if (accPrompt) fashionParts.push(this.addArticle(accPrompt));
-
-            if (fashionParts.length === 0) return '';
-
-            const fashionText = this.joinWithAnd(fashionParts);
-            const prefix = isMultiple ? `Person ${idx + 1}: ` : '';
-            return `${isMultiple ? '- ' : ''}${prefix}wearing ${fashionText}`;
-        }).filter(Boolean);
-
-        if (fashionDescriptions.length === 0) return '';
-
-        // 2명 이상일 때 줄바꿈 구조
-        if (isMultiple) {
-            return `Fashion:\n${fashionDescriptions.join('\n')}`;
+        const fashion = this.ir.slots.fashion?.content;
+        if (fashion) {
+            const subjects = this.settings.userInput?.studioSubjects || [];
+            const isMultiple = subjects.length >= 2;
+            if (isMultiple) {
+                return `Fashion:\n${fashion}`;
+            }
+            return `Fashion: ${fashion}`;
         }
-        return `Fashion: ${fashionDescriptions.join(' ')}`;
+        return '';
     }
 
     private addArticle(text: string): string {
@@ -433,84 +452,47 @@ export class ChatGPTExporter {
     }
 
     /**
-     * [Location] - 배경
+     * [Location] - 배경 (IR 슬롯 사용)
      */
     private getLocationSection(): string {
-        const backgroundType = this.settings.userInput?.studioBackgroundType;
-        if (!backgroundType) return '';
-
-        const backgroundMap: Record<string, string> = {
-            'seamless_white': 'clean white studio backdrop',
-            'seamless_gray': 'neutral gray studio backdrop',
-            'seamless_black': 'dark black studio backdrop',
-            'seamless_red': 'wine red studio backdrop',
-            'seamless_blue': 'chromakey blue screen',
-            'seamless_green': 'chromakey green screen',
-            'seamless_beige': 'warm beige studio backdrop',
-            'textured': 'textured studio backdrop'
-        };
-
-        const background = backgroundMap[backgroundType] || 'studio backdrop';
-        return `Location: ${background}`;
+        const location = this.ir.slots.location?.content;
+        if (location) {
+            return `Location: ${location}`;
+        }
+        return '';
     }
 
     /**
-     * [Tech Specs] - 카메라 바디, 렌즈, 조리개
+     * [Tech Specs] - 카메라 바디, 렌즈, 조리개 (IR 슬롯 사용)
      */
     private getTechSpecsSection(): string {
-        const camera = getCameraById(this.settings.camera?.bodyId);
-        const lens = getLensById(this.settings.camera?.lensId);
-
-        if (!camera && !lens) {
-            const cameraBody = this.ir.slots.camera_body?.content || '';
-            const lensContent = this.ir.slots.lens?.content || '';
-            if (cameraBody || lensContent) {
-                return `Tech Specs: ${[cameraBody, lensContent].filter(Boolean).join(', ')}`;
-            }
-            return '';
+        const techSpecs = this.ir.slots.tech_specs?.content;
+        if (techSpecs) {
+            return `Tech Specs: ${techSpecs}`;
         }
 
-        const sentences: string[] = [];
-
-        const cameraText = camera ? `${camera.brand} ${camera.model}` : '';
-        const lensText = lens ? `${lens.brand} ${lens.model}` : '';
-        const characteristic = lens?.characteristic_studio || '';
-
-        if (cameraText && lensText && characteristic) {
-            sentences.push(`Shot on a ${cameraText} with a ${lensText} lens for ${characteristic}.`);
-        } else if (cameraText && lensText) {
-            sentences.push(`Shot on a ${cameraText} with a ${lensText} lens.`);
-        } else if (cameraText) {
-            sentences.push(`Shot on a ${cameraText}.`);
-        } else if (lensText) {
-            sentences.push(`Shot with a ${lensText} lens.`);
+        // Fallback: 기존 IR 슬롯 조합
+        const cameraBody = this.ir.slots.camera_body?.content || '';
+        const lensContent = this.ir.slots.lens?.content || '';
+        if (cameraBody || lensContent) {
+            return `Tech Specs: ${[cameraBody, lensContent].filter(Boolean).join(', ')}`;
         }
-
-        const currentAperture = this.settings.camera?.aperture;
-        if (lens && currentAperture) {
-            const isMaxAperture = currentAperture === lens.maxAperture;
-            if (isMaxAperture) {
-                if (lens.bokeh) {
-                    sentences.push(`Shallow depth of field (${currentAperture}) creates ${lens.bokeh} that perfectly isolates the subject.`);
-                }
-                if (lens.vignetting) {
-                    sentences.push(`${lens.vignetting} adds artistic depth to the image.`);
-                }
-            } else if (currentAperture) {
-                sentences.push(`Shot at ${currentAperture} aperture.`);
-            }
-        }
-
-        if (sentences.length === 0) return '';
-        return `Tech Specs: ${sentences.join(' ')}`;
+        return '';
     }
 
     /**
-     * [Style] - ISO, Shutter Speed 정보
+     * [Style] - ISO, Shutter Speed + Photo Style 프리셋
      */
     private getStyleSection(): string {
         const parts: string[] = [];
 
+        // 1) Photo Style (IR style 슬롯에서 가져옴)
+        const styleContent = this.ir.slots.style?.content;
+        if (styleContent) {
+            parts.push(styleContent);
+        }
+
+        // 2) ISO
         const iso = this.settings.camera?.iso;
         const isoAuto = this.settings.camera?.isoAuto;
         if (iso && !isoAuto) {
@@ -523,6 +505,7 @@ export class ChatGPTExporter {
             }
         }
 
+        // 3) Shutter Speed
         const shutterSpeed = this.settings.camera?.shutterSpeed;
         const shutterSpeedAuto = this.settings.camera?.shutterSpeedAuto;
         if (shutterSpeed && !shutterSpeedAuto) {

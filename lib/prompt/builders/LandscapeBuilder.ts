@@ -1,5 +1,5 @@
 // lib/landscape/prompt-generator.ts
-// 풍경 사진 프롬프트 생성기 - 4섹션 구조 (Nano Banana 포맷)
+// 풍경 사진 프롬프트 생성기 - IR 기반 + 4섹션 구조
 
 import type {
     LandscapeSettings,
@@ -8,6 +8,7 @@ import type {
     LandscapeLandmark,
     LandscapeReferenceImage,
 } from '@/types/landscape.types';
+import type { PromptIR, SlotContent } from '@/types';
 import {
     LANDSCAPE_LENS_SPECS,
     getLightingDescription,
@@ -16,6 +17,178 @@ import {
     getAtmosphereDescription,
     getCompassLabel,
 } from '@/config/mappings/landscape-environment';
+
+/**
+ * IR 기반 Landscape 프롬프트 빌더
+ */
+export class LandscapePromptBuilder {
+    private ir: PromptIR;
+    private settings: LandscapeSettings;
+    private config: LandscapePromptConfig;
+
+    constructor(settings: LandscapeSettings, referenceImages: LandscapeReferenceImage[] = []) {
+        this.settings = settings;
+        this.config = buildLandscapePromptConfig(settings, referenceImages);
+        this.ir = {
+            slots: {},
+            metadata: {
+                conflicts: [],
+                warnings: [],
+                suggestions: []
+            },
+            version: '2.0',
+            timestamp: Date.now()
+        };
+    }
+
+    /**
+     * IR 생성 (메인 진입점)
+     */
+    async buildIR(): Promise<PromptIR> {
+        this.fillLandscapeSlots();
+        return this.ir;
+    }
+
+    private fillLandscapeSlots(): void {
+        // Instruction 슬롯
+        this.setSlot('landscape_instruction', this.getInstruction(), {
+            priority: 10,
+            source: 'deterministic',
+            locked: true
+        });
+
+        // Subject 슬롯
+        this.setSlot('landscape_subject', this.getSubject(), {
+            priority: 9,
+            source: 'deterministic',
+            locked: false
+        });
+
+        // Composition 슬롯
+        this.setSlot('landscape_composition', this.getComposition(), {
+            priority: 8,
+            source: 'deterministic',
+            locked: false
+        });
+
+        // Environment 슬롯
+        this.setSlot('landscape_environment', this.getEnvironment(), {
+            priority: 7,
+            source: 'deterministic',
+            locked: false
+        });
+
+        // Camera 슬롯
+        this.setSlot('landscape_camera', this.getCamera(), {
+            priority: 6,
+            source: 'deterministic',
+            locked: false
+        });
+    }
+
+    private getInstruction(): string {
+        return 'Use the subject name and coordinates to search for accurate real-world information about this landmark. Create a photorealistic National Geographic-quality landscape photograph with natural color grading, sharp focus throughout, and balanced exposure.';
+    }
+
+    private getSubject(): string {
+        const { location } = this.config;
+        const displayName = location.nameEn || location.name || 'Unknown Location';
+        const locationContext = extractLocationContext(location.address);
+        const fullName = locationContext ? `${displayName} in ${locationContext}` : displayName;
+
+        return `Name: ${fullName}\nCoordinates: ${location.coordinates.lat.toFixed(4)}°N, ${location.coordinates.lng.toFixed(4)}°E`;
+    }
+
+    private getComposition(): string {
+        const { camera } = this.config;
+        const lensSpec = LANDSCAPE_LENS_SPECS[camera.lens];
+        const compassDir = getCompassLabel(this.settings.camera.heading);
+        const height = this.settings.camera.height || 0;
+        const heightDesc = getHeightDescription(height);
+        const distance = this.settings.camera.distance || 100;
+        const distanceDesc = getDistanceDescription(distance);
+
+        const lines = [
+            `Camera positioned at ${heightDesc}, facing ${compassDir}, ${distanceDesc}, using ${camera.lens} ${lensSpec.type} lens.`
+        ];
+
+        // 랜드마크 정보 추가
+        const enabledLandmarks = this.config.landmarks.filter(lm => lm.enabled !== false);
+        if (enabledLandmarks.length > 0) {
+            const subjectName = this.config.location.nameEn || this.config.location.name || 'the subject';
+            const layers = {
+                foreground: enabledLandmarks.filter(lm => lm.layer === 'foreground'),
+                middleground: enabledLandmarks.filter(lm => lm.layer === 'middleground'),
+                background: enabledLandmarks.filter(lm => lm.layer === 'background'),
+            };
+
+            const layerDescriptions = {
+                foreground: 'In the immediate foreground',
+                middleground: 'In the middle distance',
+                background: 'In the distant background',
+            };
+
+            for (const [layer, landmarks] of Object.entries(layers)) {
+                if (landmarks.length > 0) {
+                    const layerIntro = layerDescriptions[layer as keyof typeof layerDescriptions];
+                    const names = landmarks.map(lm => lm.nameEn || lm.name).join(' and ');
+                    lines.push(`${layerIntro}, ${names} visible.`);
+                }
+            }
+        }
+
+        return lines.join('\n');
+    }
+
+    private getEnvironment(): string {
+        const { environment } = this.config;
+        return [
+            `Weather: ${getWeatherDescription(environment.weather)}`,
+            `Season: ${getSeasonDescription(environment.season)}`,
+            `Time: ${getLightingDescription(environment.time)}`,
+            `Atmosphere: ${getAtmosphereDescription(environment.atmosphere)}`,
+        ].join('\n');
+    }
+
+    private getCamera(): string {
+        const { camera } = this.config;
+        return [
+            `Body: Nikon D850`,
+            `Lens: AF-S NIKKOR ${camera.lens}`,
+            `Aperture: ${camera.aperture}`,
+            `ISO: ${camera.iso}`,
+        ].join('\n');
+    }
+
+    private setSlot(
+        slotId: string,
+        content: string,
+        options: {
+            priority: number;
+            source: SlotContent['source'];
+            locked: boolean;
+        }
+    ): void {
+        if (!content) return;
+
+        this.ir.slots[slotId] = {
+            slotId,
+            content,
+            priority: options.priority,
+            tokens: this.estimateTokens(content),
+            source: options.source,
+            locked: options.locked
+        };
+    }
+
+    private estimateTokens(text: string): number {
+        return Math.ceil(text.split(/\s+/).length * 1.3);
+    }
+
+    getIR(): PromptIR {
+        return this.ir;
+    }
+}
 
 /**
  * 렌즈 ID에서 초점거리 추출 (예: 'nikon_af_s_24mm_f14g_ed' -> '24mm')

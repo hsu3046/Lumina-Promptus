@@ -1,32 +1,20 @@
 // lib/prompt-builder/PromptBuilderV2.ts
 // IR(Intermediate Representation) 기반 프롬프트 빌더
 
-import type { PromptIR, SlotContent, UserSettings, ConflictReport, StudioSubject, SnapSettings } from '@/types';
+import type { PromptIR, SlotContent, UserSettings, ConflictReport, StudioSubject } from '@/types';
 import { PROMPT_SLOTS, getSlotById } from '@/lib/prompt/slot-definitions';
-import { getCameraById } from '@/config/mappings/cameras';
+import { getCameraById, getCameraTypeLabel } from '@/config/mappings/cameras';
 import { getLensById } from '@/config/mappings/lenses';
 import { buildLightingPrompt } from '@/config/mappings/lighting-patterns';
 import { detectConflicts } from '@/lib/rules/conflict-resolver';
+import { getPrompt, BODY_POSE_DICT, HAND_POSE_DICT, ANGLE_DICT } from '@/lib/dictionary';
 import {
     TOP_WEAR_OPTIONS,
     BOTTOM_WEAR_OPTIONS,
     FOOTWEAR_OPTIONS,
     ACCESSORY_OPTIONS,
 } from '@/config/mappings/fashion-options';
-import {
-    SNAP_SUBJECT_TYPES,
-    SNAP_TIME_OF_DAY,
-    SNAP_LOCATIONS,
-    SNAP_SPECIFIC_PLACES,
-    SNAP_COMPANIONS,
-    SNAP_ACTIONS,
-    SNAP_MANNERS,
-    SNAP_WEATHER,
-    SNAP_SEASONS,
-    SNAP_ATMOSPHERE,
-    SNAP_LIGHTING,
-    SNAP_CROWD_DENSITY,
-} from '@/config/mappings/snap-options';
+
 
 export class PromptBuilderV2 {
     private ir: PromptIR;
@@ -117,13 +105,32 @@ export class PromptBuilderV2 {
             });
         }
 
-        // 스타일/분위기 (사용자 입력) - Studio 모드가 아닐 때만
-        if (this.settings.artDirection.lensCharacteristicType !== 'studio' && this.settings.userInput.moodDescription) {
-            this.setSlot('style', this.settings.userInput.moodDescription, {
-                priority: 6,
-                source: 'user_direct',
-                locked: false
-            });
+        // 스타일/분위기 — photoStyle 프리셋 + 사용자 mood 입력 병합
+        {
+            const styleParts: string[] = [];
+
+            // 1) Photo Style 프리셋 (필름 스톡 / 작가 스타일)
+            const photoStyleId = this.settings.artDirection?.photoStyleId;
+            if (photoStyleId) {
+                const { getStyleById } = require('@/config/mappings/photo-styles');
+                const photoStyle = getStyleById(photoStyleId);
+                if (photoStyle) {
+                    styleParts.push(photoStyle.promptTokens);
+                }
+            }
+
+            // 2) 사용자 mood 입력 (Studio 이외 모드)
+            if (this.settings.artDirection.lensCharacteristicType !== 'studio' && this.settings.userInput.moodDescription) {
+                styleParts.push(this.settings.userInput.moodDescription);
+            }
+
+            if (styleParts.length > 0) {
+                this.setSlot('style', styleParts.join(', '), {
+                    priority: 6,
+                    source: photoStyleId ? 'deterministic' : 'user_direct',
+                    locked: false
+                });
+            }
         }
 
         // 사진 비율 (Aspect Ratio)
@@ -132,9 +139,40 @@ export class PromptBuilderV2 {
             source: 'deterministic',
             locked: false
         });
+
+        // Studio 모드일 때만 추가 슬롯 채우기
+        if (this.settings.artDirection.lensCharacteristicType === 'studio') {
+            // 배경/장소
+            this.setSlot('location', this.getLocation(), {
+                priority: 7,
+                source: 'deterministic',
+                locked: false
+            });
+
+            // 패션
+            this.setSlot('fashion', this.getFashion(), {
+                priority: 7,
+                source: 'deterministic',
+                locked: false
+            });
+
+            // 표정/포즈
+            this.setSlot('expression_pose', this.getExpressionPose(), {
+                priority: 7,
+                source: 'deterministic',
+                locked: false
+            });
+
+            // 기술 스펙
+            this.setSlot('tech_specs', this.getTechSpecs(), {
+                priority: 6,
+                source: 'deterministic',
+                locked: false
+            });
+        }
     }
 
-    // 피사체 프롬프트 생성 (모드별 분기)
+    // 피사체 프롬프트 생성 (Studio 전용)
     private getSubjectPrompt(): string {
         const { lensCharacteristicType } = this.settings.artDirection;
 
@@ -143,122 +181,8 @@ export class PromptBuilderV2 {
             return this.buildStudioSubjectPrompt();
         }
 
-        // Street (Snap) 모드: 스토리 빌더 기반
-        if (lensCharacteristicType === 'street' && this.settings.snap) {
-            return this.buildSnapPrompt();
-        }
-
         // 다른 모드: 기존 직접 입력
         return this.settings.userInput.subjectDescription || '';
-    }
-
-    // Snap 모드 프롬프트 생성 (스토리 빌더 기반)
-    private buildSnapPrompt(): string {
-        const snap = this.settings.snap!;
-        const parts: string[] = [];
-
-        // 1. 기본 스타일 선언
-        parts.push('A candid street photograph');
-
-        // 2. 피사체 (누가)
-        const subjectLabel = SNAP_SUBJECT_TYPES.find(s => s.value === snap.subject)?.label;
-        if (subjectLabel) {
-            parts.push(`of a ${subjectLabel}`);
-        }
-
-        // 3. 행동 (무엇을)
-        const actionLabel = SNAP_ACTIONS.find(a => a.value === snap.action)?.label;
-        if (actionLabel) {
-            parts.push(actionLabel);
-        }
-
-        // 4. 방식 (어떻게)
-        const mannerLabel = SNAP_MANNERS.find(m => m.value === snap.manner)?.label;
-        if (mannerLabel) {
-            parts.push(mannerLabel);
-        }
-
-        // 5. 동반자 (누구와)
-        const companionMap: Record<string, string> = {
-            alone: 'alone',
-            'with-friend': 'with a friend',
-            'with-lover': 'with a lover',
-            'with-family': 'with family',
-            'with-pet': 'with a pet',
-            'in-crowd': 'in a crowd',
-        };
-        if (snap.companion && companionMap[snap.companion]) {
-            parts.push(companionMap[snap.companion]);
-        }
-
-        // 6. 장소 (어디서)
-        const locationLabel = SNAP_LOCATIONS.find(l => l.value === snap.location)?.label;
-        if (locationLabel) {
-            parts.push(`in a ${locationLabel.toLowerCase()}`);
-        }
-
-        // 7. 시간대 (언제)
-        const timeMap: Record<string, string> = {
-            dawn: 'at dawn',
-            morning: 'in the morning',
-            midday: 'at midday',
-            afternoon: 'in the afternoon',
-            'golden-hour': 'during golden hour',
-            'blue-hour': 'during blue hour',
-            night: 'at night',
-            'late-night': 'late at night',
-        };
-        if (snap.timeOfDay && timeMap[snap.timeOfDay]) {
-            parts.push(timeMap[snap.timeOfDay]);
-        }
-
-        // 환경 섹션
-        const envParts: string[] = [];
-
-        // 8. 구체적인 장소
-        const placeLabel = SNAP_SPECIFIC_PLACES.find(p => p.value === snap.specificPlace)?.label;
-        if (placeLabel) {
-            envParts.push(`Set in ${placeLabel}`);
-        }
-
-        // 9. 계절 + 날씨
-        const seasonLabel = SNAP_SEASONS.find(s => s.value === snap.season)?.label;
-        const weatherLabel = SNAP_WEATHER.find(w => w.value === snap.weather)?.label;
-        if (seasonLabel || weatherLabel) {
-            const seasonWeather = [seasonLabel, weatherLabel].filter(Boolean).join(', ');
-            envParts.push(seasonWeather);
-        }
-
-        // 10. 분위기/효과
-        const atmosphereLabel = SNAP_ATMOSPHERE.find(a => a.value === snap.atmosphere)?.label;
-        if (atmosphereLabel) {
-            envParts.push(`with ${atmosphereLabel} atmosphere`);
-        }
-
-        // 11. 조명
-        const lightingLabel = SNAP_LIGHTING.find(l => l.value === snap.lighting)?.label;
-        if (lightingLabel && snap.lighting !== 'natural') {
-            envParts.push(`${lightingLabel} illumination`);
-        }
-
-        // 12. 군중 밀도
-        const crowdMap: Record<string, string> = {
-            empty: 'empty streets',
-            sparse: 'sparse crowd',
-            moderate: 'moderate crowd',
-            crowded: 'crowded street',
-            packed: 'densely packed crowd',
-        };
-        if (snap.crowdDensity && crowdMap[snap.crowdDensity]) {
-            envParts.push(crowdMap[snap.crowdDensity]);
-        }
-
-        // 환경 파트 결합
-        if (envParts.length > 0) {
-            parts.push(envParts.join('. '));
-        }
-
-        return parts.filter(Boolean).join(' ');
     }
 
     private buildStudioSubjectPrompt(): string {
@@ -639,17 +563,14 @@ export class PromptBuilderV2 {
 
     private getComposition(): string {
         const parts: string[] = [];
+        const framing = this.settings.userInput?.studioComposition || 'half-shot';
 
         if (this.settings.artDirection.cameraAngle) {
-            const angleMap: Record<string, string> = {
-                'eye_level': 'eye level angle',
-                'high_angle': 'high angle shot',
-                'low_angle': 'low angle shot',
-                'birds_eye': 'bird\'s eye view, top-down perspective',
-                'worms_eye': 'worm\'s eye view, extreme low angle',
-                'drone': 'aerial drone shot, cinematic overhead view'
-            };
-            parts.push(angleMap[this.settings.artDirection.cameraAngle] || '');
+            // Dictionary 기반 구도별 앵글 프롬프트 조회
+            const anglePrompt = getPrompt(ANGLE_DICT, this.settings.artDirection.cameraAngle, { framing });
+            if (anglePrompt) {
+                parts.push(anglePrompt);
+            }
         }
 
         return parts.filter(Boolean).join(', ');
@@ -664,15 +585,19 @@ export class PromptBuilderV2 {
         const isPortrait = h > w;
         const isSquare = h === w;
 
+        // 카메라 mount 기반 동적 타입 라벨
+        const camera = getCameraById(this.settings.camera.bodyId);
+        const cameraType = camera ? getCameraTypeLabel(camera.mount) : 'DSLR';
+
         // 비율별 전체 프롬프트 (세로 비율은 맞춤 프롬프트 사용)
         const ratioPrompts: Record<string, string> = {
             // 세로 (Portrait)
-            '2:3': 'A 2:3 ratio DSLR portrait',
+            '2:3': `A 2:3 ratio ${cameraType} portrait`,
             '3:4': 'A 3:4 ratio portrait',
             '9:16': 'A 9:16 smartphone portrait',
             '4:5': 'A 4:5 ratio large format portrait',
             // 가로 (Landscape) - landscape orientation 추가
-            '3:2': 'A 3:2 ratio DSLR photograph, landscape orientation',
+            '3:2': `A 3:2 ratio ${cameraType} photograph, landscape orientation`,
             '4:3': 'A 4:3 ratio photograph, landscape orientation',
             '16:9': 'A 16:9 cinematic widescreen photograph, landscape orientation',
             '5:4': 'A 5:4 ratio large format photograph, landscape orientation',
@@ -693,7 +618,192 @@ export class PromptBuilderV2 {
         return `A ${aspectRatio} ${orientationText}`;
     }
 
+    // ===== 새 IR 슬롯 메서드 =====
 
+    /**
+     * [Location] - 배경/장소
+     */
+    private getLocation(): string {
+        const backgroundType = this.settings.userInput?.studioBackgroundType;
+        if (!backgroundType) return '';
+
+        const backgroundMap: Record<string, string> = {
+            'seamless_white': 'clean white studio backdrop',
+            'seamless_gray': 'neutral gray studio backdrop',
+            'seamless_black': 'dark black studio backdrop',
+            'seamless_red': 'wine red studio backdrop',
+            'seamless_blue': 'chromakey blue screen',
+            'seamless_green': 'chromakey green screen',
+            'seamless_beige': 'warm beige studio backdrop',
+            'textured': 'textured studio backdrop'
+        };
+
+        return backgroundMap[backgroundType] || 'studio backdrop';
+    }
+
+    /**
+     * [Fashion] - 패션/의상
+     */
+    private getFashion(): string {
+        const subjects = this.settings.userInput?.studioSubjects || [];
+        if (subjects.length === 0) return '';
+
+        const isMultiple = subjects.length >= 2;
+        const fashionDescriptions = subjects.map((subject, idx) => {
+            const fashionParts: string[] = [];
+            const topPrompt = TOP_WEAR_OPTIONS.find(o => o.value === subject.topWear)?.prompt;
+            const bottomPrompt = BOTTOM_WEAR_OPTIONS.find(o => o.value === subject.bottomWear)?.prompt;
+            const footPrompt = FOOTWEAR_OPTIONS.find(o => o.value === subject.footwear)?.prompt;
+            const accPrompt = ACCESSORY_OPTIONS.find(o => o.value === subject.accessory)?.prompt;
+
+            if (topPrompt) fashionParts.push(this.addArticle(topPrompt));
+            if (bottomPrompt) fashionParts.push(bottomPrompt);
+            if (footPrompt) fashionParts.push(footPrompt);
+            if (accPrompt) fashionParts.push(this.addArticle(accPrompt));
+
+            if (fashionParts.length === 0) return '';
+
+            const fashionText = this.joinWithAnd(fashionParts);
+            const prefix = isMultiple ? `Person ${idx + 1}: ` : '';
+            return `${isMultiple ? '- ' : ''}${prefix}wearing ${fashionText}`;
+        }).filter(Boolean);
+
+        if (fashionDescriptions.length === 0) return '';
+
+        if (isMultiple) {
+            return fashionDescriptions.join('\n');
+        }
+        return fashionDescriptions.join(' ');
+    }
+
+    /**
+     * [Expression/Pose] - 표정, 포즈, 시선
+     */
+    private getExpressionPose(): string {
+        const subjects = this.settings.userInput?.studioSubjects || [];
+        if (subjects.length === 0) return '';
+
+        const isMultiple = subjects.length >= 2;
+        const framing = this.settings.userInput?.studioComposition || 'half-shot';
+
+        const descriptions = subjects.map((subject, idx) => {
+            // Dictionary 기반 구도별 프롬프트 조회
+            const bodyPose = getPrompt(BODY_POSE_DICT, subject.bodyPose, { framing });
+            const handPose = getPrompt(HAND_POSE_DICT, subject.handPose, { framing });
+
+            const expressionMap: Record<string, string> = {
+                'natural-smile': 'a natural warm smile',
+                'bright-smile': 'a bright joyful smile',
+                'subtle-smile': 'a subtle elegant smile',
+                'neutral': 'a neutral expression',
+                'serious': 'a serious expression',
+                'pensive': 'a pensive thoughtful expression',
+                'mysterious': 'a mysterious expression',
+                'intense': 'an intense expression',
+                'playful': 'a playful expression',
+                'sensual': 'a sensual expression'
+            };
+
+            const gazeMap: Record<string, string> = {
+                'direct-eye-contact': 'direct eye contact with the camera',
+                'off-camera': 'looking off-camera',
+                'looking-up': 'looking upward',
+                'looking-down': 'looking downward',
+                'side-gaze': 'a side gaze',
+                'over-shoulder': 'looking over shoulder',
+                'eyes-closed': 'eyes closed',
+                'half-closed-eyes': 'half-closed eyes'
+            };
+
+            const expression = expressionMap[subject.expression] || '';
+            const gaze = gazeMap[subject.gazeDirection] || '';
+
+            const parts: string[] = [];
+
+            if (bodyPose && handPose) {
+                parts.push(`in ${bodyPose} with ${handPose}`);
+            } else if (bodyPose) {
+                parts.push(`in ${bodyPose}`);
+            } else if (handPose) {
+                parts.push(`with ${handPose}`);
+            }
+
+            if (expression) parts.push(expression);
+            if (gaze) parts.push(gaze);
+
+            if (parts.length === 0) return '';
+
+            const prefix = isMultiple ? `Person ${idx + 1}: ` : '';
+            return `${isMultiple ? '- ' : ''}${prefix}${this.joinWithAnd(parts)}`;
+        }).filter(Boolean);
+
+        if (descriptions.length === 0) return '';
+
+        if (isMultiple) {
+            return descriptions.join('\n');
+        }
+        return descriptions.join(' ');
+    }
+
+    /**
+     * [Tech Specs] - 카메라/렌즈 상세 스펙
+     */
+    private getTechSpecs(): string {
+        const camera = getCameraById(this.settings.camera?.bodyId);
+        const lens = getLensById(this.settings.camera?.lensId);
+
+        if (!camera && !lens) return '';
+
+        const sentences: string[] = [];
+
+        const cameraText = camera ? `${camera.brand} ${camera.model}` : '';
+        const lensText = lens ? `${lens.brand} ${lens.model}` : '';
+        const characteristic = lens?.characteristic_studio || '';
+
+        if (cameraText && lensText && characteristic) {
+            sentences.push(`Shot on a ${cameraText} with a ${lensText} lens for ${characteristic}.`);
+        } else if (cameraText && lensText) {
+            sentences.push(`Shot on a ${cameraText} with a ${lensText} lens.`);
+        } else if (cameraText) {
+            sentences.push(`Shot on a ${cameraText}.`);
+        } else if (lensText) {
+            sentences.push(`Shot with a ${lensText} lens.`);
+        }
+
+        const currentAperture = this.settings.camera?.aperture;
+        if (lens && currentAperture) {
+            const isMaxAperture = currentAperture === lens.maxAperture;
+            if (isMaxAperture) {
+                if (lens.bokeh) {
+                    sentences.push(`Shallow depth of field (${currentAperture}) creates ${lens.bokeh} that perfectly isolates the subject.`);
+                }
+                if (lens.vignetting) {
+                    sentences.push(`${lens.vignetting} adds artistic depth to the image.`);
+                }
+            } else if (currentAperture) {
+                sentences.push(`Shot at ${currentAperture} aperture.`);
+            }
+        }
+
+        return sentences.join(' ');
+    }
+
+    // ===== 유틸리티 헬퍼 =====
+
+    private addArticle(text: string): string {
+        if (!text) return text;
+        const vowels = ['a', 'e', 'i', 'o', 'u'];
+        const firstChar = text.toLowerCase().charAt(0);
+        const article = vowels.includes(firstChar) ? 'an' : 'a';
+        return `${article} ${text}`;
+    }
+
+    private joinWithAnd(parts: string[]): string {
+        if (parts.length === 0) return '';
+        if (parts.length === 1) return parts[0];
+        if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
+        return `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`;
+    }
 
     // ===== 우선순위 적용 =====
 

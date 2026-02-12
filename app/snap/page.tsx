@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { SparklesIcon, ArrowDown01Icon } from '@hugeicons/core-free-icons';
 import {
@@ -14,6 +14,7 @@ import { SnapTab } from '@/components/settings/tabs/snap/SnapTab';
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { Footer } from '@/components/ui/footer';
 import { useRouter } from 'next/navigation';
+import { useSettingsStore } from '@/store/useSettingsStore';
 
 // 모드 정의
 const MODES = [
@@ -23,8 +24,14 @@ const MODES = [
 ] as const;
 
 export default function SnapPage() {
+    const { updateArtDirection } = useSettingsStore();
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
+
+    // 페이지 마운트 시 lensCharacteristicType을 'street'로 설정
+    useEffect(() => {
+        updateArtDirection({ lensCharacteristicType: 'street' });
+    }, [updateArtDirection]);
 
     const currentModeInfo = MODES.find(m => m.value === 'snap')!;
 

@@ -64,29 +64,8 @@ export const GAZE_OPTIONS: { value: PortraitGaze; label: string; prompt: string 
 // ===== 충돌 레벨 =====
 export type ConflictLevel = 'disabled' | 'critical' | 'warning' | 'ok';
 
-// ===== 구도 ↔ Body Pose 충돌 =====
-export const FRAMING_BODY_POSE_CONFLICTS: Record<PortraitFraming, Partial<Record<PortraitBodyPose, ConflictLevel>>> = {
-    'extreme-close-up': { 'contrapposto': 'critical', 's-curve': 'critical', 'sitting': 'critical', 'reclining': 'critical' },
-    'close-up': { 'contrapposto': 'critical', 's-curve': 'critical', 'sitting': 'warning', 'reclining': 'warning' },
-    'bust-shot': { 's-curve': 'critical', 'reclining': 'warning' },
-    'waist-shot': { 's-curve': 'warning' },
-    'half-shot': {},
-    'three-quarter-shot': {},
-    'full-shot': {},
-    'long-shot': {},
-};
-
-// ===== 구도 ↔ Hand Pose 충돌 =====
-export const FRAMING_HAND_POSE_CONFLICTS: Record<PortraitFraming, Partial<Record<PortraitHandPose, ConflictLevel>>> = {
-    'extreme-close-up': { 'pocket-hands': 'critical', 'crossed-arms': 'critical' },
-    'close-up': { 'pocket-hands': 'critical', 'crossed-arms': 'critical' },
-    'bust-shot': { 'pocket-hands': 'critical', 'crossed-arms': 'warning' },
-    'waist-shot': {},
-    'half-shot': {},
-    'three-quarter-shot': { 'editorial-hands': 'warning', 'framing-face': 'warning' },
-    'full-shot': { 'editorial-hands': 'warning', 'framing-face': 'warning' },
-    'long-shot': { 'editorial-hands': 'critical', 'framing-face': 'critical', 'hair-touch': 'warning' },
-};
+// NOTE: FRAMING_BODY_POSE_CONFLICTS, FRAMING_HAND_POSE_CONFLICTS, FRAMING_ANGLE_CONFLICTS는
+// lib/rules/conflict-rules.ts의 STUDIO_CONFLICT_RULES로 마이그레이션되어 삭제됨 (2026-01-01)
 
 // ===== Body Pose ↔ Expression 충돌 =====
 export const BODY_POSE_EXPRESSION_CONFLICTS: Record<PortraitBodyPose, Partial<Record<PortraitExpression, ConflictLevel>>> = {
@@ -170,64 +149,7 @@ export const ANGLE_GAZE_CONFLICTS: Record<string, Partial<Record<PortraitGaze, C
 // 레벨: 'disabled' | 'critical' | 'warning' | 'ok' | 'recommend'
 export type FramingAngleConflictLevel = 'disabled' | 'critical' | 'warning' | 'ok' | 'recommend';
 
-export const FRAMING_ANGLE_CONFLICTS: Record<PortraitFraming, Record<string, FramingAngleConflictLevel>> = {
-    'extreme-close-up': {
-        eye_level: 'recommend',  // 클로즈업은 아이레벨 최적
-        high_angle: 'ok',
-        low_angle: 'warning',  // 턱 과장
-        birds_eye: 'disabled',  // 정수리만 보임
-        worms_eye: 'disabled',  // 극단적 왜곡
-    },
-    'close-up': {
-        eye_level: 'recommend',  // 클로즈업은 아이레벨 최적
-        high_angle: 'ok',
-        low_angle: 'warning',
-        birds_eye: 'critical',  // 정수리만 보임
-        worms_eye: 'critical',  // 극단적 턱 왜곡
-    },
-    'bust-shot': {
-        eye_level: 'recommend',  // 바스트샷은 아이레벨 최적
-        high_angle: 'ok',
-        low_angle: 'ok',
-        birds_eye: 'warning',  // 어색한 상반신
-        worms_eye: 'warning',
-    },
-    'waist-shot': {
-        eye_level: 'recommend',  // 웨이스트샷은 아이레벨 최적
-        high_angle: 'ok',
-        low_angle: 'ok',
-        birds_eye: 'warning',
-        worms_eye: 'warning',
-    },
-    'half-shot': {
-        eye_level: 'recommend',  // 하프샷은 아이레벨 최적
-        high_angle: 'ok',
-        low_angle: 'ok',
-        birds_eye: 'warning',
-        worms_eye: 'warning',
-    },
-    'three-quarter-shot': {
-        eye_level: 'ok',
-        high_angle: 'ok',
-        low_angle: 'recommend',  // 3/4샷은 로우앵글로 히어로 느낌
-        birds_eye: 'ok',
-        worms_eye: 'ok',
-    },
-    'full-shot': {
-        eye_level: 'ok',
-        high_angle: 'ok',
-        low_angle: 'recommend',  // 풀샷은 로우앵글로 웅장함+ 히어로샷
-        birds_eye: 'ok',  // 환경+전신
-        worms_eye: 'ok',  // 웅장함
-    },
-    'long-shot': {
-        eye_level: 'ok',
-        high_angle: 'ok',
-        low_angle: 'ok',
-        birds_eye: 'recommend',  // 롱샷은 버즈아이로 환경+인물 조화
-        worms_eye: 'ok',
-    },
-};
+// NOTE: FRAMING_ANGLE_CONFLICTS는 lib/rules/conflict-rules.ts로 마이그레이션됨 (2026-01-01)
 
 // ===== 구성(Composition Rule) ↔ 앵글 충돌 =====
 // 구성 규칙별 앵글 호환성

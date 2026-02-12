@@ -130,7 +130,7 @@ export interface ArtDirectionSettings {
   compositionRule: string;
   cameraAngle: string;
   shotType: string;
-  photographerStyleId?: string;
+  photoStyleId?: string;
   environmentEffects: string[];
   lensCharacteristicType: 'studio' | 'landscape' | 'architecture' | 'product' | 'street';
 }

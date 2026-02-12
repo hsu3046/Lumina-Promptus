@@ -23,6 +23,7 @@ import { useCameraSettings } from './useCameraSettings';
 import { CAMERA_BODIES_BY_BRAND, getCameraById, DEFAULT_ASPECT_RATIO_SPEC } from '@/config/mappings/cameras';
 import { getLensesByMount, LENS_CATEGORY_LABELS, getLensById } from '@/config/mappings/lenses';
 import { getLensStatusForOption, type LensConflictLevel } from './lens-composition-validator';
+import { getStylesByCategory, type PhotoStyle } from '@/config/mappings/photo-styles';
 import type { Lens } from '@/types';
 import type { ExposureStatusLevel } from './exposure-calculator';
 
@@ -45,7 +46,7 @@ function getExposureStatusStyle(status: ExposureStatusLevel): { color: string; i
 }
 
 export function CameraTab() {
-    const { settings, updateCamera } = useSettingsStore();
+    const { settings, updateCamera, updateArtDirection } = useSettingsStore();
     const {
         apertureStops,
         shutterStops,
@@ -342,15 +343,40 @@ export function CameraTab() {
                     );
                 })()}
 
-                {/* 스타일 (차후 구현) */}
+                {/* 포토 스타일 (필름 스톡 / 작가 스타일) */}
                 <div className="space-y-2">
                     <Label>스타일</Label>
-                    <Select disabled>
-                        <SelectTrigger className="w-full bg-zinc-800/70 border-zinc-800 opacity-50">
-                            <SelectValue placeholder="차후 구현" />
+                    <Select
+                        value={settings.artDirection.photoStyleId || 'none'}
+                        onValueChange={(value) => updateArtDirection({ photoStyleId: value === 'none' ? undefined : value })}
+                    >
+                        <SelectTrigger className="w-full bg-zinc-800/70 border-zinc-800 text-left">
+                            <SelectValue placeholder="선택 안함" className="w-full text-left" />
                         </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800">
-                            <SelectItem value="none">선택 안함</SelectItem>
+                        <SelectContent className="bg-zinc-900 border-zinc-800 max-h-80 w-[var(--radix-select-trigger-width)]" position="popper" align="start">
+                            <SelectItem value="none">없음</SelectItem>
+                            <SelectGroup>
+                                <SelectLabel className="text-amber-400 font-medium">📷 필름 스톡</SelectLabel>
+                                {getStylesByCategory('film').map((style) => (
+                                    <SelectItem key={style.id} value={style.id}>
+                                        <div className="flex flex-col">
+                                            <span>{style.name}</span>
+                                            <span className="text-[10px] text-zinc-500">{style.description}</span>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
+                            <SelectGroup>
+                                <SelectLabel className="text-amber-400 font-medium">🎨 작가 스타일</SelectLabel>
+                                {getStylesByCategory('photographer').map((style) => (
+                                    <SelectItem key={style.id} value={style.id}>
+                                        <div className="flex flex-col">
+                                            <span>{style.name}</span>
+                                            <span className="text-[10px] text-zinc-500">{style.description}</span>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
                         </SelectContent>
                     </Select>
                 </div>

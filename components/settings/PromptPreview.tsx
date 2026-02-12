@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { PromptBuilderV2 } from '@/lib/prompt/builders/StudioBuilder';
+import { SnapBuilder } from '@/lib/prompt/builders/SnapBuilder';
 import { NanoBananaProExporter } from '@/lib/prompt/exporters/NanoBananaExporter';
 import { ChatGPTExporter } from '@/lib/prompt/exporters/ChatGPTExporter';
 import { MidjourneyExporter } from '@/lib/prompt/exporters/MidjourneyExporter';
@@ -35,11 +36,16 @@ export function PromptPreview() {
     // 모드별 프롬프트 분리 저장
     const [studioPrompt, setStudioPrompt] = useState<string>('');
     const [landscapePrompt, setLandscapePrompt] = useState<string>('');
+    const [snapPrompt, setSnapPrompt] = useState<string>('');
 
 
     // 현재 모드
     const currentMode = settings.artDirection.lensCharacteristicType;
-    const generatedPrompt = currentMode === 'landscape' ? landscapePrompt : studioPrompt;
+    const generatedPrompt = currentMode === 'landscape'
+        ? landscapePrompt
+        : currentMode === 'street'
+            ? snapPrompt
+            : studioPrompt;
 
     // 실시간 프롬프트 생성 - settings 또는 aiTarget 변경 시 자동 실행
     useEffect(() => {
@@ -69,6 +75,35 @@ export function PromptPreview() {
                     }
 
                     setLandscapePrompt(result);
+                    return;
+                }
+
+                // Snap(Street) 모드: SnapBuilder 사용
+                if (settings.artDirection.lensCharacteristicType === 'street' && settings.snap) {
+                    const builder = new SnapBuilder(settings);
+                    const newIR = await builder.buildIR();
+
+                    let result: string;
+                    switch (aiTarget) {
+                        case 'chatgpt': {
+                            const exporter = new ChatGPTExporter(newIR, settings);
+                            result = exporter.export();
+                            break;
+                        }
+                        case 'midjourney': {
+                            const exporter = new MidjourneyExporter(newIR, settings);
+                            result = exporter.export();
+                            break;
+                        }
+                        case 'nanobanana':
+                        default: {
+                            const exporter = new NanoBananaProExporter(newIR, settings);
+                            result = exporter.export();
+                            break;
+                        }
+                    }
+
+                    setSnapPrompt(result);
                     return;
                 }
 

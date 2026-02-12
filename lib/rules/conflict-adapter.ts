@@ -3,12 +3,6 @@
 
 import type { ConflictLevel } from '@/components/ui/combobox-field';
 import { STUDIO_CONFLICT_RULES, type Restriction } from '@/lib/rules/conflict-rules';
-import {
-    FRAMING_BODY_POSE_CONFLICTS,
-    FRAMING_HAND_POSE_CONFLICTS,
-    type ConflictLevel as LegacyConflictLevel,
-} from '@/config/mappings/portrait-composition';
-import type { PortraitFraming, PortraitBodyPose, PortraitHandPose } from '@/types';
 
 /**
  * Restriction을 ConflictLevel로 변환
@@ -18,18 +12,6 @@ function mapRestriction(restriction: Restriction | null): ConflictLevel {
     if (restriction === 'disabled') return 'disabled';
     if (restriction === 'none') return 'none';
     if (restriction === 'hide') return 'disabled';
-    return 'ok';
-}
-
-/**
- * 레거시 충돌 레벨을 새 ConflictLevel로 변환 (하위 호환)
- */
-function mapLegacyLevel(level: string | undefined): ConflictLevel {
-    if (!level || level === 'ok') return 'ok';
-    if (level === 'disabled') return 'disabled';
-    if (level === 'critical') return 'disabled';
-    if (level === 'warning') return 'none';
-    if (level === 'recommend') return 'recommend';
     return 'ok';
 }
 

@@ -33,18 +33,22 @@ export class MidjourneyExporter {
      */
     export(): string {
         const parts: string[] = [];
+        const isSnap = this.settings.artDirection?.lensCharacteristicType === 'street';
 
         // 1. Subject - 외모 (키워드)
         const subject = this.getSubjectKeywords();
         if (subject) parts.push(subject);
 
-        // 2. Fashion - 패션 (키워드)
-        const fashion = this.getFashionKeywords();
-        if (fashion) parts.push(fashion);
+        // Snap 모드에서는 Fashion/Expression 생략
+        if (!isSnap) {
+            // 2. Fashion - 패션 (키워드)
+            const fashion = this.getFashionKeywords();
+            if (fashion) parts.push(fashion);
 
-        // 3. Expression/Pose - 포즈, 표정 (키워드)
-        const expressionPose = this.getExpressionPoseKeywords();
-        if (expressionPose) parts.push(expressionPose);
+            // 3. Expression/Pose - 포즈, 표정 (키워드)
+            const expressionPose = this.getExpressionPoseKeywords();
+            if (expressionPose) parts.push(expressionPose);
+        }
 
         // 4. Composition - 프레이밍, 앵글 (키워드)
         const composition = this.getCompositionKeywords();
@@ -61,6 +65,10 @@ export class MidjourneyExporter {
         // 7. Camera/Lens - 카메라, 렌즈 (키워드)
         const cameraLens = this.getCameraLensKeywords();
         if (cameraLens) parts.push(cameraLens);
+
+        // 8. Style - Photo Style 프리셋 (IR style 슬롯)
+        const styleContent = this.ir.slots.style?.content;
+        if (styleContent) parts.push(styleContent);
 
         // 콤마로 조합 후 Midjourney 파라미터 추가
         const content = parts.filter(Boolean).join(', ');
@@ -103,6 +111,11 @@ export class MidjourneyExporter {
      * Subject - 간결한 키워드
      */
     private getSubjectKeywords(): string {
+        // Snap(Street) 모드: IR 슬롯의 narrative 직접 사용
+        if (this.settings.artDirection?.lensCharacteristicType === 'street') {
+            return this.ir.slots.subject?.content || '';
+        }
+
         const subjects = this.settings.userInput?.studioSubjects || [];
         if (subjects.length === 0) {
             return this.ir.slots.subject?.content || '';
@@ -186,26 +199,15 @@ export class MidjourneyExporter {
     }
 
     /**
-     * Fashion - 간결한 키워드
+     * Fashion - 간결한 키워드 (IR 슬롯 사용)
      */
     private getFashionKeywords(): string {
-        const subjects = this.settings.userInput?.studioSubjects || [];
-        if (subjects.length === 0) return '';
-
-        const fashionParts: string[] = [];
-        for (const subject of subjects) {
-            const topPrompt = TOP_WEAR_OPTIONS.find(o => o.value === subject.topWear)?.prompt;
-            const bottomPrompt = BOTTOM_WEAR_OPTIONS.find(o => o.value === subject.bottomWear)?.prompt;
-            const footPrompt = FOOTWEAR_OPTIONS.find(o => o.value === subject.footwear)?.prompt;
-            const accPrompt = ACCESSORY_OPTIONS.find(o => o.value === subject.accessory)?.prompt;
-
-            if (topPrompt) fashionParts.push(topPrompt);
-            if (bottomPrompt) fashionParts.push(bottomPrompt);
-            if (footPrompt) fashionParts.push(footPrompt);
-            if (accPrompt) fashionParts.push(accPrompt);
+        const fashion = this.ir.slots.fashion?.content;
+        if (fashion) {
+            // IR에서 생성된 패션 문자열 사용
+            return fashion;
         }
-
-        return fashionParts.length > 0 ? `wearing ${fashionParts.join(', ')}` : '';
+        return '';
     }
 
     /**
@@ -253,48 +255,55 @@ export class MidjourneyExporter {
      */
     private getCompositionKeywords(): string {
         const keywords: string[] = [];
+        const isSnap = this.settings.artDirection?.lensCharacteristicType === 'street';
 
-        // 프레이밍
-        const framing = this.settings.userInput?.studioComposition;
-        const framingMap: Record<string, string> = {
-            'extreme-close-up': 'extreme close-up', 'close-up': 'close-up',
-            'bust-shot': 'bust shot', 'waist-shot': 'waist shot',
-            'half-shot': 'medium shot', 'three-quarter-shot': 'knee shot',
-            'full-shot': 'full body', 'long-shot': 'long shot'
-        };
-        if (framingMap[framing || '']) keywords.push(framingMap[framing || '']);
+        if (isSnap) {
+            // Snap 모드: 렌즈 화각 기반 framing
+            const lens = getLensById(this.settings.camera.lensId);
+            const snapFramingMap: Record<string, string> = {
+                'ultra_wide': 'environmental wide shot',
+                'wide': 'full body shot',
+                'standard': 'three-quarter shot',
+                'medium_telephoto': 'medium shot',
+                'telephoto': 'tight medium shot',
+                'macro': 'extreme close-up',
+            };
+            const snapFraming = snapFramingMap[lens?.category || ''] || 'medium shot';
+            keywords.push(snapFraming);
+            keywords.push('observational perspective');
+        } else {
+            // Studio 모드: 기존 로직
+            const framing = this.settings.userInput?.studioComposition;
+            const framingMap: Record<string, string> = {
+                'extreme-close-up': 'extreme close-up', 'close-up': 'close-up',
+                'bust-shot': 'bust shot', 'waist-shot': 'waist shot',
+                'half-shot': 'medium shot', 'three-quarter-shot': 'knee shot',
+                'full-shot': 'full body', 'long-shot': 'long shot'
+            };
+            if (framingMap[framing || '']) keywords.push(framingMap[framing || '']);
 
-        // 앵글
-        const angle = this.settings.artDirection?.cameraAngle;
-        const angleMap: Record<string, string> = {
-            'eye_level': 'eye level', 'high_angle': 'high angle',
-            'low_angle': 'low angle', 'birds_eye': 'bird\'s eye view',
-            'worms_eye': 'worm\'s eye view'
-        };
-        if (angleMap[angle || '']) keywords.push(angleMap[angle || '']);
+            // 앵글
+            const angle = this.settings.artDirection?.cameraAngle;
+            const angleMap: Record<string, string> = {
+                'eye_level': 'eye level', 'high_angle': 'high angle',
+                'low_angle': 'low angle', 'birds_eye': 'bird\'s eye view',
+                'worms_eye': 'worm\'s eye view'
+            };
+            if (angleMap[angle || '']) keywords.push(angleMap[angle || '']);
+        }
 
         return keywords.filter(Boolean).join(', ');
     }
 
     /**
-     * Location - 간결한 키워드
+     * Location - 간결한 키워드 (IR 슬롯 사용)
      */
     private getLocationKeywords(): string {
-        const backgroundType = this.settings.userInput?.studioBackgroundType;
-        if (!backgroundType) return '';
-
-        const backgroundMap: Record<string, string> = {
-            'seamless_white': 'white studio backdrop',
-            'seamless_gray': 'gray studio backdrop',
-            'seamless_black': 'black studio backdrop',
-            'seamless_red': 'red studio backdrop',
-            'seamless_blue': 'blue screen',
-            'seamless_green': 'green screen',
-            'seamless_beige': 'beige studio backdrop',
-            'textured': 'textured backdrop'
-        };
-
-        return backgroundMap[backgroundType] || '';
+        const location = this.ir.slots.location?.content;
+        if (location) {
+            return location;
+        }
+        return '';
     }
 
     /**

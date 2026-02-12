@@ -1,6 +1,6 @@
 # Lumina Promptus - 프로젝트 구조
 
-> 마지막 업데이트: 2026-01-01
+> 마지막 업데이트: 2026-01-01 (IR 중심 아키텍처 리팩토링)
 
 ## 전체 구조
 
@@ -127,17 +127,17 @@ shadcn 기반 공통 UI 컴포넌트.
 
 ### prompt/
 
-프롬프트 생성 관련.
+프롬프트 생성 관련 (**IR 중심 아키텍처**).
 
 | 파일 | 역할 |
 |------|------|
-| `builders/StudioBuilder.ts` | 스튜디오 IR 생성 (PromptBuilderV2) |
-| `builders/LandscapeBuilder.ts` | 풍경 프롬프트 생성 |
-| `exporters/NanoBananaExporter.ts` | Nano Banana Pro 형식 변환 |
-| `exporters/ChatGPTExporter.ts` | ChatGPT 형식 변환 |
-| `exporters/MidjourneyExporter.ts` | Midjourney 형식 변환 |
+| `builders/StudioBuilder.ts` | **핵심** - 스튜디오 IR 생성 (location, fashion, expression_pose, tech_specs 슬롯) |
+| `builders/LandscapeBuilder.ts` | 풍경 IR 생성 (`LandscapePromptBuilder` 클래스 추가) |
+| `exporters/NanoBananaExporter.ts` | IR 슬롯 조합으로 Nano Banana Pro 형식 변환 |
+| `exporters/ChatGPTExporter.ts` | IR 슬롯 조합으로 ChatGPT 형식 변환 |
+| `exporters/MidjourneyExporter.ts` | IR 슬롯 조합으로 Midjourney 형식 변환 |
 | `prompt-diff-generator.ts` | 프롬프트 변경 추적 |
-| `slot-definitions.ts` | 프롬프트 슬롯 정의 |
+| `slot-definitions.ts` | 프롬프트 슬롯 정의 (Studio + Landscape) |
 | `launchers.ts` | 외부 앱 실행 |
 
 ### rules/
@@ -229,3 +229,32 @@ components/.../combobox-field.tsx        → 충돌 아이콘 표시
 - `disabled` (🔴): 선택 불가
 - `none` (⚠️): 경고 표시
 - `ok`: 정상
+
+---
+
+## IR 중심 아키텍처
+
+프롬프트 생성 흐름:
+
+```
+Settings → Builder (IR 생성) → Exporter (순서/포맷만)
+```
+
+### Studio IR 슬롯
+| 슬롯 | 역할 |
+|------|------|
+| `location` | 배경/장소 |
+| `fashion` | 패션/의상 |
+| `expression_pose` | 표정/포즈/시선 |
+| `tech_specs` | 카메라/렌즈 스펙 |
+
+### Landscape IR 슬롯
+| 슬롯 | 역할 |
+|------|------|
+| `landscape_instruction` | 지시문 |
+| `landscape_subject` | 장소/좌표 |
+| `landscape_composition` | 구도/공간 배치 |
+| `landscape_environment` | 환경/날씨 |
+| `landscape_camera` | 카메라 스펙 |
+
+**이점:** 프롬프트 수정 시 Builder 파일 하나만 수정
