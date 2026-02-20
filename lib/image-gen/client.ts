@@ -49,7 +49,7 @@ export async function generateImage(
                 imageUrl = await generateWithOpenAI(prompt, apiKey, options);
                 break;
             case 'seedream':
-                imageUrl = await generateWithSeedream(prompt, apiKey);
+                imageUrl = await generateWithSeedream(prompt, apiKey, options);
                 break;
             default:
                 return { success: false, error: '지원하지 않는 이미지 생성 엔진입니다.' };

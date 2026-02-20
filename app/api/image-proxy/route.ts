@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
             case 'openai':
                 return await handleOpenAI(apiKey, prompt, aspectRatio, referenceImage);
             case 'seedream':
-                return await handleSeedream(apiKey, prompt);
+                return await handleSeedream(apiKey, prompt, aspectRatio);
             default:
                 return NextResponse.json(
                     { error: '지원하지 않는 provider입니다.' },
@@ -132,16 +132,17 @@ async function handleGemini(apiKey: string, prompt: string, aspectRatio?: string
     return NextResponse.json({ imageUrl });
 }
 
-// ===== OpenAI GPT Image 1.5 =====
-// aspectRatio → OpenAI size 매핑
+// ===== OpenAI GPT Image 1 =====
+// aspectRatio → OpenAI size 매핑 (지원: 1024x1024, 1536x1024, 1024x1536, auto)
 function mapAspectRatioToOpenAISize(aspectRatio?: string): string {
     if (!aspectRatio) return '1024x1024';
     const [w, h] = aspectRatio.split(':').map(Number);
     if (!w || !h) return '1024x1024';
     const ratio = w / h;
-    if (ratio > 1) return '1536x1024'; // 가로 (landscape)
-    if (ratio < 1) return '1024x1536'; // 세로 (portrait)
-    return '1024x1024'; // 정사각
+
+    if (Math.abs(ratio - 1) < 0.05) return '1024x1024';   // 1:1 정방형
+    if (ratio > 1) return '1536x1024';                      // 가로 (3:2, 16:9, 4:3 등)
+    return '1024x1536';                                      // 세로 (2:3, 9:16, 3:4, 4:5 등)
 }
 
 async function handleOpenAI(apiKey: string, prompt: string, aspectRatio?: string, referenceImage?: string) {
@@ -207,7 +208,24 @@ async function handleOpenAI(apiKey: string, prompt: string, aspectRatio?: string
 }
 
 // ===== ByteDance SeedDream 4.5 (via BytePlus ModelArk) =====
-async function handleSeedream(apiKey: string, prompt: string) {
+// aspectRatio → SeedDream size 매핑
+function mapAspectRatioToSeedreamSize(aspectRatio?: string): string {
+    if (!aspectRatio) return '1024x1024';
+    const [w, h] = aspectRatio.split(':').map(Number);
+    if (!w || !h) return '1024x1024';
+    const ratio = w / h;
+
+    // SeedDream 지원 사이즈: 정방, 가로, 세로
+    if (Math.abs(ratio - 1) < 0.05) return '1024x1024';     // 1:1
+    if (ratio >= 1.7) return '1280x720';                      // 16:9 와이드
+    if (ratio > 1) return '1152x896';                         // 3:2, 4:3 등 가로
+    if (ratio <= 0.59) return '720x1280';                     // 9:16 세로
+    return '896x1152';                                         // 2:3, 3:4, 4:5 등 세로
+}
+
+async function handleSeedream(apiKey: string, prompt: string, aspectRatio?: string) {
+    const size = mapAspectRatioToSeedreamSize(aspectRatio);
+
     // BytePlus ModelArk — OpenAI 호환 이미지 생성 API
     const response = await fetch('https://ark.ap-southeast.bytepluses.com/api/v3/images/generations', {
         method: 'POST',
@@ -218,7 +236,7 @@ async function handleSeedream(apiKey: string, prompt: string) {
         body: JSON.stringify({
             model: 'seedream-4-5-250422',
             prompt,
-            size: '1024x1024',
+            size,
             n: 1,
             response_format: 'url',
         }),

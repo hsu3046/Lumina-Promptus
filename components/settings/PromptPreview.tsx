@@ -117,7 +117,8 @@ export function PromptPreview() {
                     const config = buildLandscapePromptConfig(landscape);
                     let result: string;
                     if (aiTarget === 'midjourney') {
-                        result = generateSimpleLandscapePrompt(config) + ' --ar 16:9 --style raw --s 0';
+                        const ar = settings.camera?.aspectRatio || '16:9';
+                        result = generateSimpleLandscapePrompt(config) + ` --ar ${ar} --style raw --s 0`;
                     } else {
                         result = generateLandscapePrompt(config);
                     }
