@@ -1,28 +1,21 @@
 // lib/exporters/MidjourneyExporter.ts
 // Midjourney 최적화 프롬프트 Exporter - 간결한 키워드 스타일
 
+import { BaseExporter } from './BaseExporter';
+
 import type { PromptIR, UserSettings, StudioSubject } from '@/types';
 import { getCameraById } from '@/config/mappings/cameras';
 import { getLensById } from '@/config/mappings/lenses';
-import {
-    TOP_WEAR_OPTIONS,
-    BOTTOM_WEAR_OPTIONS,
-    FOOTWEAR_OPTIONS,
-    ACCESSORY_OPTIONS,
-} from '@/config/mappings/fashion-options';
 
 interface MidjourneyParams {
     aspectRatio?: string;    // --ar
 }
 
-export class MidjourneyExporter {
-    private ir: PromptIR;
-    private settings: UserSettings;
+export class MidjourneyExporter extends BaseExporter {
     private params: MidjourneyParams;
 
     constructor(ir: PromptIR, settings?: UserSettings, params?: Partial<MidjourneyParams>) {
-        this.ir = ir;
-        this.settings = settings || {} as UserSettings;
+        super(ir, settings);
         this.params = { ...params };
     }
 
@@ -74,7 +67,7 @@ export class MidjourneyExporter {
         const content = parts.filter(Boolean).join(', ');
         const paramsStr = this.buildParams();
 
-        return `${content} ${paramsStr}`.trim();
+        return `${content} ${paramsStr} `.trim();
     }
 
     /**
@@ -86,7 +79,7 @@ export class MidjourneyExporter {
         // Aspect Ratio
         const aspectRatio = this.extractAspectRatio();
         if (aspectRatio) {
-            params.push(`--ar ${aspectRatio}`);
+            params.push(`--ar ${aspectRatio} `);
         }
 
         // 고정 파라미터: --raw --style 0 (또는 --s 0)
@@ -143,7 +136,7 @@ export class MidjourneyExporter {
         const genderMap: Record<string, string> = { male: 'man', female: 'woman', androgynous: 'model' };
         const age = ageMap[subject.ageGroup] || '';
         const gender = genderMap[subject.gender] || 'person';
-        keywords.push(`${age} ${gender}`.trim());
+        keywords.push(`${age} ${gender} `.trim());
 
         // 피부톤
         const skinMap: Record<string, string> = {
@@ -203,11 +196,15 @@ export class MidjourneyExporter {
      */
     private getFashionKeywords(): string {
         const fashion = this.ir.slots.fashion?.content;
-        if (fashion) {
-            // IR에서 생성된 패션 문자열 사용
-            return fashion;
-        }
-        return '';
+        if (!fashion) return '';
+
+        // Fashion 텍스트를 파싱하여 키워드로 변환 (쉼표 및 and 등 제거)
+        return fashion
+            .replace(/Person \d+:/g, '')
+            .split(',')
+            .map(s => s.trim().replace(/^and /, ''))
+            .filter(Boolean)
+            .join(', ');
     }
 
     /**
@@ -259,7 +256,7 @@ export class MidjourneyExporter {
 
         if (isSnap) {
             // Snap 모드: 렌즈 화각 기반 framing
-            const lens = getLensById(this.settings.camera.lensId);
+            const lens = getLensById(this.settings.camera?.lensId || '');
             const snapFramingMap: Record<string, string> = {
                 'ultra_wide': 'environmental wide shot',
                 'wide': 'full body shot',
@@ -339,15 +336,15 @@ export class MidjourneyExporter {
     private getCameraLensKeywords(): string {
         const keywords: string[] = [];
 
-        const camera = getCameraById(this.settings.camera?.bodyId);
-        const lens = getLensById(this.settings.camera?.lensId);
+        const camera = getCameraById(this.settings.camera?.bodyId || '');
+        const lens = getLensById(this.settings.camera?.lensId || '');
 
         if (camera) {
-            keywords.push(`shot on ${camera.brand} ${camera.model}`);
+            keywords.push(`shot on ${camera.brand} ${camera.model} `);
         }
 
         if (lens) {
-            keywords.push(`${lens.brand} ${lens.model}`);
+            keywords.push(`${lens.brand} ${lens.model} `);
         }
 
         // 조리개 정보
@@ -375,8 +372,9 @@ export class MidjourneyExporter {
         params: MidjourneyParams;
     } {
         let totalTokens = 0;
-        for (const slot of Object.values(this.ir.slots)) {
-            totalTokens += slot.tokens;
+        for (const slotId in this.ir.slots) {
+            const slot = this.ir.slots[slotId];
+            totalTokens += slot?.tokens || 0;
         }
 
         return {

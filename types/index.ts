@@ -59,6 +59,11 @@ export interface ValidationResult {
 
 // ===== User Settings =====
 
+import type { LandscapeSettings } from './landscape.types';
+
+export * from './landscape.types';
+export * from './lighting.types';
+
 export interface UserSettings {
   camera: CameraSettings;
   lighting: LightingSettings;
@@ -228,11 +233,14 @@ export interface StudioSubject {
 export interface UserInputSettings {
   subjectDescription: string;
   moodDescription: string;
-  // Studio 전용
-  studioSubjectCount: 1 | 2 | 3;
-  studioComposition: PortraitFraming;
-  studioBackgroundType: 'seamless_white' | 'seamless_gray' | 'seamless_blue' | 'textured';
+  sceneDescription: string;
+  lightingDescription: string;
+
+  // Studio 전용 속성 추가
+  studioComposition: string;
   studioSubjects: StudioSubject[];
+  studioSubjectCount: number;
+  studioBackgroundType: string;
 }
 
 // ===== Generated Prompt =====
@@ -395,12 +403,14 @@ export interface PromptHistoryItem {
 // ===== Store Types =====
 
 export interface SettingsStore {
-  settings: UserSettings;
+  settings: UserSettings & { landscape: LandscapeSettings; snap: SnapSettings };
   updateCamera: (camera: Partial<CameraSettings>) => void;
   updateLighting: (lighting: Partial<LightingSettings>) => void;
   updateColorGrading: (colorGrading: Partial<ColorGradingSettings>) => void;
   updateArtDirection: (artDirection: Partial<ArtDirectionSettings>) => void;
   updateUserInput: (userInput: Partial<UserInputSettings>) => void;
+  updateLandscape: (landscape: Partial<LandscapeSettings>) => void;
+  updateSnap: (snap: Partial<SnapSettings>) => void;
   resetToDefaults: () => void;
 }
 

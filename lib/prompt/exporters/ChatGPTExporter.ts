@@ -2,24 +2,16 @@
 // ChatGPT/DALL-E 최적화 프롬프트 Exporter
 // NanoBananaProExporter와 동일한 구조 사용
 
+import { BaseExporter } from './BaseExporter';
+
 import type { PromptIR, UserSettings, StudioSubject } from '@/types';
 import { getCameraById, getCameraTypeLabel } from '@/config/mappings/cameras';
 import { getLensById } from '@/config/mappings/lenses';
 import { getPrompt, ANGLE_DICT } from '@/lib/dictionary';
-import {
-    TOP_WEAR_OPTIONS,
-    BOTTOM_WEAR_OPTIONS,
-    FOOTWEAR_OPTIONS,
-    ACCESSORY_OPTIONS,
-} from '@/config/mappings/fashion-options';
 
-export class ChatGPTExporter {
-    private ir: PromptIR;
-    private settings: UserSettings;
-
+export class ChatGPTExporter extends BaseExporter {
     constructor(ir: PromptIR, settings?: UserSettings) {
-        this.ir = ir;
-        this.settings = settings || {} as UserSettings;
+        super(ir, settings);
     }
 
     /**
@@ -207,127 +199,6 @@ export class ChatGPTExporter {
     }
 
     /**
-     * 외모 정보만 추출 (패션/포즈/표정 제외)
-     */
-    private buildAppearanceDescription(subject: StudioSubject, personNumber: number | null): string {
-        const parts: string[] = [];
-
-        if (personNumber) {
-            parts.push(`Person ${personNumber}:`);
-        }
-
-        // 성별
-        const genderMap: Record<string, string> = { male: 'man', female: 'woman', androgynous: 'androgynous model' };
-        const gender = genderMap[subject.gender] || 'person';
-
-        // 나이
-        const ageMap: Record<string, string> = {
-            'early-20s': 'young',
-            'late-20s': 'young',
-            '30s': '',
-            '40s-50s': 'middle-aged',
-            '60s-70s': 'senior',
-            '80plus': 'elderly'
-        };
-        const agePrefix = ageMap[subject.ageGroup] || '';
-
-        // 나이 상세
-        const ageDetailMap: Record<string, string> = {
-            'early-20s': 'in early 20s',
-            'late-20s': 'in late 20s',
-            '30s': 'in 30s',
-            '40s-50s': 'in 40s-50s',
-            '60s-70s': 'in 60s-70s',
-            '80plus': '80 plus'
-        };
-        const ageDetail = ageDetailMap[subject.ageGroup] || '';
-
-        // 피부톤
-        const skinToneMap: Record<string, string> = {
-            fair: 'very fair complexion',
-            light: 'fair complexion',
-            medium: 'light medium complexion',
-            tan: 'medium complexion',
-            brown: 'olive tan complexion',
-            dark: 'deep dark complexion'
-        };
-        const skinTone = skinToneMap[subject.skinTone] || '';
-
-        // 체형
-        const bodyMap: Record<string, string> = {
-            slim: 'slim build',
-            average: 'average build',
-            athletic: 'athletic build',
-            muscular: 'muscular build',
-            curvy: 'curvy build'
-        };
-        const bodyType = bodyMap[subject.bodyType] || '';
-
-        // 얼굴형
-        const faceShapeMap: Record<string, string> = {
-            oval: 'an oval face',
-            round: 'a round face',
-            square: 'a square face',
-            heart: 'a heart-shaped face',
-            diamond: 'a diamond face',
-            oblong: 'an oblong face'
-        };
-        const faceShape = faceShapeMap[subject.faceShape] || '';
-
-        // 눈색
-        const eyeColorMap: Record<string, string> = {
-            black: 'deep black eyes',
-            brown: 'dark brown eyes',
-            'light-brown': 'light brown eyes',
-            hazel: 'hazel eyes',
-            blue: 'blue eyes',
-            green: 'green eyes',
-            gray: 'gray eyes'
-        };
-        const eyeColor = eyeColorMap[subject.eyeColor] || '';
-
-        // 머리색
-        const hairColorMap: Record<string, string> = {
-            black: 'jet black',
-            brown: 'dark brown',
-            blonde: 'golden blonde',
-            red: 'auburn',
-            gray: 'silver gray',
-            white: 'platinum blonde'
-        };
-
-        // 헤어스타일
-        const hairStyleMap: Record<string, string> = {
-            short: 'short', medium: 'medium-length', long: 'long flowing',
-            wavy: 'wavy', curly: 'curly', straight: 'straight',
-            bald: 'bald', ponytail: 'ponytail', bun: 'elegant bun', braids: 'braided'
-        };
-
-        let hair = '';
-        if (subject.hairStyle === 'bald') {
-            hair = 'bald head';
-        } else {
-            hair = `${hairStyleMap[subject.hairStyle] || ''} ${hairColorMap[subject.hairColor] || ''} hair`.trim();
-        }
-
-        // 외모 프리셋 ID에서 국가/인종 정보 추출
-        const nationalityLabel = subject.appearancePresetId
-            ? subject.appearancePresetId.split('-').map(word =>
-                word.charAt(0).toUpperCase() + word.slice(1)
-            ).join(' ')
-            : '';
-
-        // 조합
-        const subjectCore = nationalityLabel
-            ? `${nationalityLabel} ${agePrefix} ${gender} in ${subject.gender === 'male' ? 'his' : 'her'} ${ageDetail.replace('in ', '')}`
-            : (agePrefix ? `${agePrefix} ${gender} in ${subject.gender === 'male' ? 'his' : 'her'} ${ageDetail.replace('in ', '')}` : `${gender} in ${subject.gender === 'male' ? 'his' : 'her'} ${ageDetail.replace('in ', '')}`);
-        const physicalDesc = `with a ${skinTone.replace(' complexion', '')} complexion and ${bodyType.startsWith('a') ? 'an' : 'a'} ${bodyType}`;
-        parts.push(`A ${subjectCore} ${physicalDesc}, featuring ${faceShape}, ${eyeColor}, and ${hair}`);
-
-        return parts.join(' ').replace(/\s+/g, ' ').trim();
-    }
-
-    /**
      * [Fashion] - 패션 정보 (IR 슬롯 사용)
      */
     private getFashionSection(): string {
@@ -341,21 +212,6 @@ export class ChatGPTExporter {
             return `Fashion: ${fashion}`;
         }
         return '';
-    }
-
-    private addArticle(text: string): string {
-        if (!text) return text;
-        const vowels = ['a', 'e', 'i', 'o', 'u'];
-        const firstChar = text.toLowerCase().charAt(0);
-        const article = vowels.includes(firstChar) ? 'an' : 'a';
-        return `${article} ${text}`;
-    }
-
-    private joinWithAnd(parts: string[]): string {
-        if (parts.length === 0) return '';
-        if (parts.length === 1) return parts[0];
-        if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
-        return `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`;
     }
 
     /**

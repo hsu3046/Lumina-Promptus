@@ -421,7 +421,7 @@ export function StudioSubjectForm() {
                 <CarouselPicker
                     label="인원수"
                     options={COUNT_OPTIONS}
-                    value={studioSubjectCount}
+                    value={studioSubjectCount as 1 | 2 | 3}
                     onChange={handleCountChange}
                 />
                 <Button

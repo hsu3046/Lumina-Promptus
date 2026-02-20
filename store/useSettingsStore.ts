@@ -101,9 +101,13 @@ const createDefaultStudioSubject = (): StudioSubject => ({
 const defaultUserInputSettings: UserInputSettings = {
     subjectDescription: '',
     moodDescription: '',
+    sceneDescription: '',
+    lightingDescription: '',
+
+    // Studio 전용 속성 추가
+    studioComposition: 'half-shot',
     studioSubjectCount: 1,
-    studioComposition: 'bust-shot',
-    studioBackgroundType: 'seamless_gray',
+    studioBackgroundType: 'seamless_white',
     studioSubjects: [createDefaultStudioSubject()],
 };
 
@@ -157,18 +161,8 @@ export const defaultSettings: UserSettings & { landscape: LandscapeSettings; sna
     snap: defaultSnapSettings,
 };
 
-// Store 인터페이스
-interface SettingsStore {
-    settings: UserSettings & { landscape: LandscapeSettings; snap: SnapSettings };
-    updateCamera: (camera: Partial<CameraSettings>) => void;
-    updateLighting: (lighting: Partial<LightingSettings>) => void;
-    updateColorGrading: (colorGrading: Partial<ColorGradingSettings>) => void;
-    updateArtDirection: (artDirection: Partial<ArtDirectionSettings>) => void;
-    updateUserInput: (userInput: Partial<UserInputSettings>) => void;
-    updateLandscape: (landscape: Partial<LandscapeSettings>) => void;
-    updateSnap: (snap: Partial<SnapSettings>) => void;
-    resetToDefaults: () => void;
-}
+// Store 인터페이스는 types/index.ts에서 import
+import type { SettingsStore } from '@/types';
 
 export const useSettingsStore = create<SettingsStore>((set) => ({
     settings: defaultSettings,

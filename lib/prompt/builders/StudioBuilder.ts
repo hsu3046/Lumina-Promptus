@@ -186,7 +186,11 @@ export class PromptBuilderV2 {
     }
 
     private buildStudioSubjectPrompt(): string {
-        const { studioSubjectCount, studioComposition, studioBackgroundType, studioSubjects } = this.settings.userInput;
+        const { studioComposition } = this.settings.userInput;
+        const studioSubjectCount = this.settings.userInput.studioSubjects?.length || 0;
+        const studioSubjects = this.settings.userInput.studioSubjects || [];
+        const studioBackgroundType = this.settings.userInput.studioBackgroundType;
+
         const parts: string[] = [];
 
         // 구도 매핑 (PortraitFraming 타입과 일치)

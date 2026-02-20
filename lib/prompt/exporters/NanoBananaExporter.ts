@@ -1,24 +1,15 @@
 // lib/exporters/NanoBananaProExporter.ts
 // Nano Banana Pro 모델용 8섹션 프롬프트 Exporter
 
-import type { PromptIR, UserSettings, StudioSubject } from '@/types';
-import { getCameraById } from '@/config/mappings/cameras';
+import { BaseExporter } from './BaseExporter';
+
+import type { PromptIR, UserSettings } from '@/types';
 import { getLensById } from '@/config/mappings/lenses';
-import {
-    TOP_WEAR_OPTIONS,
-    BOTTOM_WEAR_OPTIONS,
-    FOOTWEAR_OPTIONS,
-    ACCESSORY_OPTIONS,
-} from '@/config/mappings/fashion-options';
+import { buildLightingPrompt } from '@/config/mappings/lighting-patterns';
 
-export class NanoBananaProExporter {
-    private ir: PromptIR;
-    private settings: UserSettings;
-
+export class NanoBananaProExporter extends BaseExporter {
     constructor(ir: PromptIR, settings?: UserSettings) {
-        this.ir = ir;
-        // settings가 제공되지 않으면 IR에서 추론 (하위 호환성)
-        this.settings = settings || {} as UserSettings;
+        super(ir, settings);
     }
 
     /**
@@ -141,6 +132,7 @@ export class NanoBananaProExporter {
             // 2. 두 번째 문장: 앵글 (Dictionary 기반 구도별 프롬프트)
             const cameraAngle = this.settings.artDirection?.cameraAngle;
             if (cameraAngle) {
+                // eslint-disable-next-line @typescript-eslint/no-require-imports
                 const { getPrompt, ANGLE_DICT } = require('@/lib/dictionary');
                 const framing = this.settings.userInput?.studioComposition || 'half-shot';
                 const anglePrompt = getPrompt(ANGLE_DICT, cameraAngle, { framing });
@@ -208,130 +200,6 @@ export class NanoBananaProExporter {
     }
 
     /**
-     * 외모 정보만 추출 (패션/포즈/표정 제외)
-     */
-    private buildAppearanceDescription(subject: StudioSubject, personNumber: number | null): string {
-        const parts: string[] = [];
-
-        if (personNumber) {
-            parts.push(`Person ${personNumber}:`);
-        }
-
-        // 성별
-        const genderMap: Record<string, string> = { male: 'man', female: 'woman', androgynous: 'androgynous model' };
-        const gender = genderMap[subject.gender] || 'person';
-
-        // 나이 (gender와 조합하여 사용)
-        const ageMap: Record<string, string> = {
-            'early-20s': 'young',
-            'late-20s': 'young',
-            '30s': '',
-            '40s-50s': 'middle-aged',
-            '60s-70s': 'senior',
-            '80plus': 'elderly'
-        };
-        const agePrefix = ageMap[subject.ageGroup] || '';
-
-        // 나이 상세 (in early 20s, in 30s 등)
-        const ageDetailMap: Record<string, string> = {
-            'early-20s': 'in early 20s',
-            'late-20s': 'in late 20s',
-            '30s': 'in 30s',
-            '40s-50s': 'in 40s-50s',
-            '60s-70s': 'in 60s-70s',
-            '80plus': '80 plus'
-        };
-        const ageDetail = ageDetailMap[subject.ageGroup] || '';
-
-        // 피부톤
-        const skinToneMap: Record<string, string> = {
-            fair: 'very fair complexion',
-            light: 'fair complexion',
-            medium: 'light medium complexion',
-            tan: 'medium complexion',
-            brown: 'olive tan complexion',
-            dark: 'deep dark complexion'
-        };
-        const skinTone = skinToneMap[subject.skinTone] || '';
-
-        // 체형
-        const bodyMap: Record<string, string> = {
-            slim: 'slim build',
-            average: 'average build',
-            athletic: 'athletic build',
-            muscular: 'muscular build',
-            curvy: 'curvy build'
-        };
-        const bodyType = bodyMap[subject.bodyType] || '';
-
-        // 얼굴형
-        const faceShapeMap: Record<string, string> = {
-            oval: 'an oval face',
-            round: 'a round face',
-            square: 'a square face',
-            heart: 'a heart-shaped face',
-            diamond: 'a diamond face',
-            oblong: 'an oblong face'
-        };
-        const faceShape = faceShapeMap[subject.faceShape] || '';
-
-        // 눈색
-        const eyeColorMap: Record<string, string> = {
-            black: 'deep black eyes',
-            brown: 'dark brown eyes',
-            'light-brown': 'light brown eyes',
-            hazel: 'hazel eyes',
-            blue: 'blue eyes',
-            green: 'green eyes',
-            gray: 'gray eyes'
-        };
-        const eyeColor = eyeColorMap[subject.eyeColor] || '';
-
-        // 머리색
-        const hairColorMap: Record<string, string> = {
-            black: 'jet black',
-            brown: 'dark brown',
-            blonde: 'golden blonde',
-            red: 'auburn',
-            gray: 'silver gray',
-            white: 'platinum blonde'
-        };
-
-        // 헤어스타일
-        const hairStyleMap: Record<string, string> = {
-            short: 'short', medium: 'medium-length', long: 'long flowing',
-            wavy: 'wavy', curly: 'curly', straight: 'straight',
-            bald: 'bald', ponytail: 'ponytail', bun: 'elegant bun', braids: 'braided'
-        };
-
-        let hair = '';
-        if (subject.hairStyle === 'bald') {
-            hair = 'bald head';
-        } else {
-            hair = `${hairStyleMap[subject.hairStyle] || ''} ${hairColorMap[subject.hairColor] || ''} hair`.trim();
-        }
-
-        // 외모 프리셋 ID에서 국가/인종 정보 추출 (예: 'korean' -> 'Korean')
-        const nationalityLabel = subject.appearancePresetId
-            ? subject.appearancePresetId.split('-').map(word =>
-                word.charAt(0).toUpperCase() + word.slice(1)
-            ).join(' ')
-            : '';
-
-        // 조합: "A Korean young man in his early 20s with a fair complexion and an average build"
-        // 1) 국적(있으면)+나이+성별+나이상세
-        const subjectCore = nationalityLabel
-            ? `${nationalityLabel} ${agePrefix} ${gender} in ${subject.gender === 'male' ? 'his' : 'her'} ${ageDetail.replace('in ', '')}`
-            : (agePrefix ? `${agePrefix} ${gender} in ${subject.gender === 'male' ? 'his' : 'her'} ${ageDetail.replace('in ', '')}` : `${gender} in ${subject.gender === 'male' ? 'his' : 'her'} ${ageDetail.replace('in ', '')}`);
-        // 2) 피부톤+체형: "with a fair complexion and an average build"
-        const physicalDesc = `with a ${skinTone.replace(' complexion', '')} complexion and ${bodyType.startsWith('a') ? 'an' : 'a'} ${bodyType}`;
-        // 3) 얼굴형, 눈색, 머리카락은 별도의 문장
-        parts.push(`A ${subjectCore} ${physicalDesc}, featuring ${faceShape}, ${eyeColor}, and ${hair}`);
-
-        return parts.join(' ').replace(/\s+/g, ' ').trim();
-    }
-
-    /**
      * [Fashion] - 패션 정보 (IR 슬롯 사용)
      */
     private getFashionSection(): string {
@@ -346,28 +214,6 @@ export class NanoBananaProExporter {
             return `[Fashion] ${fashion}`;
         }
         return '';
-    }
-
-    /**
-     * 단어에 적절한 관사(a/an) 추가
-     */
-    private addArticle(text: string): string {
-        if (!text) return text;
-        const vowels = ['a', 'e', 'i', 'o', 'u'];
-        const firstChar = text.toLowerCase().charAt(0);
-        const article = vowels.includes(firstChar) ? 'an' : 'a';
-        return `${article} ${text}`;
-    }
-
-    /**
-     * 배열을 쉼표로 연결하되, 마지막 항목 앞에 "and" 추가
-     * 예: ["a", "b", "c"] → "a, b, and c"
-     */
-    private joinWithAnd(parts: string[]): string {
-        if (parts.length === 0) return '';
-        if (parts.length === 1) return parts[0];
-        if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
-        return `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`;
     }
 
     /**
