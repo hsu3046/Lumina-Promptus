@@ -13,6 +13,7 @@ import type {
     SnapSettings,
 } from '@/types';
 import type { LandscapeSettings } from '@/types/landscape.types';
+import type { ProductSettings } from '@/types/product.types';
 
 // 기본값 정의 (스튜디오 기본: Nikon D850 + AF-S 85mm)
 const defaultCameraSettings: CameraSettings = {
@@ -151,7 +152,17 @@ const defaultSnapSettings: SnapSettings = {
     crowdDensity: 'sparse',
 };
 
-export const defaultSettings: UserSettings & { landscape: LandscapeSettings; snap: SnapSettings } = {
+const defaultProductSettings: ProductSettings = {
+    category: 'cosmetics',
+    customCategory: '',
+    productName: '',
+    material: 'glossy',
+    surface: 'studio-white',
+    shotType: 'hero',
+    props: '',
+};
+
+export const defaultSettings: UserSettings & { landscape: LandscapeSettings; snap: SnapSettings; product: ProductSettings } = {
     camera: defaultCameraSettings,
     lighting: defaultLightingSettings,
     colorGrading: defaultColorGradingSettings,
@@ -159,6 +170,7 @@ export const defaultSettings: UserSettings & { landscape: LandscapeSettings; sna
     userInput: defaultUserInputSettings,
     landscape: defaultLandscapeSettings,
     snap: defaultSnapSettings,
+    product: defaultProductSettings,
 };
 
 // Store 인터페이스는 types/index.ts에서 import
@@ -220,6 +232,14 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
             settings: {
                 ...state.settings,
                 snap: { ...state.settings.snap, ...snap },
+            },
+        })),
+
+    updateProduct: (product) =>
+        set((state) => ({
+            settings: {
+                ...state.settings,
+                product: { ...state.settings.product, ...product },
             },
         })),
 

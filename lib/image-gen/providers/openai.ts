@@ -22,6 +22,7 @@ export async function generateWithOpenAI(
             provider: 'openai',
             prompt,
             aspectRatio: options?.aspectRatio,
+            referenceImage: options?.referenceImage,
         }),
     });
 

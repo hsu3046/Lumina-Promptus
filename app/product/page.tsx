@@ -10,7 +10,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { PromptPreview } from '@/components/settings';
-import { SnapTab } from '@/components/settings/tabs/snap/SnapTab';
+import { ProductTab } from '@/components/settings/tabs/product/ProductTab';
 import { HelpDialog } from '@/components/ui/help-dialog';
 import { Footer } from '@/components/ui/footer';
 import { useRouter } from 'next/navigation';
@@ -24,19 +24,18 @@ const MODES = [
     { value: 'product', label: '제품', href: '/product', disabled: false },
 ] as const;
 
-export default function SnapPage() {
+export default function ProductPage() {
     const { updateArtDirection } = useSettingsStore();
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
 
-    // 페이지 마운트 시 lensCharacteristicType을 'street'로 설정
+    // 페이지 마운트 시 lensCharacteristicType을 'product'로 설정
     useEffect(() => {
-        updateArtDirection({ lensCharacteristicType: 'street' });
+        updateArtDirection({ lensCharacteristicType: 'product' });
     }, [updateArtDirection]);
 
-    const currentModeInfo = MODES.find(m => m.value === 'snap')!;
+    const currentModeInfo = MODES.find(m => m.value === 'product')!;
 
-    // 모드 변경 핸들러
     const handleModeChange = (href: string, disabled: boolean) => {
         if (!disabled) {
             router.push(href);
@@ -49,7 +48,6 @@ export default function SnapPage() {
             <header className="sticky top-0 z-50 bg-zinc-900/95 backdrop-blur-sm border-b border-zinc-800">
                 <div className="max-w-7xl mx-auto px-4 py-3">
                     <div className="flex items-center justify-between">
-                        {/* 로고 + 모드 드롭다운 */}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <button className="flex items-center gap-1.5 hover:opacity-80 transition-opacity cursor-pointer">
@@ -74,7 +72,7 @@ export default function SnapPage() {
                                         key={mode.value}
                                         onClick={() => handleModeChange(mode.href, mode.disabled)}
                                         disabled={mode.disabled}
-                                        className={`${mode.value === 'snap' ? 'bg-amber-500/20 text-amber-400 font-semibold' : ''} ${mode.disabled ? 'opacity-50' : 'cursor-pointer'}`}
+                                        className={`${mode.value === 'product' ? 'bg-amber-500/20 text-amber-400 font-semibold' : ''} ${mode.disabled ? 'opacity-50' : 'cursor-pointer'}`}
                                     >
                                         <span>{mode.label}</span>
                                         {mode.disabled && <span className="text-[10px] text-zinc-500 ml-auto">준비중</span>}
@@ -83,28 +81,23 @@ export default function SnapPage() {
                             </DropdownMenuContent>
                         </DropdownMenu>
 
-                        {/* 도움말 */}
                         <HelpDialog />
                     </div>
                 </div>
             </header>
 
-            {/* 메인 콘텐츠 - 반응형 2열 레이아웃 */}
+            {/* 메인 콘텐츠 */}
             <main className="max-w-7xl mx-auto px-4 py-6">
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] lg:items-start gap-8">
-                    {/* 왼쪽: 설정 패널 */}
                     <div ref={scrollContainerRef} className="space-y-6">
-                        <SnapTab />
+                        <ProductTab />
                     </div>
-
-                    {/* 오른쪽: 프롬프트 (PC에서는 사이드, 모바일에서는 아래) */}
                     <div className="lg:sticky lg:top-24 lg:self-start">
                         <PromptPreview />
                     </div>
                 </div>
             </main>
 
-            {/* 푸터 */}
             <Footer />
         </div>
     );

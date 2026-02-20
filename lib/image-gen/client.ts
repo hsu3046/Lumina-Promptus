@@ -15,6 +15,7 @@ export interface GenerateImageResult {
 
 export interface ImageGenOptions {
     aspectRatio?: string; // e.g. '2:3', '16:9'
+    referenceImage?: string; // base64 data URL (data:image/png;base64,...)
 }
 
 /**

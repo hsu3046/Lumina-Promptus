@@ -25,6 +25,8 @@ import { NanoBananaProExporter } from '@/lib/prompt/exporters/NanoBananaExporter
 import { ChatGPTExporter } from '@/lib/prompt/exporters/ChatGPTExporter';
 import { MidjourneyExporter } from '@/lib/prompt/exporters/MidjourneyExporter';
 import { buildLandscapePromptConfig, generateLandscapePrompt, generateSimpleLandscapePrompt } from '@/lib/prompt/builders/LandscapeBuilder';
+import { ProductBuilder } from '@/lib/prompt/builders/ProductBuilder';
+import { ProductExporter } from '@/lib/prompt/exporters/ProductExporter';
 import { generateImage } from '@/lib/image-gen/client';
 import { ApiKeyDialog } from './ApiKeyDialog';
 import { ImagePreview, type ImageGenStatus } from './ImagePreview';
@@ -89,6 +91,7 @@ export function PromptPreview() {
     const [studioPrompt, setStudioPrompt] = useState<string>('');
     const [landscapePrompt, setLandscapePrompt] = useState<string>('');
     const [snapPrompt, setSnapPrompt] = useState<string>('');
+    const [productPrompt, setProductPrompt] = useState<string>('');
 
     // 현재 모드
     const currentMode = settings.artDirection.lensCharacteristicType;
@@ -96,7 +99,9 @@ export function PromptPreview() {
         ? landscapePrompt
         : currentMode === 'street'
             ? snapPrompt
-            : studioPrompt;
+            : currentMode === 'product'
+                ? productPrompt
+                : studioPrompt;
 
     // 실시간 프롬프트 생성 - settings 또는 aiTarget 변경 시 자동 실행
     useEffect(() => {
@@ -144,6 +149,15 @@ export function PromptPreview() {
                         }
                     }
                     setSnapPrompt(result);
+                    return;
+                }
+
+                // 제품 모드
+                if (settings.artDirection.lensCharacteristicType === 'product' && settings.product) {
+                    const builder = new ProductBuilder(settings);
+                    const newIR = await builder.buildIR();
+                    const exporter = new ProductExporter(newIR, settings);
+                    setProductPrompt(exporter.export());
                     return;
                 }
 
@@ -212,6 +226,7 @@ export function PromptPreview() {
 
         const result = await generateImage(provider, generatedPrompt, apiKey, {
             aspectRatio: settings.camera.aspectRatio,
+            referenceImage: settings.product?.referenceImage?.base64,
         });
 
         if (result.success && result.imageUrl) {

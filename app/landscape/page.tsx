@@ -21,6 +21,7 @@ const MODES = [
     { value: 'studio', label: '스튜디오', href: '/studio', disabled: false },
     { value: 'landscape', label: '풍경', href: '/landscape', disabled: false },
     { value: 'snap', label: '스냅', href: '/snap', disabled: false },
+    { value: 'product', label: '제품', href: '/product', disabled: false },
 ] as const;
 
 export default function LandscapePage() {
@@ -51,10 +52,9 @@ export default function LandscapePage() {
                         {/* 로고 + 모드 드롭다운 */}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <button className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                                        <HugeiconsIcon icon={SparklesIcon} size={20} className="text-white" />
-                                    </div>
+                                <button className="flex items-center gap-1.5 hover:opacity-80 transition-opacity cursor-pointer">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src="/logo.png" alt="Lumina Promptus" className="w-10 h-10 rounded-xl" />
                                     <div className="text-left">
                                         <div className="flex items-center gap-1">
                                             <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-playfair)' }}>

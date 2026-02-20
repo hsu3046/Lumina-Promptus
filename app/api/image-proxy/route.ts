@@ -10,6 +10,7 @@ interface ProxyRequestBody {
     provider: Provider;
     prompt: string;
     aspectRatio?: string;
+    referenceImage?: string; // base64 data URL (data:image/png;base64,...)
 }
 
 export async function POST(request: NextRequest) {
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body: ProxyRequestBody = await request.json();
-        const { provider, prompt, aspectRatio } = body;
+        const { provider, prompt, aspectRatio, referenceImage } = body;
 
         if (!prompt || prompt.trim() === '') {
             return NextResponse.json(
@@ -34,9 +35,9 @@ export async function POST(request: NextRequest) {
 
         switch (provider) {
             case 'gemini':
-                return await handleGemini(apiKey, prompt, aspectRatio);
+                return await handleGemini(apiKey, prompt, aspectRatio, referenceImage);
             case 'openai':
-                return await handleOpenAI(apiKey, prompt, aspectRatio);
+                return await handleOpenAI(apiKey, prompt, aspectRatio, referenceImage);
             case 'seedream':
                 return await handleSeedream(apiKey, prompt);
             default:
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
 }
 
 // ===== Gemini 3 Pro Image =====
-async function handleGemini(apiKey: string, prompt: string, aspectRatio?: string) {
+async function handleGemini(apiKey: string, prompt: string, aspectRatio?: string, referenceImage?: string) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key=${apiKey}`;
 
     // Gemini 이미지 설정
@@ -64,13 +65,35 @@ async function handleGemini(apiKey: string, prompt: string, aspectRatio?: string
         imageConfig.aspectRatio = aspectRatio;
     }
 
+    // 콘텐츠 parts 구성: 텍스트 + (레퍼런스 이미지)
+    const requestParts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [];
+
+    // 레퍼런스 이미지가 있으면 먼저 추가
+    if (referenceImage) {
+        const match = referenceImage.match(/^data:(image\/\w+);base64,(.+)$/);
+        if (match) {
+            requestParts.push({
+                inlineData: {
+                    mimeType: match[1],
+                    data: match[2],
+                },
+            });
+        }
+    }
+
+    // 프롬프트 추가 (레퍼런스 이미지가 있으면 지시사항 세분화)
+    const promptText = referenceImage
+        ? `Using the attached product image as reference, generate a professional product photograph with the following specifications:\n\n${prompt}`
+        : prompt;
+    requestParts.push({ text: promptText });
+
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             contents: [
                 {
-                    parts: [{ text: prompt }],
+                    parts: requestParts,
                 },
             ],
             generationConfig: {
@@ -121,8 +144,32 @@ function mapAspectRatioToOpenAISize(aspectRatio?: string): string {
     return '1024x1024'; // 정사각
 }
 
-async function handleOpenAI(apiKey: string, prompt: string, aspectRatio?: string) {
+async function handleOpenAI(apiKey: string, prompt: string, aspectRatio?: string, referenceImage?: string) {
     const size = mapAspectRatioToOpenAISize(aspectRatio);
+
+    // OpenAI 요청 바디 구성
+    const requestBody: Record<string, unknown> = {
+        model: 'gpt-image-1',
+        prompt: referenceImage
+            ? `Using the attached product image as reference, generate a professional product photograph with the following specifications:\n\n${prompt}`
+            : prompt,
+        n: 1,
+        size,
+        quality: 'medium',
+        moderation: 'low',
+    };
+
+    // 레퍼런스 이미지가 있으면 image 파라미터 추가
+    if (referenceImage) {
+        const match = referenceImage.match(/^data:(image\/\w+);base64,(.+)$/);
+        if (match) {
+            requestBody.image = [{
+                type: 'base64',
+                media_type: match[1],
+                data: match[2],
+            }];
+        }
+    }
 
     const response = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
@@ -130,14 +177,7 @@ async function handleOpenAI(apiKey: string, prompt: string, aspectRatio?: string
             'Content-Type': 'application/json',
             Authorization: `Bearer ${apiKey}`,
         },
-        body: JSON.stringify({
-            model: 'gpt-image-1',
-            prompt,
-            n: 1,
-            size,
-            quality: 'medium',
-            moderation: 'low',
-        }),
+        body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {

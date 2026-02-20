@@ -60,9 +60,11 @@ export interface ValidationResult {
 // ===== User Settings =====
 
 import type { LandscapeSettings } from './landscape.types';
+import type { ProductSettings } from './product.types';
 
 export * from './landscape.types';
 export * from './lighting.types';
+export * from './product.types';
 
 export interface UserSettings {
   camera: CameraSettings;
@@ -71,6 +73,7 @@ export interface UserSettings {
   artDirection: ArtDirectionSettings;
   userInput: UserInputSettings;
   snap?: SnapSettings; // 스냅 모드 설정 (선택)
+  product?: ProductSettings; // 제품 모드 설정 (선택)
 }
 
 // ===== Snap Mode Settings =====
@@ -403,7 +406,7 @@ export interface PromptHistoryItem {
 // ===== Store Types =====
 
 export interface SettingsStore {
-  settings: UserSettings & { landscape: LandscapeSettings; snap: SnapSettings };
+  settings: UserSettings & { landscape: LandscapeSettings; snap: SnapSettings; product: ProductSettings };
   updateCamera: (camera: Partial<CameraSettings>) => void;
   updateLighting: (lighting: Partial<LightingSettings>) => void;
   updateColorGrading: (colorGrading: Partial<ColorGradingSettings>) => void;
@@ -411,6 +414,7 @@ export interface SettingsStore {
   updateUserInput: (userInput: Partial<UserInputSettings>) => void;
   updateLandscape: (landscape: Partial<LandscapeSettings>) => void;
   updateSnap: (snap: Partial<SnapSettings>) => void;
+  updateProduct: (product: Partial<ProductSettings>) => void;
   resetToDefaults: () => void;
 }
 

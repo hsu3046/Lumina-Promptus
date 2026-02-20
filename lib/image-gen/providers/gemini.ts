@@ -33,6 +33,7 @@ export async function generateWithGemini(
             provider: 'gemini',
             prompt,
             aspectRatio: options?.aspectRatio,
+            referenceImage: options?.referenceImage,
         }),
     });
 
