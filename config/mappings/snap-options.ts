@@ -151,13 +151,13 @@ export const SNAP_ATMOSPHERE = [
     { value: 'grain', label: '아날로그 입자감' },
     { value: 'rays', label: '웅장한 빛내림' },
     // 렌즈 효과
-    { value: 'lens-flare', label: 'Lens Flare' },
-    { value: 'raindrops-lens', label: 'Raindrops on Lens' },
-    { value: 'motion-blur', label: 'Motion Blur' },
-    { value: 'freeze-frame', label: 'Freeze Frame' },
-    { value: 'long-exposure', label: 'Long Exposure' },
-    { value: 'bokeh', label: 'Bokeh Balls' },
-    { value: 'light-leak', label: 'Light Leak' },
+    { value: 'lens-flare', label: '렌즈 플레어' },
+    { value: 'raindrops-lens', label: '렌즈 빗방울' },
+    { value: 'motion-blur', label: '모션 블러' },
+    { value: 'freeze-frame', label: '프리즈 프레임' },
+    { value: 'long-exposure', label: '장노출' },
+    { value: 'bokeh', label: '보케 볼' },
+    { value: 'light-leak', label: '라이트 릭' },
     { value: 'vignette', label: '비네팅' },
 ] as const;
 

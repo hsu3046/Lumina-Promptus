@@ -199,7 +199,7 @@ export function PromptPreview() {
 
         const apiKey = apiKeys[provider];
         if (!apiKey || apiKey.trim() === '') {
-            setImageError('API Key가 설정되지 않았습니다. ⚙️ 버튼에서 설정해주세요.');
+            setImageError('API Key가 설정되지 않았습니다.\n⚙️ 버튼에서 설정해주세요.');
             setImageStatus('error');
             setActiveTab('generate');
             return;

@@ -298,10 +298,24 @@ export class SnapBuilder {
     private buildLocationContext(): string {
         const parts: string[] = [];
 
-        // 구체적 장소 (도쿄 시부야, 파리 몽마르트르 등)
+        // 구체적 장소 (value → 영어 장소명, 한글 label 사용 금지)
         if (this.snap.specificPlace) {
-            const place = SNAP_SPECIFIC_PLACES.find(p => p.value === this.snap.specificPlace);
-            if (place) parts.push(`Set in ${place.label}`);
+            const placeMap: Record<string, string> = {
+                'tokyo-shibuya': 'Shibuya, Tokyo',
+                'paris-montmartre': 'Montmartre, Paris',
+                'new-york-times-square': 'Times Square, New York',
+                'london-soho': 'Soho, London',
+                'hongkong-mongkok': 'Mong Kok, Hong Kong',
+                'seoul-hongdae': 'Hongdae, Seoul',
+                'seoul-myeongdong': 'Myeongdong, Seoul',
+                'bangkok-khaosan': 'Khaosan Road, Bangkok',
+                'amsterdam-jordaan': 'Jordaan, Amsterdam',
+                'havana-old-town': 'Old Havana',
+                'marrakech-medina': 'Medina, Marrakech',
+                'venice-canals': 'Venice canals',
+            };
+            const placeText = placeMap[this.snap.specificPlace];
+            if (placeText) parts.push(`Set in ${placeText}`);
         }
 
         // 군중 밀도

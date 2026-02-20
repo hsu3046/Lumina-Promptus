@@ -49,17 +49,78 @@ export function SnapTab() {
     ].filter(Boolean);
     const storyPreview = storyParts.join(' ');
 
-    // 랜덤 스토리 생성
+    // 랜덤 스토리 생성 (충돌 규칙 반영)
     const randomizeStory = () => {
         const pick = <T extends readonly { value: string }[]>(arr: T) =>
             arr[Math.floor(Math.random() * arr.length)].value;
+
+        const pickFiltered = <T extends readonly { value: string }[]>(
+            arr: T,
+            excluded: Set<string>
+        ) => {
+            const available = arr.filter(item => !excluded.has(item.value));
+            if (available.length === 0) return '';
+            return available[Math.floor(Math.random() * available.length)].value;
+        };
+
+        // 1. 피사체 먼저 선택 (다른 필드의 제약 조건 결정)
+        const subject = pick(SNAP_SUBJECT_TYPES);
+        const subjectInfo = SNAP_SUBJECT_TYPES.find(s => s.value === subject);
+        const category = subjectInfo?.category || 'person';
+
+        // 2. 카테고리별 차단 목록 생성
+        const isNonHuman = ['animal', 'vehicle', 'object'].includes(category);
+        const isVehicleOrObject = ['vehicle', 'object'].includes(category);
+
+        // 행동 차단 목록
+        const blockedActions = new Set<string>();
+        if (category === 'animal') {
+            ['talking', 'working', 'walking', 'watching', 'waiting', 'running', 'napping'].forEach(a => blockedActions.add(a));
+        }
+        if (isVehicleOrObject) {
+            ['talking', 'working', 'eating', 'running', 'sitting', 'napping', 'resting', 'walking', 'watching', 'waiting'].forEach(a => blockedActions.add(a));
+        }
+
+        // 동반자 차단 목록
+        const blockedCompanions = new Set<string>();
+        if (isNonHuman) {
+            ['with-friend', 'with-lover', 'with-family', 'with-pet', 'in-crowd'].forEach(c => blockedCompanions.add(c));
+        }
+
+        // 방식 차단 목록
+        const blockedManners = new Set<string>();
+        if (category === 'animal') {
+            ['nostalgic', 'tense', 'mysterious', 'melancholic'].forEach(m => blockedManners.add(m));
+        }
+        if (isVehicleOrObject) {
+            SNAP_MANNERS.forEach(m => blockedManners.add(m.value));
+        }
+
+        // 3. 시간대 선택 (제약 없음)
+        const timeOfDay = pick(SNAP_TIME_OF_DAY);
+
+        // 4. 장소 선택 (제약 없음)
+        const location = pick(SNAP_LOCATIONS);
+
+        // 5. 동반자 선택 (카테고리 제약 적용)
+        const companion = pickFiltered(SNAP_COMPANIONS, blockedCompanions);
+
+        // 6. 행동 선택 (카테고리 제약 적용)
+        const action = pickFiltered(SNAP_ACTIONS, blockedActions);
+
+        // 7. 방식 선택 (카테고리 + 동반자 제약 적용)
+        if (companion === 'alone') {
+            blockedManners.add(''); // no extra block needed, talking is in actions
+        }
+        const manner = pickFiltered(SNAP_MANNERS, blockedManners);
+
         updateSnap({
-            subject: pick(SNAP_SUBJECT_TYPES),
-            timeOfDay: pick(SNAP_TIME_OF_DAY),
-            location: pick(SNAP_LOCATIONS),
-            companion: pick(SNAP_COMPANIONS),
-            action: pick(SNAP_ACTIONS),
-            manner: pick(SNAP_MANNERS),
+            subject,
+            timeOfDay,
+            location,
+            companion,
+            action,
+            manner,
         });
     };
 

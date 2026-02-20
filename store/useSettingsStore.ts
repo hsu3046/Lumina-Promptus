@@ -17,7 +17,7 @@ import type { LandscapeSettings } from '@/types/landscape.types';
 // 기본값 정의 (스튜디오 기본: Nikon D850 + AF-S 85mm)
 const defaultCameraSettings: CameraSettings = {
     bodyId: 'nikon_d850',
-    lensId: 'nikon_af_s_85mm_f14g',
+    lensId: 'nikon_af_s_35mm_f14g',
     iso: 100,
     aperture: 'f/2.8',
     shutterSpeed: '1/200',
@@ -56,7 +56,7 @@ const defaultColorGradingSettings: ColorGradingSettings = {
 const defaultArtDirectionSettings: ArtDirectionSettings = {
     compositionRule: 'rule_of_thirds',
     cameraAngle: 'eye_level',
-    shotType: 'medium_shot',
+    shotType: 'bust-shot',
     photoStyleId: undefined,
     environmentEffects: [],
     lensCharacteristicType: 'studio',

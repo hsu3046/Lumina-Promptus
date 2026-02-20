@@ -3,9 +3,11 @@
 // components/settings/ImagePreview.tsx
 // 생성된 이미지 프리뷰 컴포넌트 (로딩/완료/에러 상태)
 
+import { useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Download04Icon, ArrowReloadHorizontalIcon, Image01Icon, AlertCircleIcon } from '@hugeicons/core-free-icons';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 export type ImageGenStatus = 'idle' | 'generating' | 'done' | 'error';
 
@@ -123,7 +125,7 @@ export function ImagePreview({ status, imageUrl, error, durationMs, onRetry }: I
                 <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
                     <HugeiconsIcon icon={AlertCircleIcon} size={20} className="text-red-400" />
                 </div>
-                <p className="text-sm text-red-400 text-center">{error || '이미지 생성에 실패했습니다.'}</p>
+                <p className="text-sm text-red-400 text-center whitespace-pre-line">{error || '이미지 생성에 실패했습니다.'}</p>
                 {onRetry && (
                     <Button
                         variant="outline"
@@ -139,33 +141,54 @@ export function ImagePreview({ status, imageUrl, error, durationMs, onRetry }: I
         );
     }
 
+    // 라이트박스 상태
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+
     // 완료 — 이미지 표시
     return (
-        <div className="relative rounded-lg border border-zinc-800 bg-zinc-950 overflow-hidden">
-            <div className="h-[350px] flex items-center justify-center p-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                    src={imageUrl}
-                    alt="AI 생성 이미지"
-                    className="max-h-full max-w-full object-contain rounded"
-                />
+        <>
+            <div className="relative rounded-lg border border-zinc-800 bg-zinc-950 overflow-hidden">
+                <div
+                    className="h-[350px] flex items-center justify-center p-2 cursor-pointer"
+                    onClick={() => setLightboxOpen(true)}
+                >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={imageUrl}
+                        alt="AI 생성 이미지"
+                        className="max-h-full max-w-full object-contain rounded"
+                    />
+                </div>
+
+                {/* 하단 오버레이: 다운로드 + 소요 시간 */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-2 flex items-center justify-between">
+                    <span className="text-[10px] text-zinc-400">
+                        {durationMs ? `${(durationMs / 1000).toFixed(1)}초` : ''}
+                    </span>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleDownload}
+                        className="h-6 text-xs px-2 text-zinc-300 hover:text-white hover:bg-white/10"
+                    >
+                        <HugeiconsIcon icon={Download04Icon} size={12} className="mr-1" />
+                        저장
+                    </Button>
+                </div>
             </div>
 
-            {/* 하단 오버레이: 다운로드 + 소요 시간 */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-2 flex items-center justify-between">
-                <span className="text-[10px] text-zinc-400">
-                    {durationMs ? `${(durationMs / 1000).toFixed(1)}초` : ''}
-                </span>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleDownload}
-                    className="h-6 text-xs px-2 text-zinc-300 hover:text-white hover:bg-white/10"
-                >
-                    <HugeiconsIcon icon={Download04Icon} size={12} className="mr-1" />
-                    저장
-                </Button>
-            </div>
-        </div>
+            {/* 전체화면 라이트박스 */}
+            <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+                <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto p-0 border-none bg-black/95 flex items-center justify-center [&>button]:text-white [&>button]:hover:bg-white/10">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={imageUrl}
+                        alt="AI 생성 이미지 (전체화면)"
+                        className="max-w-[90vw] max-h-[90vh] object-contain rounded"
+                        onClick={() => setLightboxOpen(false)}
+                    />
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }

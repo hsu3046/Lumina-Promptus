@@ -251,5 +251,107 @@ export const SNAP_CONFLICT_RULES: ConflictRule[] = [
         source: { field: 'location', values: ['market', 'downtown'] },
         target: { field: 'mood', affected: ['mysterious'] },
     },
+
+    // === 피사체-행동 추가 차단 ===
+
+    // 동물: 걷기/바라보기 추가 차단 (기존 누락)
+    {
+        restriction: 'disabled',
+        source: { field: 'subjectCategory', values: ['animal'] },
+        target: { field: 'action', affected: ['walking', 'watching', 'waiting', 'running', 'napping'] },
+    },
+
+    // 탈것/사물: 걷기/바라보기 추가 차단
+    {
+        restriction: 'disabled',
+        source: { field: 'subjectCategory', values: ['vehicle', 'object'] },
+        target: { field: 'action', affected: ['walking', 'watching', 'waiting'] },
+    },
+
+    // === 피사체-동반자 충돌 ===
+
+    // 비인간 피사체 + 인간 동반자 (모순)
+    {
+        restriction: 'disabled',
+        source: { field: 'subjectCategory', values: ['animal', 'vehicle', 'object'] },
+        target: { field: 'companion', affected: ['with-friend', 'with-lover', 'with-family', 'with-pet', 'in-crowd'] },
+    },
+
+    // === 피사체-방식 충돌 ===
+
+    // 동물: 인간 감정 부사 차단
+    {
+        restriction: 'disabled',
+        source: { field: 'subjectCategory', values: ['animal'] },
+        target: { field: 'manner', affected: ['nostalgic', 'tense', 'mysterious', 'melancholic'] },
+    },
+
+    // 탈것/사물: 모든 방식 차단
+    {
+        restriction: 'disabled',
+        source: { field: 'subjectCategory', values: ['vehicle', 'object'] },
+        target: { field: 'manner', affected: ['hurriedly', 'leisurely', 'secretly', 'silently', 'absentmindedly', 'lonely', 'busy', 'peaceful', 'tense', 'nostalgic', 'vibrant', 'mysterious', 'melancholic'] },
+    },
+
+    // === 동반자-방식 추가 ===
+
+    // 군중 속에서 + 신비롭게 (어색)
+    {
+        restriction: 'none',
+        source: { field: 'companion', values: ['in-crowd'] },
+        target: { field: 'manner', affected: ['mysterious'] },
+    },
+
+    // === 날씨-분위기 충돌 ===
+
+    // 맑음/눈 + 렌즈 빗방울 (비가 있어야 빗방울)
+    {
+        restriction: 'disabled',
+        source: { field: 'weather', values: ['clear', 'snowy', 'windy'] },
+        target: { field: 'atmosphere', affected: ['raindrops-lens'] },
+    },
+
+    // === 시간대-조명 크로스 충돌 ===
+
+    // 낮 시간대 + 야간 인공 조명 (모순)
+    {
+        restriction: 'disabled',
+        source: { field: 'timeOfDay', values: ['dawn', 'morning', 'midday', 'afternoon', 'golden-hour'] },
+        target: { field: 'lighting', affected: ['neon', 'car-headlight'] },
+    },
+
+    // 야간 + 자연광 (밤에 태양광 없음)
+    {
+        restriction: 'disabled',
+        source: { field: 'timeOfDay', values: ['night', 'late-night'] },
+        target: { field: 'lighting', affected: ['natural'] },
+    },
+
+    // === 시간대-분위기 크로스 충돌 ===
+
+    // 야간 + 빛내림 (태양 필요)
+    {
+        restriction: 'disabled',
+        source: { field: 'timeOfDay', values: ['night', 'late-night'] },
+        target: { field: 'atmosphere', affected: ['rays'] },
+    },
+
+    // === 날씨-분위기 크로스 충돌 ===
+
+    // 안개/비 + 투명한 공기 (직접 모순)
+    {
+        restriction: 'disabled',
+        source: { field: 'weather', values: ['foggy', 'rainy'] },
+        target: { field: 'atmosphere', affected: ['clear'] },
+    },
+
+    // === 계절-날씨 크로스 충돌 ===
+
+    // 여름 + 눈 (극히 드묾)
+    {
+        restriction: 'disabled',
+        source: { field: 'season', values: ['summer'] },
+        target: { field: 'weather', affected: ['snowy'] },
+    },
 ];
 
