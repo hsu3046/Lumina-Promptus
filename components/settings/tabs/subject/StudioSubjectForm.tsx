@@ -1,13 +1,15 @@
 'use client';
 
 import * as React from 'react';
+import { useMemo } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { ArrowLeft01Icon, ArrowRight01Icon, ShuffleIcon, GridIcon, AspectRatioIcon, Square01Icon } from '@hugeicons/core-free-icons';
+import { ArrowLeft01Icon, ArrowRight01Icon, ShuffleIcon, GridIcon, AspectRatioIcon, Square01Icon, Image01Icon } from '@hugeicons/core-free-icons';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { ComboboxField, GroupedComboboxField, type ConflictLevel } from '@/components/ui/combobox-field';
 import { useSettingsStore } from '@/store/useSettingsStore';
-import { PersonForm } from './PersonForm';
+import { ReferenceImageUpload } from '@/components/settings/ReferenceImageUpload';
+import { PersonForm, type DisabledBlocks } from './PersonForm';
 import {
     FRAMING_OPTIONS,
 } from '@/config/mappings/portrait-composition';
@@ -30,7 +32,7 @@ import {
     selectConflictAwarePose,
     getFashionVisibility,
 } from './conflict-aware-random';
-import type { StudioSubject, UserInputSettings, PortraitFraming, PortraitExpression } from '@/types';
+import type { StudioSubject, UserInputSettings, PortraitFraming, PortraitExpression, StudioReferenceMode } from '@/types';
 
 const DEFAULT_SUBJECT: StudioSubject = {
     autoMode: true,
@@ -132,6 +134,23 @@ const RANDOM_OPTIONS = {
     gazeDirection: ['direct-eye-contact', 'off-camera', 'looking-up', 'looking-down', 'side-gaze', 'over-shoulder'] as const,
 };
 
+// 레퍼런스 모드에 따른 비활성화 블록 계산
+function getDisabledBlocks(mode: StudioReferenceMode): DisabledBlocks {
+    switch (mode) {
+        case 'all':
+            return { appearance: true, outfit: true, compositionPose: true };
+        case 'appearance':
+            return { appearance: true, outfit: false, compositionPose: false };
+        case 'outfit':
+            return { appearance: false, outfit: true, compositionPose: false };
+        case 'composition':
+            return { appearance: false, outfit: false, compositionPose: true };
+        case 'none':
+        default:
+            return { appearance: false, outfit: false, compositionPose: false };
+    }
+}
+
 const pickRandom = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
 // 캐러셀 스타일 피커 (인원수용)
@@ -195,8 +214,12 @@ function ComboboxRow({ children }: { children: React.ReactNode }) {
 
 export function StudioSubjectForm() {
     const { settings, updateUserInput, updateArtDirection, updateCamera } = useSettingsStore();
-    const { studioSubjectCount, studioComposition, studioBackgroundType, studioSubjects } = settings.userInput;
+    const { studioSubjectCount, studioComposition, studioBackgroundType, studioSubjects, studioReferenceMode, studioReferenceImage } = settings.userInput;
     const { cameraAngle } = settings.artDirection;
+
+    // 레퍼런스 모드에 따른 비활성화 블록
+    const disabledBlocks = useMemo(() => getDisabledBlocks(studioReferenceMode), [studioReferenceMode]);
+    const isReferenceActive = studioReferenceMode !== 'none';
 
     // 인원수 ≥ 2 → 익스트림 클로즈업 숨김
     const compositionOptions = studioSubjectCount >= 2
@@ -354,6 +377,7 @@ export function StudioSubjectForm() {
                     label="구도"
                     options={compositionOptions}
                     value={studioComposition}
+                    disabled={disabledBlocks.compositionPose}
                     onSelect={(value) => {
                         const newComposition = value as UserInputSettings['studioComposition'];
                         const newFraming = newComposition as PortraitFraming;
@@ -391,6 +415,7 @@ export function StudioSubjectForm() {
                     label="앵글"
                     options={CAMERA_ANGLE_OPTIONS}
                     value={cameraAngle}
+                    disabled={disabledBlocks.compositionPose}
                     onSelect={(value) => updateArtDirection({ cameraAngle: value })}
                     getConflictLevel={(value) => getAngleConflictLevel(value) as ConflictLevel}
                 />
@@ -443,6 +468,7 @@ export function StudioSubjectForm() {
                         index={idx}
                         subject={subject}
                         onUpdate={(updates) => handleSubjectUpdate(idx, updates)}
+                        disabledBlocks={disabledBlocks}
                     />
                 </div>
             ))}

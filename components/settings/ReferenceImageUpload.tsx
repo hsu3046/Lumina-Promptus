@@ -8,6 +8,11 @@ import { useCallback, useRef, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Upload04Icon, Delete02Icon, Image01Icon } from '@hugeicons/core-free-icons';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import type { ProductReferenceImage } from '@/types/product.types';
 
 interface ReferenceImageUploadProps {
@@ -20,6 +25,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export function ReferenceImageUpload({ image, onUpload, onRemove }: ReferenceImageUploadProps) {
     const [isDragging, setIsDragging] = useState(false);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const processFile = useCallback((file: File) => {
@@ -72,29 +78,48 @@ export function ReferenceImageUpload({ image, onUpload, onRemove }: ReferenceIma
     // 이미지가 있으면 프리뷰 표시
     if (image) {
         return (
-            <div className="relative rounded-lg border border-zinc-700 bg-zinc-900 overflow-hidden">
-                <div className="h-[140px] flex items-center justify-center p-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                        src={image.base64}
-                        alt="레퍼런스 이미지"
-                        className="max-h-full max-w-full object-contain rounded"
-                    />
-                </div>
-                <div className="absolute top-2 right-2">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={onRemove}
-                        className="h-7 w-7 p-0 bg-black/60 hover:bg-red-500/60 text-zinc-300 hover:text-white rounded-full"
+            <>
+                <div className="relative rounded-lg border border-zinc-700 bg-zinc-900 overflow-hidden">
+                    <div
+                        className="h-[140px] flex items-center justify-center p-2 cursor-pointer"
+                        onClick={() => setIsPreviewOpen(true)}
                     >
-                        <HugeiconsIcon icon={Delete02Icon} size={14} />
-                    </Button>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                            src={image.base64}
+                            alt="레퍼런스 이미지"
+                            className="max-h-full max-w-full object-contain rounded"
+                        />
+                    </div>
+                    <div className="absolute top-2 right-2">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={onRemove}
+                            className="h-7 w-7 p-0 bg-black/60 hover:bg-red-500/60 text-zinc-300 hover:text-white rounded-full"
+                        >
+                            <HugeiconsIcon icon={Delete02Icon} size={14} />
+                        </Button>
+                    </div>
+                    <div className="px-3 py-1.5 bg-zinc-800/80 text-[10px] text-zinc-400 truncate">
+                        {image.fileName} ({(image.fileSize / 1024).toFixed(0)}KB)
+                    </div>
                 </div>
-                <div className="px-3 py-1.5 bg-zinc-800/80 text-[10px] text-zinc-400 truncate">
-                    {image.fileName} ({(image.fileSize / 1024).toFixed(0)}KB)
-                </div>
-            </div>
+
+                {/* 전체화면 프리뷰 */}
+                <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+                    <DialogContent className="max-w-[90vw] max-h-[90vh] p-0 bg-black/95 border-zinc-800 flex items-center justify-center">
+                        <DialogTitle className="sr-only">레퍼런스 이미지 프리뷰</DialogTitle>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                            src={image.base64}
+                            alt="레퍼런스 이미지 프리뷰"
+                            className="max-w-full max-h-[85vh] object-contain"
+                            onClick={() => setIsPreviewOpen(false)}
+                        />
+                    </DialogContent>
+                </Dialog>
+            </>
         );
     }
 

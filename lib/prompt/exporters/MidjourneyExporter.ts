@@ -195,6 +195,11 @@ export class MidjourneyExporter extends BaseExporter {
      * Fashion - 간결한 키워드 (IR 슬롯 사용)
      */
     private getFashionKeywords(): string {
+        // 레퍼런스 모드에서 복장 참고 시 생략
+        if (this.isOutfitFromReference()) {
+            return '';
+        }
+
         const fashion = this.ir.slots.fashion?.content;
         if (!fashion) return '';
 
@@ -211,6 +216,11 @@ export class MidjourneyExporter extends BaseExporter {
      * Expression/Pose - 간결한 키워드
      */
     private getExpressionPoseKeywords(): string {
+        // 레퍼런스 모드에서 구도/포즈 참고 시 생략
+        if (this.isPoseFromReference()) {
+            return '';
+        }
+
         const subjects = this.settings.userInput?.studioSubjects || [];
         if (subjects.length === 0) return '';
 
@@ -268,6 +278,8 @@ export class MidjourneyExporter extends BaseExporter {
             const snapFraming = snapFramingMap[lens?.category || ''] || 'medium shot';
             keywords.push(snapFraming);
             keywords.push('observational perspective');
+        } else if (this.isPoseFromReference()) {
+            // 레퍼런스 구도 참고: 생략
         } else {
             // Studio 모드: 기존 로직
             const framing = this.settings.userInput?.studioComposition;

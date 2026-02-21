@@ -60,7 +60,7 @@ export interface ValidationResult {
 // ===== User Settings =====
 
 import type { LandscapeSettings } from './landscape.types';
-import type { ProductSettings } from './product.types';
+import type { ProductSettings, ProductReferenceImage } from './product.types';
 
 export * from './landscape.types';
 export * from './lighting.types';
@@ -198,6 +198,14 @@ export type PortraitGaze =
   | 'eyes-closed'        // 눈 감음
   | 'half-closed-eyes';  // 반쯤 뜬 눈
 
+// Studio 레퍼런스 모드 (블록 단위 참고 영역 선택)
+export type StudioReferenceMode =
+  | 'none'                // 레퍼런스 미사용
+  | 'all'                 // 외형+복장+구도 모두 참고
+  | 'appearance'          // 외형만 참고
+  | 'outfit'              // 복장만 참고
+  | 'composition';        // 구도만 참고
+
 // Studio 인물 정보
 export interface StudioSubject {
   autoMode: boolean; // Auto 모드 - ON이면 검색창만 표시
@@ -244,6 +252,10 @@ export interface UserInputSettings {
   studioSubjects: StudioSubject[];
   studioSubjectCount: number;
   studioBackgroundType: string;
+
+  // Studio 레퍼런스 사진
+  studioReferenceMode: StudioReferenceMode;
+  studioReferenceImage?: ProductReferenceImage;
 }
 
 // ===== Generated Prompt =====

@@ -110,6 +110,13 @@ export class ChatGPTExporter extends BaseExporter {
 
             // Snap 모드: Studio의 angle dictionary 대신 관찰자 시점
             sentences.push('Shot from a natural, observational perspective.');
+        } else if (this.isPoseFromReference()) {
+            // Studio 모드 + 레퍼런스 구도 참고: framing/angle 생략
+            if (aspectRatio) {
+                sentences.push(`${aspectRatio}, composition as shown in reference photo.`);
+            } else {
+                sentences.push('composition as shown in reference photo.');
+            }
         } else {
             // Studio 모드: 기존 로직 유지
             const framing = this.settings.userInput?.studioComposition;
@@ -202,6 +209,11 @@ export class ChatGPTExporter extends BaseExporter {
      * [Fashion] - 패션 정보 (IR 슬롯 사용)
      */
     private getFashionSection(): string {
+        // 레퍼런스 모드에서 복장 참고 시 생략
+        if (this.isOutfitFromReference()) {
+            return 'Fashion: as shown in reference photo';
+        }
+
         const fashion = this.ir.slots.fashion?.content;
         if (fashion) {
             const subjects = this.settings.userInput?.studioSubjects || [];
@@ -218,6 +230,11 @@ export class ChatGPTExporter extends BaseExporter {
      * [Expression/Pose] - 포즈, 표정, 시선 통합
      */
     private getExpressionPoseSection(): string {
+        // 레퍼런스 모드에서 구도/포즈 참고 시 생략
+        if (this.isPoseFromReference()) {
+            return 'Expression/Pose: as shown in reference photo';
+        }
+
         const subjects = this.settings.userInput?.studioSubjects || [];
         if (subjects.length === 0) return '';
 

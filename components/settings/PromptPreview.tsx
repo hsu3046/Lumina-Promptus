@@ -227,7 +227,13 @@ export function PromptPreview() {
 
         const result = await generateImage(provider, generatedPrompt, apiKey, {
             aspectRatio: settings.camera.aspectRatio,
-            referenceImage: settings.product?.referenceImage?.base64,
+            referenceImage:
+                // Product 모드 참고 사진
+                settings.product?.referenceImage?.base64 ||
+                // Studio 모드 참고 사진 (레퍼런스 모드 활성 시)
+                (settings.userInput.studioReferenceMode !== 'none'
+                    ? settings.userInput.studioReferenceImage?.base64
+                    : undefined),
         });
 
         if (result.success && result.imageUrl) {

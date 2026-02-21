@@ -66,16 +66,10 @@ export class NanoBananaProExporter extends BaseExporter {
 
     /**
      * [Composition] - 프레이밍(구도), 구성 규칙, 앵글
-     * 문장 구조: 
-     * - A 굳 classic 35mm portrait with a bust-shot framing.
-     * - The subject is aligned with the rule of thirds composition.
-     * - Shot from a direct eye-level angle.
      */
     private getCompositionSection(): string {
         const sentences: string[] = [];
         const isSnap = this.settings.artDirection?.lensCharacteristicType === 'street';
-
-        // 1. 첫 번째 문장: 비율 + 프레이밍
         const aspectRatio = this.ir.slots.aspect_ratio?.content || '';
 
         if (isSnap) {
@@ -96,13 +90,17 @@ export class NanoBananaProExporter extends BaseExporter {
             } else {
                 sentences.push(`A ${snapFraming} framing.`);
             }
-
-            // Snap 모드: Studio의 angle dictionary 대신 관찰자 시점
             sentences.push('shot from a natural, observational perspective');
+        } else if (this.isPoseFromReference()) {
+            // Studio 모드 + 레퍼런스 구도 참고: framing/angle 생략
+            if (aspectRatio) {
+                sentences.push(`${aspectRatio}, composition as shown in reference photo.`);
+            } else {
+                sentences.push('composition as shown in reference photo.');
+            }
         } else {
-            // Studio 모드: 기존 로직 유지
+            // Studio 모드: 기존 로직
             const framing = this.settings.userInput?.studioComposition;
-
             const framingMap: Record<string, string> = {
                 'extreme-close-up': 'extreme close-up',
                 'close-up': 'close-up',
@@ -115,12 +113,9 @@ export class NanoBananaProExporter extends BaseExporter {
             };
             const framingText = framingMap[framing || ''] || 'standard';
 
-            // 첫 번째 피사체의 여백(margin) 가져오기
             const subjects = this.settings.userInput?.studioSubjects || [];
             const margin = subjects?.[0]?.margin || 'normal';
             const isMultipleSubjects = subjects.length >= 2;
-
-            // 여백에 따른 텍스트 (normal이면 추가 안함)
             const marginText = margin === 'tight' ? 'tight ' : margin === 'loose' ? 'loose ' : '';
 
             if (aspectRatio) {
@@ -129,31 +124,29 @@ export class NanoBananaProExporter extends BaseExporter {
                 sentences.push(`A ${marginText}${framingText} framing.`);
             }
 
-            // 2. 두 번째 문장: 앵글 (Dictionary 기반 구도별 프롬프트)
+            // 앵글
             const cameraAngle = this.settings.artDirection?.cameraAngle;
             if (cameraAngle) {
                 // eslint-disable-next-line @typescript-eslint/no-require-imports
                 const { getPrompt, ANGLE_DICT } = require('@/lib/dictionary');
-                const framing = this.settings.userInput?.studioComposition || 'half-shot';
-                const anglePrompt = getPrompt(ANGLE_DICT, cameraAngle, { framing });
+                const framingForAngle = this.settings.userInput?.studioComposition || 'half-shot';
+                const anglePrompt = getPrompt(ANGLE_DICT, cameraAngle, { framing: framingForAngle });
                 if (anglePrompt) {
                     sentences.push(anglePrompt);
                 }
             }
 
-            // 3. 위치 정보: 2명 이상일 때 각 인물의 위치 표시
+            // 위치 정보
             if (isMultipleSubjects) {
                 const positionDescriptions = subjects.map((subject, idx) => {
                     if (!subject.position || subject.position === 'center') return null;
                     const positionText = subject.position === 'left' ? 'left' : 'right';
                     return `Person ${idx + 1} is positioned on the ${positionText} side`;
                 }).filter(Boolean);
-
                 if (positionDescriptions.length > 0) {
                     sentences.push(`${positionDescriptions.join(', ')}.`);
                 }
             } else if (subjects.length === 1 && subjects[0]?.position && subjects[0]?.position !== 'center') {
-                // 1명일 때 기존 로직
                 const positionText = subjects[0].position === 'left' ? 'left' : 'right';
                 sentences.push(`The subject positioned on the ${positionText} side of the frame.`);
             }
@@ -203,6 +196,11 @@ export class NanoBananaProExporter extends BaseExporter {
      * [Fashion] - 패션 정보 (IR 슬롯 사용)
      */
     private getFashionSection(): string {
+        // 레퍼런스 모드에서 복장 참고 시 생략
+        if (this.isOutfitFromReference()) {
+            return '[Fashion] as shown in reference photo';
+        }
+
         // IR 슬롯에서 fashion 가져오기 (StudioBuilder에서 생성)
         const fashion = this.ir.slots.fashion?.content;
         if (fashion) {
@@ -221,6 +219,11 @@ export class NanoBananaProExporter extends BaseExporter {
      * 예: "in an elegant contrapposto pose with relaxed natural hands, a natural warm smile, and direct eye contact with the camera"
      */
     private getExpressionPoseSection(): string {
+        // 레퍼런스 모드에서 구도/포즈 참고 시 생략
+        if (this.isPoseFromReference()) {
+            return '[Expression/Pose] as shown in reference photo';
+        }
+
         // IR 슬롯에서 expression_pose 가져오기 (StudioBuilder에서 생성)
         const expressionPose = this.ir.slots.expression_pose?.content;
         if (expressionPose) {

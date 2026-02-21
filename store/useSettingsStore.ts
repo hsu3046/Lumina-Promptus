@@ -110,6 +110,10 @@ const defaultUserInputSettings: UserInputSettings = {
     studioSubjectCount: 1,
     studioBackgroundType: 'seamless_white',
     studioSubjects: [createDefaultStudioSubject()],
+
+    // Studio 레퍼런스 사진
+    studioReferenceMode: 'none',
+    studioReferenceImage: undefined,
 };
 
 // Landscape 기본값

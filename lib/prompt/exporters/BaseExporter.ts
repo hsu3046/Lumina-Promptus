@@ -1,7 +1,7 @@
 // lib/prompt/exporters/BaseExporter.ts
 // Exporter 계층의 공통 로직을 담는 추상 클래스
 
-import type { PromptIR, UserSettings, StudioSubject } from '@/types';
+import type { PromptIR, UserSettings, StudioSubject, StudioReferenceMode } from '@/types';
 import { getCameraById } from '@/config/mappings/cameras';
 import { getLensById } from '@/config/mappings/lenses';
 
@@ -48,9 +48,43 @@ export abstract class BaseExporter {
     }
 
     /**
+     * 레퍼런스 모드 헬퍼
+     */
+    protected getReferenceMode(): StudioReferenceMode {
+        return this.settings.userInput?.studioReferenceMode || 'none';
+    }
+
+    protected isAppearanceFromReference(): boolean {
+        const mode = this.getReferenceMode();
+        return mode === 'all' || mode === 'appearance';
+    }
+
+    protected isOutfitFromReference(): boolean {
+        const mode = this.getReferenceMode();
+        return mode === 'all' || mode === 'outfit';
+    }
+
+    protected isPoseFromReference(): boolean {
+        const mode = this.getReferenceMode();
+        return mode === 'all' || mode === 'composition';
+    }
+
+    protected hasReferenceImage(): boolean {
+        return !!this.settings.userInput?.studioReferenceImage;
+    }
+
+    /**
      * 외모 정보만 추출 (패션/포즈/표정 제외)
      */
     protected buildAppearanceDescription(subject: StudioSubject, personNumber: number | null): string {
+        // 레퍼런스 모드에서 외모 참고 시 생략
+        if (this.isAppearanceFromReference()) {
+            if (personNumber) {
+                return `Person ${personNumber}: appearance as shown in reference photo`;
+            }
+            return 'appearance as shown in reference photo';
+        }
+
         const parts: string[] = [];
 
         if (personNumber) {
