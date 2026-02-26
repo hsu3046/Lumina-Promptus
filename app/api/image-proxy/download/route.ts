@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
             'oaidalleapiprodscus.blob.core.windows.net', // OpenAI
             'fal.media', // fal.ai
             'fal-cdn.batelu.com', // fal.ai CDN
-            'ark-', // BytePlus ModelArk
+            'ark.ap-southeast.bytepluses.com', // BytePlus ModelArk
             'storage.googleapis.com', // Google
         ];
 
