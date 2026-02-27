@@ -31,12 +31,13 @@ import { generateImage } from '@/lib/image-gen/client';
 import { ApiKeyDialog } from './ApiKeyDialog';
 import { ImagePreview, type ImageGenStatus } from './ImagePreview';
 
-type AITarget = 'nanobanana' | 'chatgpt' | 'midjourney';
+type AITarget = 'nanobanana' | 'chatgpt' | 'midjourney' | 'seedream';
 type PreviewTab = 'prompt' | 'generate';
 
 const AI_TARGET_OPTIONS: { value: AITarget; label: string; desc: string }[] = [
     { value: 'nanobanana', label: '나노 바나나', desc: 'Nano Banana Pro 최적화' },
     { value: 'chatgpt', label: '챗GPT', desc: 'ChatGPT/DALL-E 최적화' },
+    { value: 'seedream', label: 'SeedDream', desc: 'ByteDance SeedDream 5.0' },
     { value: 'midjourney', label: '미드저니', desc: 'Midjourney 파라미터 포함' },
 ];
 
@@ -44,6 +45,7 @@ const AI_TARGET_OPTIONS: { value: AITarget; label: string; desc: string }[] = [
 const AI_TARGET_TO_PROVIDER: Record<AITarget, ImageProvider | null> = {
     nanobanana: 'gemini',
     chatgpt: 'openai',
+    seedream: 'seedream',
     midjourney: null, // API 미지원
 };
 
@@ -51,6 +53,7 @@ const AI_TARGET_TO_PROVIDER: Record<AITarget, ImageProvider | null> = {
 const PROVIDER_TO_AI_TARGET: Partial<Record<ImageProvider, AITarget>> = {
     gemini: 'nanobanana',
     openai: 'chatgpt',
+    seedream: 'seedream',
 };
 
 export function PromptPreview() {

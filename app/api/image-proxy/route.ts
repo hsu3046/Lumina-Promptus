@@ -55,9 +55,9 @@ export async function POST(request: NextRequest) {
     }
 }
 
-// ===== Gemini 3 Pro Image =====
+// ===== Gemini 3.1 Flash Image =====
 async function handleGemini(apiKey: string, prompt: string, aspectRatio?: string, referenceImage?: string) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${apiKey}`;
 
     // Gemini 이미지 설정
     const imageConfig: Record<string, string> = {};
@@ -207,20 +207,20 @@ async function handleOpenAI(apiKey: string, prompt: string, aspectRatio?: string
     return NextResponse.json({ imageUrl });
 }
 
-// ===== ByteDance SeedDream 4.5 (via BytePlus ModelArk) =====
+// ===== ByteDance SeedDream 5.0 lite (via BytePlus ModelArk) =====
 // aspectRatio → SeedDream size 매핑
 function mapAspectRatioToSeedreamSize(aspectRatio?: string): string {
-    if (!aspectRatio) return '1024x1024';
+    // SeedDream 5.0: 최소 3,686,400 픽셀 (1920×1920) 이상 필요
+    if (!aspectRatio) return '1920x1920';
     const [w, h] = aspectRatio.split(':').map(Number);
-    if (!w || !h) return '1024x1024';
+    if (!w || !h) return '1920x1920';
     const ratio = w / h;
 
-    // SeedDream 지원 사이즈: 정방, 가로, 세로
-    if (Math.abs(ratio - 1) < 0.05) return '1024x1024';     // 1:1
-    if (ratio >= 1.7) return '1280x720';                      // 16:9 와이드
-    if (ratio > 1) return '1152x896';                         // 3:2, 4:3 등 가로
-    if (ratio <= 0.59) return '720x1280';                     // 9:16 세로
-    return '896x1152';                                         // 2:3, 3:4, 4:5 등 세로
+    if (Math.abs(ratio - 1) < 0.05) return '1920x1920';     // 1:1 (3,686,400px)
+    if (ratio >= 1.7) return '2560x1440';                     // 16:9 와이드 (3,686,400px)
+    if (ratio > 1) return '2400x1600';                        // 3:2, 4:3 등 가로 (3,840,000px)
+    if (ratio <= 0.59) return '1440x2560';                    // 9:16 세로 (3,686,400px)
+    return '1600x2400';                                        // 2:3, 3:4, 4:5 등 세로 (3,840,000px)
 }
 
 async function handleSeedream(apiKey: string, prompt: string, aspectRatio?: string) {
@@ -234,11 +234,12 @@ async function handleSeedream(apiKey: string, prompt: string, aspectRatio?: stri
             Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-            model: 'seedream-4-5-250422',
+            model: 'seedream-5-0-260128',
             prompt,
             size,
             n: 1,
             response_format: 'url',
+            watermark: false,
         }),
     });
 

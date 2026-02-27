@@ -15,10 +15,10 @@ export interface ProviderConfig {
 
 export const PROVIDER_CONFIGS: Record<ImageProvider, ProviderConfig> = {
     gemini: {
-        label: 'Google Gemini 3 Pro',
-        description: '최대 4K · 사진 리얼리즘 최고',
-        pricing: '~$0.13/장',
-        modelId: 'gemini-3-pro-image-preview',
+        label: 'Google Gemini 3.1 Flash',
+        description: '최대 4K · 고속 이미지 생성',
+        pricing: '~$0.067/장 (1K)',
+        modelId: 'gemini-3.1-flash-image-preview',
     },
     openai: {
         label: 'OpenAI GPT Image 1.5',
@@ -27,10 +27,10 @@ export const PROVIDER_CONFIGS: Record<ImageProvider, ProviderConfig> = {
         modelId: 'gpt-image-1.5',
     },
     seedream: {
-        label: 'ByteDance SeedDream 4.5',
+        label: 'ByteDance SeedDream 5.0',
         description: 'BytePlus ModelArk Key · 인물 자유도',
-        pricing: '~$0.04/장',
-        modelId: 'bytedance/seedream-4-5',
+        pricing: '~$0.035/장',
+        modelId: 'seedream-5-0-260128',
     },
 };
 

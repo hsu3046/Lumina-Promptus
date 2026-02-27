@@ -7,15 +7,21 @@ AI Photography Prompt Builder
 
 ## Summary-ko
 
-Lumina Promptus는 실제 카메라와 렌즈의 광학 특성을 시뮬레이션하여 AI 이미지 생성을 위한 고품질 프롬프트를 생성하는 웹 애플리케이션입니다. 21개 카메라 바디, 30개 이상의 렌즈, 16개 마운트 시스템을 기반으로 실제 촬영 파라미터(조리개, ISO, 셔터 스피드)를 1/3 스탑 단위로 조절할 수 있으며, Studio · Landscape · Snap · Product 4가지 모드에서 ChatGPT, Midjourney, NanoBanana 등 다양한 포맷으로 프롬프트를 내보낼 수 있습니다.
+Lumina Promptus는 실제 카메라와 렌즈의 광학 특성을 시뮬레이션하여 AI 이미지 생성을 위한 고품질 프롬프트를 생성하는 웹 애플리케이션입니다. 
+
+21개 카메라 바디, 30개 이상의 렌즈, 16개 마운트 시스템을 기반으로 실제 촬영 파라미터(조리개, ISO, 셔터 스피드)를 1/3 스탑 단위로 조절할 수 있으며, Studio · Landscape · Snap · Product 4가지 모드에서 ChatGPT, Midjourney, NanoBanana 등 다양한 포맷으로 프롬프트를 내보낼 수 있습니다.
 
 ## Summary-en
 
-Lumina Promptus is a web application that simulates real camera and lens optical characteristics to generate high-quality prompts for AI image generation. With 21 camera bodies, 30+ lenses, and 16 mount systems, you can dial in real shooting parameters (aperture, ISO, shutter speed) at 1/3-stop increments across four specialized modes — Studio, Landscape, Snap, and Product — and export prompts in ChatGPT, Midjourney, NanoBanana, and other formats.
+Lumina Promptus is a web application that simulates real camera and lens optical characteristics to generate high-quality prompts for AI image generation. 
+
+With 21 camera bodies, 30+ lenses, and 16 mount systems, you can dial in real shooting parameters (aperture, ISO, shutter speed) at 1/3-stop increments across four specialized modes — Studio, Landscape, Snap, and Product — and export prompts in ChatGPT, Midjourney, NanoBanana, and other formats.
 
 ## Summary-ja
 
-Lumina Promptusは、実際のカメラとレンズの光学特性をシミュレーションし、AI画像生成のための高品質なプロンプトを生成するWebアプリケーションです。21台のカメラボディ、30本以上のレンズ、16のマウントシステムを基盤に、実際の撮影パラメータ（絞り、ISO、シャッタースピード）を1/3段刻みで調整可能。Studio・Landscape・Snap・Productの4モードで、ChatGPT、Midjourney、NanoBananaなど多様なフォーマットでプロンプトをエクスポートできます。
+Lumina Promptusは、実際のカメラとレンズの光学特性をシミュレーションし、AI画像生成のための高品質なプロンプトを生成するWebアプリケーションです。
+
+21台のカメラボディ、30本以上のレンズ、16のマウントシステムを基盤に、実際の撮影パラメータ（絞り、ISO、シャッタースピード）を1/3段刻みで調整可能。Studio・Landscape・Snap・Productの4モードで、ChatGPT、Midjourney、NanoBananaなど多様なフォーマットでプロンプトをエクスポートできます。
 
 ---
 

@@ -7,7 +7,8 @@ import { useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Download04Icon, ArrowReloadHorizontalIcon, Image01Icon, AlertCircleIcon } from '@hugeicons/core-free-icons';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 export type ImageGenStatus = 'idle' | 'generating' | 'done' | 'error';
 
@@ -180,6 +181,7 @@ export function ImagePreview({ status, imageUrl, error, durationMs, onRetry }: I
             {/* 전체화면 라이트박스 */}
             <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
                 <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto p-0 border-none bg-black/95 flex items-center justify-center [&>button]:text-white [&>button]:hover:bg-white/10">
+                    <VisuallyHidden><DialogTitle>이미지 미리보기</DialogTitle></VisuallyHidden>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                         src={imageUrl}
