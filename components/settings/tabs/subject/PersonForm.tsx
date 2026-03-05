@@ -6,6 +6,7 @@ import { ComboboxField, GroupedComboboxField, type ConflictLevel as ComboboxConf
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useSettingsStore } from '@/store/useSettingsStore';
+import { usePhotoAnalysis } from '@/hooks/usePhotoAnalysis';
 import { ReferenceImageUpload } from '@/components/settings/ReferenceImageUpload';
 import { getFieldConflictLevel, type PortraitConfig } from './portrait-conflict-validator';
 import { getBodyPoseConflict, getHandPoseConflict, getFashionDisabled } from '@/lib/rules/conflict-adapter';
@@ -162,6 +163,7 @@ interface PersonFormProps {
 export function PersonForm({ index, subject, onUpdate, disabledBlocks }: PersonFormProps) {
     const { settings } = useSettingsStore();
     const framing = settings.userInput.studioComposition;
+    const { status: analysisStatus, error: analysisError, analyzePhoto, resetAnalysis } = usePhotoAnalysis();
 
     // 현재 Portrait 설정 (포즈 충돌 감지용)
     const currentConfig = useMemo((): PortraitConfig => ({
@@ -259,6 +261,13 @@ export function PersonForm({ index, subject, onUpdate, disabledBlocks }: PersonF
     const isOutfitDisabled = disabledBlocks?.outfit ?? false;
     const isPoseDisabled = disabledBlocks?.compositionPose ?? false;
 
+    // AI 분석 핸들러
+    const handleAnalyze = async () => {
+        const refImage = settings.userInput.studioReferenceImage;
+        if (!refImage?.base64) return;
+        await analyzePhoto(refImage.base64);
+    };
+
     return (
         <div className="space-y-3 py-3">
             {/* 인물 헤더 + 상세 Switch */}
@@ -309,17 +318,48 @@ export function PersonForm({ index, subject, onUpdate, disabledBlocks }: PersonF
                     </RadioGroup>
                 </div>
                 {settings.userInput.studioReferenceMode !== 'none' && (
-                    <ReferenceImageUpload
-                        image={settings.userInput.studioReferenceImage}
-                        onUpload={(img) => {
-                            const { updateUserInput } = useSettingsStore.getState();
-                            updateUserInput({ studioReferenceImage: img });
-                        }}
-                        onRemove={() => {
-                            const { updateUserInput } = useSettingsStore.getState();
-                            updateUserInput({ studioReferenceImage: undefined });
-                        }}
-                    />
+                    <>
+                        <ReferenceImageUpload
+                            image={settings.userInput.studioReferenceImage}
+                            onUpload={(img) => {
+                                const { updateUserInput } = useSettingsStore.getState();
+                                updateUserInput({ studioReferenceImage: img });
+                                resetAnalysis();
+                            }}
+                            onRemove={() => {
+                                const { updateUserInput } = useSettingsStore.getState();
+                                updateUserInput({ studioReferenceImage: undefined });
+                                resetAnalysis();
+                            }}
+                        />
+                        {/* AI 분석 버튼 */}
+                        {settings.userInput.studioReferenceImage && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleAnalyze}
+                                    disabled={analysisStatus === 'analyzing'}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-600 hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs text-white font-medium transition-colors"
+                                >
+                                    {analysisStatus === 'analyzing' ? (
+                                        <>
+                                            <span className="animate-spin">⏳</span>
+                                            분석 중...
+                                        </>
+                                    ) : (
+                                        <>
+                                            🔍 AI로 분석
+                                        </>
+                                    )}
+                                </button>
+                                {analysisStatus === 'done' && (
+                                    <span className="text-[10px] text-emerald-400">✅ 분석 완료 — 설정이 자동 반영되었습니다</span>
+                                )}
+                                {analysisStatus === 'error' && (
+                                    <span className="text-[10px] text-red-400">❌ {analysisError}</span>
+                                )}
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 

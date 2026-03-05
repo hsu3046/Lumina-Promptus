@@ -207,7 +207,7 @@ async function handleOpenAI(apiKey: string, prompt: string, aspectRatio?: string
     return NextResponse.json({ imageUrl });
 }
 
-// ===== ByteDance SeedDream 5.0 lite (via BytePlus ModelArk) =====
+// ===== ByteDance SeedDream 4.5 (via BytePlus ModelArk) =====
 // aspectRatio → SeedDream size 매핑
 function mapAspectRatioToSeedreamSize(aspectRatio?: string): string {
     // SeedDream 5.0: 최소 3,686,400 픽셀 (1920×1920) 이상 필요
@@ -234,7 +234,7 @@ async function handleSeedream(apiKey: string, prompt: string, aspectRatio?: stri
             Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-            model: 'seedream-5-0-260128',
+            model: 'seedream-4-5-251128',
             prompt,
             size,
             n: 1,

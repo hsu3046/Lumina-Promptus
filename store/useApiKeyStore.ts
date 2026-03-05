@@ -27,10 +27,10 @@ export const PROVIDER_CONFIGS: Record<ImageProvider, ProviderConfig> = {
         modelId: 'gpt-image-1.5',
     },
     seedream: {
-        label: 'ByteDance SeedDream 5.0',
+        label: 'ByteDance SeedDream 4.5',
         description: 'BytePlus ModelArk Key · 인물 자유도',
-        pricing: '~$0.035/장',
-        modelId: 'seedream-5-0-260128',
+        pricing: '~$0.04/장',
+        modelId: 'seedream-4-5-251128',
     },
 };
 

@@ -5,6 +5,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { Tick01Icon, UnfoldMoreIcon, AlertCircleIcon, Alert02Icon, StarIcon, Cancel01Icon } from '@hugeicons/core-free-icons';
 import type { IconSvgElement } from '@hugeicons/react';
 import { cn } from '@/lib/utils';
+import { ANALYSIS_UNKNOWN } from '@/hooks/usePhotoAnalysis';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -158,9 +159,9 @@ export function ComboboxField({
         }
     };
 
-    // 표시할 값: 선택된 항목이 있으면 라벨만, 없으면 검색어
-    // (선택 상태에서는 searchValue 무시)
-    const displayValue = value ? (selectedOption?.label || '') : searchValue;
+    // 표시할 값: __unknown__이면 '— 분석 불가', 선택된 항목이면 라벨, 아니면 검색어
+    const isUnknown = value === ANALYSIS_UNKNOWN;
+    const displayValue = isUnknown ? '— 분석 불가' : value ? (selectedOption?.label || '') : searchValue;
 
     // 검색어 변경 시 하이라이트 인덱스 리셋
     React.useEffect(() => {
@@ -204,7 +205,10 @@ export function ComboboxField({
                             onClick={() => setOpen(true)}
                             placeholder={placeholder}
                             disabled={disabled}
-                            className="flex-1 min-w-0 bg-transparent outline-none placeholder:text-zinc-500 text-[16px] md:text-xs"
+                            className={cn(
+                                "flex-1 min-w-0 bg-transparent outline-none placeholder:text-zinc-500 text-[16px] md:text-xs",
+                                isUnknown && "italic text-zinc-500"
+                            )}
                         />
                         {/* 선택된 옵션의 색상 원 표시 */}
                         {selectedOption?.color && (
@@ -247,6 +251,16 @@ export function ComboboxField({
                                 {emptyMessage}
                             </CommandEmpty>
                             <CommandGroup>
+                                {/* AI 분석 불가 옵션 — 조건부 렌더링 (일반 아이템 아님) */}
+                                {isUnknown && (
+                                    <CommandItem
+                                        value="__unknown__"
+                                        className="text-xs italic text-zinc-500 cursor-default"
+                                        disabled
+                                    >
+                                        <span className="text-zinc-500">— 분석 불가</span>
+                                    </CommandItem>
+                                )}
                                 {filteredOptions.map((opt, index) => {
                                     const conflict = getConflictLevel?.(opt.value);
                                     const isDisabled = conflict === 'critical' || conflict === 'disabled';
@@ -355,8 +369,9 @@ export function GroupedComboboxField({
     // 모든 필터링된 옵션 (플랫)
     const filteredOptions = filteredGroups.flatMap(g => g.options);
 
-    // 표시 값 계산: 선택된 값이 있으면 라벨만, 없으면 검색어
-    const displayValue = value ? (selectedOption?.label || '') : searchValue;
+    // 표시 값 계산: __unknown__이면 '— 분석 불가', 선택된 값이 있으면 라벨만, 없으면 검색어
+    const isUnknown = value === ANALYSIS_UNKNOWN;
+    const displayValue = isUnknown ? '— 분석 불가' : value ? (selectedOption?.label || '') : searchValue;
 
     // 클리어 핸들러
     const handleClear = (e: React.MouseEvent) => {
@@ -445,7 +460,10 @@ export function GroupedComboboxField({
                             onClick={() => setOpen(true)}
                             placeholder={placeholder}
                             disabled={disabled}
-                            className="flex-1 min-w-0 bg-transparent outline-none placeholder:text-zinc-500 text-[16px] md:text-xs"
+                            className={cn(
+                                "flex-1 min-w-0 bg-transparent outline-none placeholder:text-zinc-500 text-[16px] md:text-xs",
+                                isUnknown && "italic text-zinc-500"
+                            )}
                         />
                         {/* Clear 버튼 또는 Chevron 아이콘 */}
                         {clearable && (value || searchValue) ? (

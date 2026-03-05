@@ -37,7 +37,7 @@ type PreviewTab = 'prompt' | 'generate';
 const AI_TARGET_OPTIONS: { value: AITarget; label: string; desc: string }[] = [
     { value: 'nanobanana', label: '나노 바나나', desc: 'Nano Banana Pro 최적화' },
     { value: 'chatgpt', label: '챗GPT', desc: 'ChatGPT/DALL-E 최적화' },
-    { value: 'seedream', label: 'SeedDream', desc: 'ByteDance SeedDream 5.0' },
+    { value: 'seedream', label: 'SeedDream', desc: 'ByteDance SeedDream 4.5' },
     { value: 'midjourney', label: '미드저니', desc: 'Midjourney 파라미터 포함' },
 ];
 

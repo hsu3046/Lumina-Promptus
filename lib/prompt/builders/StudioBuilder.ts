@@ -629,7 +629,7 @@ export class PromptBuilderV2 {
      */
     private getLocation(): string {
         const backgroundType = this.settings.userInput?.studioBackgroundType;
-        if (!backgroundType) return '';
+        if (!backgroundType || backgroundType === '__unknown__') return '';
 
         const backgroundMap: Record<string, string> = {
             'seamless_white': 'clean white studio backdrop',
