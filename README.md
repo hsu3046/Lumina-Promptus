@@ -1,208 +1,145 @@
 # 🌟 Lumina Promptus
 
-**Digital Darkroom — Optical Simulator**  
-AI Photography Prompt Builder
+## Tagline-en
+
+Forget copying prompts from Instagram. Just shoot the way you always have — pick your body, your lens, your lighting — and let Lumina Promptus turn those settings into a photo-ready AI prompt. You can even generate the image right here, no other app needed.
+
+## Tagline-ko
+
+인스타에서 프롬프트 복붙하던 시절은 끝. 늘 하던 대로 바디 고르고, 렌즈 끼우고, 조명 잡고, 조리개와 ISO 맞추세요 — Lumina Promptus가 그 감각을 사진 전용 AI 프롬프트로 바꿔드립니다. 여기서 바로 사진 생성까지.
+
+## Tagline-ja
+
+Instagramからプロンプトをコピペする時代は終わり。いつも通りボディを選び、レンズを付け、ライティングを決め、絞りとISOを合わせてください — Lumina Promptusがその感覚を写真専用AIプロンプトに変えます。このアプリだけで写真の生成まで。
 
 ---
-
-## Summary-ko
-
-Lumina Promptus는 실제 카메라와 렌즈의 광학 특성을 시뮬레이션하여 AI 이미지 생성을 위한 **고정밀 프롬프트**를 만들어내는 「디지털 암실(Digital Darkroom)」 웹 애플리케이션입니다.
-
-다양한 카메라 바디, 렌즈, 마운트 시스템을 기반으로 실제 촬영 파라미터(조리개, ISO, 셔터 스피드)를 1/3 스탑 단위로 조절할 수 있습니다. **Studio · Landscape · Snap · Product** 4가지 전문 모드에서 인물, 풍경, 스트리트, 상업 촬영까지 커버하며, ChatGPT · Midjourney · NanoBanana 등 다양한 AI 모델별 최적화 포맷으로 프롬프트를 내보낼 수 있습니다.
-
-Landscape 모드에서는 **CesiumJS 3D 타일** 기반 지오스패셜 시뮬레이션과 **Google Places / 날씨 API** 연동으로 실제 위치의 태양 고도·기상·지형을 반영합니다. AI 레퍼런스 사진 분석(Gemini 3.1 Flash), 멀티 프로바이더 이미지 생성(Gemini · OpenAI · SeeDream), QR 코드 프롬프트 핸드오프, 물리 기반 충돌 감지 엔진, 그리고 **BYOK(Bring Your Own Key)** 보안 모델까지 — 전문 포토그래퍼의 워크플로를 완벽히 재현하는 올인원 AI 촬영 시뮬레이터입니다.
 
 ## Summary-en
 
-Lumina Promptus is a **Digital Darkroom** — a web application that simulates real camera and lens optical characteristics to generate high-precision prompts for AI image generation.
+You know that feeling — scrolling through social media at midnight, saving yet another "magic prompt" someone swears makes incredible AI photos. Then you try it, and the result looks nothing like what you imagined. Lumina Promptus takes a completely different approach. Instead of guessing at text prompts, you set up your shot the way you've always done: choose a camera body, pair it with a lens, adjust your lighting, dial in your aperture and ISO. The app takes that photographer's intuition and translates it into a prompt built specifically for realistic photography. Four modes cover the genres you actually shoot — Studio for portraits and fashion, Landscape for scenery with real weather and 3D terrain, Snap for street and candid moments, and Product for commercial work.
 
-With a wide range of camera bodies, lenses, and mount systems, you can dial in real shooting parameters (aperture, ISO, shutter speed) at 1/3-stop increments across four specialized modes — **Studio** (portrait/fashion), **Landscape** (geospatial), **Snap** (street/candid), and **Product** (commercial) — and export deterministic prompts optimized for ChatGPT, Midjourney, NanoBanana, and more.
+## Summary-ko
 
-The Landscape mode features **CesiumJS 3D Photorealistic Tiles** for geospatial simulation with **Google Places API** and real-time weather/solar data. Additional capabilities include AI-powered reference photo analysis (Gemini 3.1 Flash), multi-provider image generation (Gemini, OpenAI, SeeDream via fal.ai), a physics-based conflict detection engine, QR code prompt handoff for cross-device workflows, and a **BYOK (Bring Your Own Key)** security model where API keys never leave your device.
+한밤중에 SNS 돌아다니면서 "이 프롬프트 쓰면 진짜 사진 같은 결과 나온다"는 게시물 저장해 본 적 있으시죠? 막상 써보면 내가 원하던 그림이 아닌 경우가 대부분입니다. Lumina Promptus는 접근 방식이 다릅니다. 텍스트 프롬프트를 짜맞추는 대신, 늘 해오던 방식으로 촬영을 세팅하세요. 바디 고르고, 렌즈 끼우고, 조명 잡고, 조리개와 ISO 맞추면 됩니다. 앱이 그 포토그래퍼의 감각을 사진에 특화된 AI 프롬프트로 번역해 줍니다. 전문적인 용도에 맞게 네 가지 모드를 갖추고 있어서 — 인물·패션은 Studio, 풍경은 실제 날씨와 3D 지형까지 반영하는 Landscape, 거리 스냅은 Snap, 상품 촬영은 Product — 용도에 맞는 다양한 모드를 지원합니다.
 
 ## Summary-ja
 
-Lumina Promptusは、実際のカメラとレンズの光学特性をシミュレーションし、AI画像生成のための**高精度プロンプト**を生成する「デジタル暗室（Digital Darkroom）」Webアプリケーションです。
-
-多彩なカメラボディ、レンズ、マウントシステムを基盤に、実際の撮影パラメータ（絞り、ISO、シャッタースピード）を1/3段刻みで調整可能。**Studio**（ポートレート）・**Landscape**（ジオスペーシャル）・**Snap**（ストリート）・**Product**（商業撮影）の4つの専門モードで、ChatGPT・Midjourney・NanoBananaなど各AIモデルに最適化されたプロンプトを決定論的にエクスポートできます。
-
-Landscapeモードでは**CesiumJS 3Dフォトリアリスティックタイル**による地理空間シミュレーションと**Google Places API**・リアルタイム気象/太陽データを統合。AIリファレンス写真分析（Gemini 3.1 Flash）、マルチプロバイダー画像生成（Gemini・OpenAI・SeeDream）、物理ベースの衝突検知エンジン、QRコードによるプロンプトハンドオフ、**BYOK（Bring Your Own Key）**セキュリティモデルを搭載し、プロフォトグラファーのワークフローを完全に再現するオールインワンAI撮影シミュレータです。
+深夜にSNSをスクロールしながら「このプロンプトなら本物の写真みたいな結果が出る」という投稿を保存したこと、ありますよね？実際に使ってみると、思い描いていた写真とは全然違う。Lumina Promptusはアプローチが違います。テキストプロンプトを組み立てる代わりに、いつも通りに撮影をセットアップしてください。ボディを選び、レンズを付け、ライティングを決め、絞りとISOを合わせるだけ。アプリがそのフォトグラファーの感覚を写真に特化したAIプロンプトに翻訳します。実際に撮るジャンルに合わせたモードも用意されています — ポートレート・ファッションはStudio、実際の天気と3D地形が反映される風景はLandscape、ストリート・キャンディッドはSnap、商品撮影はProduct。
 
 ---
 
-## ✨ Features
+## ✨ What It Does
 
-### 🎛️ Four Specialized Modes
-
-| Mode | Description |
-|------|-------------|
-| **Studio** | Full portrait/fashion photography simulation with subject, wardrobe, pose, and lighting controls |
-| **Landscape** | Environment-first composition with real-time solar position, weather, and terrain parameters |
-| **Snap** | Quick street/candid photography with streamlined controls |
-| **Product** | Commercial product photography with material and staging options |
-
-### 📷 Camera & Lens Simulation
-
-- **21 Camera Bodies** — 17 digital + 4 film across Canon, Sony, Nikon, Leica, Fujifilm, Hasselblad, Panasonic, Pentax
-- **30+ Lenses** — Modern GM/RF/Z glass to legendary Leica Noctilux and vintage film lenses
-- **16 Mount Systems** — Automatic lens compatibility filtering (RF, EF, E, Z, F, M, L, X, G, V, 67…)
-- **Snap Sliders** — Real 1/3-stop increment controls for aperture, ISO, and shutter speed
-- **Brand Auto-selection** — Selecting a brand auto-populates compatible cameras and lenses
-
-### 🧠 Prompt Engine
-
-- **Slot-based Architecture** — Priority-weighted prompt composition via IR-v2.1 Semantic Authority model
-- **4 Dedicated Builders** — `StudioBuilder`, `LandscapeBuilder`, `SnapBuilder`, `ProductBuilder`
-- **Conflict Resolution** — Automatically detects and resolves incompatible settings
-- **Prompt Diff Generator** — Visual diff comparison between prompt versions
-- **Universal Dictionary** — Standardized vocabulary for camera angles, body poses, and hand poses
-
-### 📤 Multi-Format Export
-
-| Exporter | Target |
-|----------|--------|
-| **NanoBanana** | Optimized for NanoBanana Pro format |
-| **ChatGPT** | Structured for ChatGPT / DALL-E workflows |
-| **Midjourney** | Formatted with Midjourney-style parameters |
-| **Product** | Specialized commercial photography output |
-
-### 🎨 Subject & Composition
-
-- **Fashion System** — Comprehensive wardrobe options with style conflict detection
-- **Portrait Composition** — Framing, cropping, and subject placement presets
-- **Photo Styles** — Curated photography style presets
-- **Lighting Patterns** — Studio and natural lighting configurations
-
-### 🌍 Landscape Intelligence
-
-- **Solar Calculator** — Real-time sun position based on location and time
-- **Occlusion Analyzer** — Terrain-aware lighting analysis
-- **Environment Validator** — Ensures physically consistent settings
-- **Google Places API** — Location autocomplete and geographic context
-
-### 🖼️ Image Generation
-
-Generate images directly from prompts via built-in multi-provider support:
-
-- **Google Gemini** (Imagen)
-- **OpenAI** (GPT-Image)
-- **SeeDream** (via fal.ai)
-
-### 🔑 BYOK Security Model
-
-All API keys are stored client-side in browser local storage. No server-side key storage — your keys never leave your device.
+- **Simulates real cameras** — Choose a camera body and lens, then adjust aperture, ISO, and shutter speed with sliders that behave like physical dials.
+- **Sets up studio lighting** — Pick from professional lighting patterns like Rembrandt, Butterfly, and Loop, adjust key light direction and color temperature, and see it all reflected in the final prompt.
+- **Builds prompts automatically** — Every setting you touch is converted into an AI-ready prompt, so you never have to write one from scratch.
+- **Supports 4 shooting modes** — Studio (portraits), Landscape (scenery), Snap (street photography), and Product (commercial) — each with tailored controls.
+- **Exports to any AI platform** — One-click optimized output for ChatGPT, Midjourney, and NanoBanana with platform-specific formatting.
+- **Detects setting conflicts** — A physics-based engine warns you when your combination of aperture, lighting, and lens produces unrealistic results.
+- **Shows real-world conditions** — In Landscape mode, the app pulls live weather, sun angle, and 3D terrain data for the location you choose.
+- **Generates images directly** — Connects to Google Gemini, OpenAI, and SeeDream to generate images right inside the app using your own API keys.
+- **Hands off via QR code** — Scan a QR code to transfer your finished prompt to a phone, tablet, or another device instantly.
 
 ---
 
-## 🏗️ Tech Stack
+## 🚀 Try It Now
+
+👉 **[Live Demo](https://luminaprompt.com/)**
+
+---
+
+## 🛠 Tech Stack
 
 | Layer | Technology |
-|-------|------------|
+|-------|-----------|
 | Framework | Next.js 16 (App Router) |
-| Language | TypeScript |
+| Language | TypeScript (Strict) |
 | Styling | Tailwind CSS 4 |
 | UI Components | shadcn/ui + Radix UI |
-| State Management | Zustand 5 |
+| State | Zustand 5 |
 | Icons | Huge Icons |
-| Image Generation | fal.ai, Google GenAI, OpenAI |
-| Geo / Solar | SunCalc, Google Places API |
+| Image Generation | Google Gemini · OpenAI · SeeDream (fal.ai) |
+| Geo / Solar | CesiumJS · SunCalc · Google Places API |
+| Deploy | Vercel |
 
 ---
 
-## 🚀 Getting Started
-
-### 1. Install Dependencies
+## 📦 Installation
 
 ```bash
+git clone https://github.com/hsu3046/Lumina-Promptus.git
+cd Lumina-Promptus
 npm install
-```
-
-### 2. Configure Environment
-
-```bash
-cp .env.example .env.local
-```
-
-Fill in your API keys — see `.env.example` for details.
-
-### 3. Run Dev Server
-
-```bash
+cp .env.example .env.local   # Fill in your API keys
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
 
-### 4. Production Build
-
-```bash
-npm run build
-npm start
-```
-
 ---
 
-## 📂 Project Structure
+## 📁 Project Structure
 
 ```
-├── app/                        # Next.js App Router
-│   ├── studio/                # Studio mode page
-│   ├── landscape/             # Landscape mode page
-│   ├── snap/                  # Snap mode page
-│   ├── product/               # Product mode page
-│   └── api/                   # API routes (places, weather, knowledge-graph, image-proxy)
+├── app/                          # Next.js App Router
+│   ├── studio/                   # Studio mode (portrait / fashion)
+│   ├── landscape/                # Landscape mode (geospatial)
+│   ├── snap/                     # Snap mode (street / candid)
+│   ├── product/                  # Product mode (commercial)
+│   └── api/                      # API routes (places, weather, image-proxy)
 ├── components/
-│   ├── settings/              # Mode-specific settings panels (28+ components)
-│   │   └── tabs/              # Camera, Subject, Lighting, Landscape, Product, Snap tabs
-│   └── ui/                    # shadcn/ui components
-├── config/mappings/           # Equipment & style databases
-│   ├── cameras.ts             # 21 camera body specs
-│   ├── lenses.ts              # 30+ lens specs
-│   ├── fashion-options.ts     # Wardrobe & styling data
-│   ├── lighting-patterns.ts   # Lighting configurations
-│   ├── landscape-environment.ts
-│   ├── photo-styles.ts
-│   ├── portrait-composition.ts
-│   ├── product-options.ts
-│   └── snap-options.ts
+│   ├── settings/                 # Mode-specific settings panels (28+ components)
+│   │   └── tabs/                 # Camera, Subject, Lighting, Landscape, Product tabs
+│   └── ui/                       # shadcn/ui base components
+├── config/mappings/              # Equipment & style databases
+│   ├── cameras.ts                # 21 camera body specs
+│   ├── lenses.ts                 # 30+ lens specs
+│   ├── fashion-options.ts        # Wardrobe & styling data
+│   ├── lighting-patterns.ts      # Lighting configurations
+│   └── ...                       # landscape, photo-styles, portrait, product, snap
 ├── lib/
 │   ├── prompt/
-│   │   ├── builders/          # StudioBuilder, LandscapeBuilder, SnapBuilder, ProductBuilder
-│   │   └── exporters/         # NanoBanana, ChatGPT, Midjourney, Product exporters
-│   ├── image-gen/             # Multi-provider image generation (Gemini, OpenAI, SeeDream)
-│   ├── landscape/             # Solar calculator, occlusion analyzer, environment validator
-│   ├── dictionary/            # Universal Dictionary (angles, body poses, hand poses)
-│   └── rules/                 # Conflict resolution engine
-├── store/                     # Zustand stores (settings, history, prompt, API keys)
-├── types/                     # TypeScript type definitions
-└── docs/                      # Project documentation
+│   │   ├── builders/             # StudioBuilder, LandscapeBuilder, SnapBuilder, ProductBuilder
+│   │   └── exporters/            # NanoBanana, ChatGPT, Midjourney exporters
+│   ├── image-gen/                # Multi-provider image generation
+│   ├── landscape/                # Solar calculator, occlusion analyzer
+│   ├── dictionary/               # Universal angle / pose dictionary
+│   └── rules/                    # Conflict resolution engine
+├── store/                        # Zustand stores
+├── types/                        # TypeScript type definitions
+└── docs/                         # Project documentation
 ```
 
 ---
 
-## �️ Roadmap
+## 🗺 Roadmap
 
 - [ ] Image Gallery with Preset / Reference Injection
-- [ ] Photographer Style presets
+- [ ] Photographer Style presets expansion
 - [ ] Additional camera brands (Phase One, Mamiya, etc.)
 - [ ] Extended lighting patterns
 - [ ] Prompt history & favorites
-- [ ] Visual diff system
+- [ ] Multi-angle product prompts — generate prompts for multiple angles of a product in one go (Product mode)
+- [ ] Cross-mode subject reuse — use a portrait created in Studio mode as the subject in Landscape or Snap mode
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feat/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat(scope): add amazing feature'`)
+4. Push to the branch (`git push origin feat/amazing-feature`)
+5. Open a Pull Request
 
 ---
 
 ## 📄 License
 
-This project is licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html).  
-© KnowAI — [https://knowai.space](https://knowai.space)
+This project is licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html).
 
 ---
 
-## 👤 Author
-
-**KnowAI**
-
----
-
-Built with ❤️ using Next.js and shadcn/ui
+*Built by [KnowAI](https://knowai.space) · © 2026 KnowAI*
